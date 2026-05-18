@@ -1,8 +1,11 @@
 import { LockKeyhole } from "lucide-react";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
+import { unlockGalleryAction } from "./actions";
 import { featuredAlbums } from "@/lib/sample-data";
 import { GalleryLightbox, type GalleryDisplayPhoto } from "@/components/gallery/GalleryLightbox";
 import { PhotoTile } from "@/components/PhotoTile";
+import { albumAccessCookieName, hasAlbumAccess } from "@/lib/gallery-access";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -16,6 +19,7 @@ type GalleryAlbum = {
   event_date: string | null;
   is_public: boolean;
   is_password_protected: boolean;
+  password_hash: string | null;
   expires_at: string | null;
   download_zip_url: string | null;
 };
@@ -38,10 +42,17 @@ type ClientGalleryPageProps = {
   params: Promise<{
     slug: string;
   }>;
+  searchParams: Promise<{
+    notice?: string;
+  }>;
 };
 
-export default async function ClientGalleryPage({ params }: ClientGalleryPageProps) {
+export default async function ClientGalleryPage({
+  params,
+  searchParams
+}: ClientGalleryPageProps) {
   const { slug } = await params;
+  const { notice } = await searchParams;
   const supabase = createSupabaseAdminClient();
   const viewerSupabase = await createSupabaseServerClient();
   const {
@@ -50,7 +61,7 @@ export default async function ClientGalleryPage({ params }: ClientGalleryPagePro
   const { data: dbAlbum } = await supabase
     .from("albums")
     .select(
-      "id, title, slug, event_date, is_public, is_password_protected, expires_at, download_zip_url"
+      "id, title, slug, event_date, is_public, is_password_protected, password_hash, expires_at, download_zip_url"
     )
     .eq("slug", slug)
     .maybeSingle();
@@ -65,8 +76,16 @@ export default async function ClientGalleryPage({ params }: ClientGalleryPagePro
     notFound();
   }
 
+  const cookieStore = await cookies();
+  const hasUnlockedAlbum = album
+    ? hasAlbumAccess(
+        album.id,
+        album.password_hash,
+        cookieStore.get(albumAccessCookieName(album.id))?.value
+      )
+    : false;
   const canViewPhotos =
-    Boolean(user) || Boolean(album?.is_public) || !album?.is_password_protected;
+    Boolean(user) || !album?.is_password_protected || hasUnlockedAlbum;
   const { data: dbPhotos } =
     album && canViewPhotos
       ? await supabase
@@ -91,9 +110,13 @@ export default async function ClientGalleryPage({ params }: ClientGalleryPagePro
     })
   );
   const title = album?.title ?? fallbackAlbum?.title ?? "";
-  const photoCount = album ? displayPhotos.length : fallbackAlbum?.count ?? 0;
   const isProtected = Boolean(album?.is_password_protected);
   const galleryLabel = album?.is_public ? "Public Gallery" : "Private Gallery";
+  const photoSummary = album
+    ? canViewPhotos
+      ? `${displayPhotos.length} photos`
+      : "Password required"
+    : `${fallbackAlbum?.count ?? 0} photos`;
   const zipObjectKey = album?.download_zip_url
     ? objectKeyFromPublicUrl(album.download_zip_url)
     : null;
@@ -112,7 +135,7 @@ export default async function ClientGalleryPage({ params }: ClientGalleryPagePro
           <p className="eyebrow">{galleryLabel}</p>
           <h1 style={{ fontSize: "clamp(2.8rem, 8vw, 6rem)" }}>{title}</h1>
           <p className="muted">
-            {photoCount} photos
+            {photoSummary}
             {album?.event_date ? ` · ${album.event_date}` : ""}
           </p>
         </div>
@@ -129,11 +152,16 @@ export default async function ClientGalleryPage({ params }: ClientGalleryPagePro
       {isProtected && !canViewPhotos ? (
         <section className="gallery-gate" style={{ marginBottom: 26 }}>
           <h2 style={{ fontSize: "1.7rem" }}>Password protection</h2>
-          <p className="form-note">Enter the gallery password to view this album.</p>
-          <form>
+          <p className="form-note">Enter the gallery password to view and download this album.</p>
+          {notice === "wrong-password" ? (
+            <p className="alert">That password did not match. Try again.</p>
+          ) : null}
+          <form action={unlockGalleryAction}>
+            <input name="album_id" type="hidden" value={album.id} />
+            <input name="slug" type="hidden" value={album.slug} />
             <label className="field">
               Gallery password
-              <input type="password" name="password" />
+              <input type="password" name="password" required />
             </label>
             <button className="button" type="submit">
               Unlock gallery

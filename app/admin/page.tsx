@@ -25,6 +25,7 @@ import {
 import { AdminPhotoUpload } from "@/components/admin/AdminPhotoUpload";
 import { AdminZipUpload } from "@/components/admin/AdminZipUpload";
 import { ConfirmSubmitButton } from "@/components/admin/ConfirmSubmitButton";
+import { CopyLinkButton } from "@/components/admin/CopyLinkButton";
 import { siteConfig } from "@/config/site";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -330,6 +331,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                           <ExternalLink size={16} />
                           Open gallery
                         </a>
+                        <CopyLinkButton value={selectedClientLink} />
                         {selectedAlbum.is_public ? (
                           <a className="button secondary small" href="/albums">
                             <ExternalLink size={16} />
