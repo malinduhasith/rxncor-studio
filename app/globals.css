@@ -282,6 +282,23 @@ h3 {
   box-shadow: var(--shadow);
 }
 
+.alert {
+  padding: 12px 14px;
+  border: 1px solid #c87a62;
+  border-radius: 8px;
+  background: #fff3ee;
+  color: #7f2f20;
+  line-height: 1.45;
+}
+
+.admin-topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
 .dashboard-panel {
   max-width: none;
 }
@@ -382,6 +399,7 @@ h3 {
 @media (max-width: 860px) {
   .nav,
   .section-head,
+  .admin-topbar,
   .gallery-bar {
     align-items: flex-start;
     flex-direction: column;

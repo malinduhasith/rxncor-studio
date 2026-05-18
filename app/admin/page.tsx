@@ -1,4 +1,9 @@
 import { CalendarDays, ImageUp, Link as LinkIcon, LockKeyhole } from "lucide-react";
+import { redirect } from "next/navigation";
+import { signOutAction } from "./actions";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
 
 const recentAlbums = [
   ["Chaya Birthday", "chaya-birthday-2026", "128 photos", "Protected"],
@@ -6,7 +11,16 @@ const recentAlbums = [
   ["Family Afternoon", "family-afternoon", "86 photos", "Public"]
 ];
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
   return (
     <main className="shell section">
       <div className="admin-layout">
@@ -19,7 +33,17 @@ export default function AdminPage() {
         </aside>
 
         <section className="dashboard-panel">
-          <p className="eyebrow">Dashboard</p>
+          <div className="admin-topbar">
+            <div>
+              <p className="eyebrow">Dashboard</p>
+              <p className="muted">Signed in as {user.email}</p>
+            </div>
+            <form action={signOutAction}>
+              <button className="button secondary" type="submit">
+                Sign out
+              </button>
+            </form>
+          </div>
           <h1 style={{ fontSize: "clamp(2.6rem, 8vw, 5.8rem)" }}>Gallery control</h1>
 
           <div className="stat-grid">
