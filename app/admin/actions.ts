@@ -70,6 +70,10 @@ function emptyToNull(value: string | undefined) {
   return value ? value : null;
 }
 
+function emailToNull(value: string | undefined) {
+  return value ? value.toLowerCase() : null;
+}
+
 function uniqueKeys(values: Array<string | null | undefined>) {
   return [...new Set(values.filter((value): value is string => Boolean(value)))];
 }
@@ -145,7 +149,7 @@ export async function createClientAction(formData: FormData) {
     .from("clients")
     .insert({
       name: payload.data.name,
-      email: emptyToNull(payload.data.email),
+      email: emailToNull(payload.data.email),
       phone: emptyToNull(payload.data.phone)
     })
     .select("id")
@@ -182,7 +186,7 @@ export async function updateClientAction(formData: FormData) {
     .from("clients")
     .update({
       name: payload.data.name,
-      email: emptyToNull(payload.data.email),
+      email: emailToNull(payload.data.email),
       phone: emptyToNull(payload.data.phone)
     })
     .eq("id", payload.data.client_id);

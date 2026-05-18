@@ -123,7 +123,7 @@ export default async function ClientGalleryPage({
             .from("clients")
             .select("*")
             .in("id", assignedClientIds)
-            .eq("email", clientEmail)
+            .ilike("email", clientEmail)
             .maybeSingle()
         : { data: null };
       const galleryClient = client as GalleryClient | null;

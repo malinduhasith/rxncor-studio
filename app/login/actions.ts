@@ -28,7 +28,7 @@ export async function clientLoginAction(formData: FormData) {
   const { data: client } = await supabase
     .from("clients")
     .select("*")
-    .eq("email", email)
+    .ilike("email", email)
     .maybeSingle();
   const loginClient = client as LoginClient | null;
 

@@ -90,7 +90,7 @@ export async function unlockGalleryAction(formData: FormData) {
           .from("clients")
           .select("*")
           .in("id", assignedClientIds)
-          .eq("email", email)
+          .ilike("email", email)
           .maybeSingle()
       : { data: null };
     const unlockClient = client as UnlockClient | null;
