@@ -626,6 +626,22 @@ h3 {
   align-items: end;
 }
 
+.assignment-list {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8f5ef;
+}
+
+.checkbox-field.compact {
+  margin-bottom: 0;
+  font-size: 0.86rem;
+}
+
 .share-box {
   margin-bottom: 18px;
   padding: 14px;
@@ -663,7 +679,7 @@ h3 {
 
 .client-edit-row {
   display: grid;
-  grid-template-columns: minmax(160px, 1fr) minmax(180px, 1fr) minmax(120px, 0.8fr) auto auto;
+  grid-template-columns: repeat(3, minmax(140px, 1fr)) minmax(140px, 1fr) minmax(110px, 0.7fr) auto;
   gap: 10px;
   align-items: end;
   flex: 1;

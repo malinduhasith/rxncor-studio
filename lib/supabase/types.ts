@@ -3,6 +3,7 @@ export type Client = {
   name: string;
   email: string | null;
   phone: string | null;
+  password_hash: string | null;
   created_at: string;
 };
 
@@ -15,10 +16,18 @@ export type Album = {
   is_public: boolean;
   is_password_protected: boolean;
   password_hash: string | null;
+  requires_email: boolean;
+  allow_client_password_access: boolean;
   cover_photo_url: string | null;
   created_at: string;
   expires_at: string | null;
   download_zip_url: string | null;
+};
+
+export type AlbumClient = {
+  album_id: string;
+  client_id: string;
+  created_at: string;
 };
 
 export type Photo = {

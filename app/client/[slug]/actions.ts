@@ -6,7 +6,8 @@ import { z } from "zod";
 import {
   albumAccessCookieName,
   albumClientEmailCookieName,
-  createAlbumAccessToken
+  createAlbumAccessToken,
+  createEmailAccessToken
 } from "@/lib/gallery-access";
 import { verifyPassword } from "@/lib/password";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -15,8 +16,23 @@ const unlockSchema = z.object({
   album_id: z.string().uuid(),
   slug: z.string().min(1),
   client_email: z.string().trim().email().optional().or(z.literal("")),
-  password: z.string().min(1)
+  password: z.string().optional().or(z.literal(""))
 });
+
+type UnlockAlbum = {
+  id: string;
+  slug: string;
+  password_hash?: string | null;
+  is_password_protected?: boolean;
+  requires_email?: boolean;
+  allow_client_password_access?: boolean;
+};
+
+type UnlockClient = {
+  id: string;
+  email: string | null;
+  password_hash?: string | null;
+};
 
 export async function unlockGalleryAction(formData: FormData) {
   const payload = unlockSchema.safeParse({
@@ -33,41 +49,89 @@ export async function unlockGalleryAction(formData: FormData) {
   const supabase = createSupabaseAdminClient();
   const { data: album } = await supabase
     .from("albums")
-    .select("id, slug, password_hash")
+    .select("*")
     .eq("id", payload.data.album_id)
     .eq("slug", payload.data.slug)
     .maybeSingle();
+  const unlockAlbum = album as UnlockAlbum | null;
+  const email = String(payload.data.client_email ?? "").trim().toLowerCase();
+  const password = String(payload.data.password ?? "");
+  let accessToken: string | null = null;
+
+  if (!unlockAlbum) {
+    redirect(`/client/${payload.data.slug}?notice=wrong-password`);
+  }
+
+  if (unlockAlbum.requires_email && !email) {
+    redirect(`/client/${payload.data.slug}?notice=email-required`);
+  }
 
   if (
-    !album ||
-    !album.password_hash ||
-    !verifyPassword(payload.data.password, album.password_hash)
+    unlockAlbum.password_hash &&
+    password &&
+    verifyPassword(password, unlockAlbum.password_hash)
   ) {
+    accessToken = createAlbumAccessToken(unlockAlbum.id, unlockAlbum.password_hash);
+  }
+
+  if (
+    !accessToken &&
+    email &&
+    password &&
+    unlockAlbum.allow_client_password_access !== false
+  ) {
+    const { data: assignments } = await supabase
+      .from("album_clients")
+      .select("client_id")
+      .eq("album_id", unlockAlbum.id);
+    const assignedClientIds = (assignments ?? []).map((row) => row.client_id);
+    const { data: client } = assignedClientIds.length
+      ? await supabase
+          .from("clients")
+          .select("*")
+          .in("id", assignedClientIds)
+          .eq("email", email)
+          .maybeSingle()
+      : { data: null };
+    const unlockClient = client as UnlockClient | null;
+
+    if (
+      unlockClient?.password_hash &&
+      verifyPassword(password, unlockClient.password_hash)
+    ) {
+      accessToken = createAlbumAccessToken(
+        unlockAlbum.id,
+        `client:${unlockClient.id}:${unlockClient.password_hash}`
+      );
+    }
+  }
+
+  if (!accessToken && email && unlockAlbum.requires_email && !unlockAlbum.is_password_protected) {
+    accessToken = createEmailAccessToken(unlockAlbum.id, email);
+  }
+
+  if (!accessToken) {
     redirect(`/client/${payload.data.slug}?notice=wrong-password`);
   }
 
   const cookieStore = await cookies();
-  cookieStore.set(
-    albumAccessCookieName(album.id),
-    createAlbumAccessToken(album.id, album.password_hash),
-    {
-      httpOnly: true,
-      maxAge: 60 * 60 * 24 * 14,
-      path: `/client/${album.slug}`,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production"
-    }
-  );
+  cookieStore.set(albumAccessCookieName(unlockAlbum.id), accessToken, {
+    httpOnly: true,
+    maxAge: 60 * 60 * 24 * 14,
+    path: `/client/${unlockAlbum.slug}`,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production"
+  });
 
-  if (payload.data.client_email) {
-    cookieStore.set(albumClientEmailCookieName(album.id), payload.data.client_email, {
+  if (email) {
+    cookieStore.set(albumClientEmailCookieName(unlockAlbum.id), email, {
       httpOnly: true,
       maxAge: 60 * 60 * 24 * 14,
-      path: `/client/${album.slug}`,
+      path: `/client/${unlockAlbum.slug}`,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production"
     });
   }
 
-  redirect(`/client/${album.slug}`);
+  redirect(`/client/${unlockAlbum.slug}`);
 }

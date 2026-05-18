@@ -8,7 +8,8 @@ import { PhotoTile } from "@/components/PhotoTile";
 import {
   albumAccessCookieName,
   albumClientEmailCookieName,
-  hasAlbumAccess
+  createAlbumAccessToken,
+  createEmailAccessToken
 } from "@/lib/gallery-access";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -24,8 +25,16 @@ type GalleryAlbum = {
   is_public: boolean;
   is_password_protected: boolean;
   password_hash: string | null;
+  requires_email?: boolean;
+  allow_client_password_access?: boolean;
   expires_at: string | null;
   download_zip_url: string | null;
+};
+
+type GalleryClient = {
+  id: string;
+  email: string | null;
+  password_hash?: string | null;
 };
 
 type GalleryPhoto = {
@@ -64,9 +73,7 @@ export default async function ClientGalleryPage({
   } = await viewerSupabase.auth.getUser();
   const { data: dbAlbum } = await supabase
     .from("albums")
-    .select(
-      "id, title, slug, event_date, is_public, is_password_protected, password_hash, expires_at, download_zip_url"
-    )
+    .select("*")
     .eq("slug", slug)
     .maybeSingle();
   const fallbackAlbum = featuredAlbums.find((item) => item.slug === slug);
@@ -81,18 +88,54 @@ export default async function ClientGalleryPage({
   }
 
   const cookieStore = await cookies();
-  const hasUnlockedAlbum = album
-    ? hasAlbumAccess(
-        album.id,
-        album.password_hash,
-        cookieStore.get(albumAccessCookieName(album.id))?.value
-      )
-    : false;
   const clientEmail = album
     ? cookieStore.get(albumClientEmailCookieName(album.id))?.value ?? null
     : null;
+  const accessCookie = album
+    ? cookieStore.get(albumAccessCookieName(album.id))?.value
+    : undefined;
+  let hasUnlockedAlbum = false;
+
+  if (album && accessCookie) {
+    const possibleTokens = [
+      album.password_hash ? createAlbumAccessToken(album.id, album.password_hash) : null,
+      clientEmail && album.requires_email
+        ? createEmailAccessToken(album.id, clientEmail)
+        : null
+    ];
+
+    if (clientEmail && album.allow_client_password_access !== false) {
+      const { data: assignments } = await supabase
+        .from("album_clients")
+        .select("client_id")
+        .eq("album_id", album.id);
+      const assignedClientIds = (assignments ?? []).map((row) => row.client_id);
+      const { data: client } = assignedClientIds.length
+        ? await supabase
+            .from("clients")
+            .select("*")
+            .in("id", assignedClientIds)
+            .eq("email", clientEmail)
+            .maybeSingle()
+        : { data: null };
+      const galleryClient = client as GalleryClient | null;
+
+      if (galleryClient?.password_hash) {
+        possibleTokens.push(
+          createAlbumAccessToken(
+            album.id,
+            `client:${galleryClient.id}:${galleryClient.password_hash}`
+          )
+        );
+      }
+    }
+
+    hasUnlockedAlbum = possibleTokens.includes(accessCookie);
+  }
+
+  const requiresUnlock = Boolean(album?.is_password_protected || album?.requires_email);
   const canViewPhotos =
-    Boolean(user) || !album?.is_password_protected || hasUnlockedAlbum;
+    Boolean(user) || !requiresUnlock || hasUnlockedAlbum;
   const { data: dbPhotos } =
     album && canViewPhotos
       ? await supabase
@@ -117,7 +160,7 @@ export default async function ClientGalleryPage({
     })
   );
   const title = album?.title ?? fallbackAlbum?.title ?? "";
-  const isProtected = Boolean(album?.is_password_protected);
+  const isProtected = requiresUnlock;
   const galleryLabel = album?.is_public ? "Public Gallery" : "Private Gallery";
   const photoSummary = album
     ? canViewPhotos
@@ -156,24 +199,38 @@ export default async function ClientGalleryPage({
         </div>
       </div>
 
-      {isProtected && !canViewPhotos ? (
+      {album && isProtected && !canViewPhotos ? (
         <section className="gallery-gate" style={{ marginBottom: 26 }}>
           <h2 style={{ fontSize: "1.7rem" }}>Password protection</h2>
-          <p className="form-note">Enter the gallery password to view and download this album.</p>
+          <p className="form-note">
+            {album?.is_password_protected
+              ? "Enter the album password, or use your client email and personal client password if one was assigned."
+              : "Enter your email to view and download this album."}
+          </p>
           {notice === "wrong-password" ? (
             <p className="alert">That password did not match. Try again.</p>
+          ) : null}
+          {notice === "email-required" ? (
+            <p className="alert">Enter your email before opening this gallery.</p>
           ) : null}
           <form action={unlockGalleryAction}>
             <input name="album_id" type="hidden" value={album.id} />
             <input name="slug" type="hidden" value={album.slug} />
             <label className="field">
               Email
-              <input name="client_email" type="email" placeholder="you@example.com" />
+              <input
+                name="client_email"
+                type="email"
+                placeholder="you@example.com"
+                required={Boolean(album?.requires_email)}
+              />
             </label>
-            <label className="field">
-              Gallery password
-              <input type="password" name="password" required />
-            </label>
+            {album?.is_password_protected ? (
+              <label className="field">
+                Gallery or client password
+                <input type="password" name="password" required />
+              </label>
+            ) : null}
             <button className="button" type="submit">
               Unlock gallery
             </button>

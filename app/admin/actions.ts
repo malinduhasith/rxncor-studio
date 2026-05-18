@@ -23,11 +23,13 @@ async function requireAdmin() {
 const clientSchema = z.object({
   name: z.string().trim().min(1),
   email: z.string().trim().email().optional().or(z.literal("")),
-  phone: z.string().trim().optional()
+  phone: z.string().trim().optional(),
+  password: z.string().optional()
 });
 
 const clientUpdateSchema = clientSchema.extend({
-  client_id: z.string().uuid()
+  client_id: z.string().uuid(),
+  remove_password: z.boolean()
 });
 
 const clientIdSchema = z.object({
@@ -44,6 +46,8 @@ const albumSchema = z.object({
     .regex(/^[a-z0-9-]+$/),
   event_date: z.string().optional().or(z.literal("")),
   is_public: z.boolean(),
+  requires_email: z.boolean(),
+  allow_client_password_access: z.boolean(),
   password: z.string().optional(),
   expires_at: z.string().optional().or(z.literal(""))
 });
@@ -69,30 +73,89 @@ function uniqueKeys(values: Array<string | null | undefined>) {
   return [...new Set(values.filter((value): value is string => Boolean(value)))];
 }
 
+function formUuidList(formData: FormData, name: string) {
+  const uuidSchema = z.string().uuid();
+
+  return [
+    ...new Set(
+      formData
+        .getAll(name)
+        .map(String)
+        .filter((value) => uuidSchema.safeParse(value).success)
+    )
+  ];
+}
+
 async function deleteR2Objects(keys: string[]) {
   await Promise.allSettled(keys.map((key) => deleteR2Object(key)));
 }
 
+async function updateClientPassword(
+  supabase: Awaited<ReturnType<typeof requireAdmin>>,
+  clientId: string,
+  passwordHash: string | null
+) {
+  await supabase.from("clients").update({ password_hash: passwordHash }).eq("id", clientId);
+}
+
+async function updateAlbumAccessFlags(
+  supabase: Awaited<ReturnType<typeof requireAdmin>>,
+  albumId: string,
+  accessFlags: {
+    requires_email: boolean;
+    allow_client_password_access: boolean;
+  }
+) {
+  await supabase.from("albums").update(accessFlags).eq("id", albumId);
+}
+
+async function syncAlbumClients(
+  supabase: Awaited<ReturnType<typeof requireAdmin>>,
+  albumId: string,
+  clientIds: string[]
+) {
+  await supabase.from("album_clients").delete().eq("album_id", albumId);
+
+  if (clientIds.length) {
+    await supabase.from("album_clients").insert(
+      clientIds.map((clientId) => ({
+        album_id: albumId,
+        client_id: clientId
+      }))
+    );
+  }
+}
+
 export async function createClientAction(formData: FormData) {
   const supabase = await requireAdmin();
+  const rawPassword = String(formData.get("password") ?? "").trim();
   const payload = clientSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
-    phone: formData.get("phone")
+    phone: formData.get("phone"),
+    password: rawPassword
   });
 
   if (!payload.success) {
     redirect("/admin?notice=client-error#clients");
   }
 
-  const { error } = await supabase.from("clients").insert({
-    name: payload.data.name,
-    email: emptyToNull(payload.data.email),
-    phone: emptyToNull(payload.data.phone)
-  });
+  const { data: client, error } = await supabase
+    .from("clients")
+    .insert({
+      name: payload.data.name,
+      email: emptyToNull(payload.data.email),
+      phone: emptyToNull(payload.data.phone)
+    })
+    .select("id")
+    .single();
 
-  if (error) {
+  if (error || !client) {
     redirect("/admin?notice=client-error#clients");
+  }
+
+  if (rawPassword) {
+    await updateClientPassword(supabase, client.id, hashPassword(rawPassword));
   }
 
   revalidatePath("/admin");
@@ -105,7 +168,9 @@ export async function updateClientAction(formData: FormData) {
     client_id: formData.get("client_id"),
     name: formData.get("name"),
     email: formData.get("email"),
-    phone: formData.get("phone")
+    phone: formData.get("phone"),
+    password: formData.get("password"),
+    remove_password: formData.get("remove_password") === "on"
   });
 
   if (!payload.success) {
@@ -123,6 +188,14 @@ export async function updateClientAction(formData: FormData) {
 
   if (error) {
     redirect("/admin?notice=client-error#clients");
+  }
+
+  const rawPassword = String(payload.data.password ?? "").trim();
+
+  if (rawPassword) {
+    await updateClientPassword(supabase, payload.data.client_id, hashPassword(rawPassword));
+  } else if (payload.data.remove_password) {
+    await updateClientPassword(supabase, payload.data.client_id, null);
   }
 
   revalidatePath("/admin");
@@ -158,6 +231,8 @@ export async function createAlbumAction(formData: FormData) {
     slug: formData.get("slug"),
     event_date: formData.get("event_date"),
     is_public: formData.get("is_public") === "on",
+    requires_email: formData.get("requires_email") === "on",
+    allow_client_password_access: formData.get("allow_client_password_access") === "on",
     password: rawPassword,
     expires_at: formData.get("expires_at")
   });
@@ -167,19 +242,32 @@ export async function createAlbumAction(formData: FormData) {
   }
 
   const passwordHash = rawPassword ? hashPassword(rawPassword) : null;
-  const { error } = await supabase.from("albums").insert({
-    client_id: emptyToNull(payload.data.client_id),
-    title: payload.data.title,
-    slug: payload.data.slug,
-    event_date: emptyToNull(payload.data.event_date),
-    is_public: payload.data.is_public,
-    is_password_protected: Boolean(passwordHash),
-    password_hash: passwordHash,
-    expires_at: emptyToNull(payload.data.expires_at)
+  const { data: album, error } = await supabase
+    .from("albums")
+    .insert({
+      client_id: emptyToNull(payload.data.client_id),
+      title: payload.data.title,
+      slug: payload.data.slug,
+      event_date: emptyToNull(payload.data.event_date),
+      is_public: payload.data.is_public,
+      is_password_protected: Boolean(passwordHash),
+      password_hash: passwordHash,
+      expires_at: emptyToNull(payload.data.expires_at)
+    })
+    .select("id")
+    .single();
+
+  if (error || !album) {
+    redirect("/admin?notice=album-error#albums");
+  }
+
+  await updateAlbumAccessFlags(supabase, album.id, {
+    requires_email: payload.data.requires_email,
+    allow_client_password_access: payload.data.allow_client_password_access
   });
 
-  if (error) {
-    redirect("/admin?notice=album-error#albums");
+  if (payload.data.client_id) {
+    await syncAlbumClients(supabase, album.id, [payload.data.client_id]);
   }
 
   revalidatePath("/admin");
@@ -196,6 +284,8 @@ export async function updateAlbumAction(formData: FormData) {
     slug: formData.get("slug"),
     event_date: formData.get("event_date"),
     is_public: formData.get("is_public") === "on",
+    requires_email: formData.get("requires_email") === "on",
+    allow_client_password_access: formData.get("allow_client_password_access") === "on",
     password: rawPassword,
     remove_password: formData.get("remove_password") === "on",
     expires_at: formData.get("expires_at")
@@ -239,6 +329,19 @@ export async function updateAlbumAction(formData: FormData) {
   if (error) {
     redirect(`/admin?notice=album-update-error&album=${payload.data.album_id}#manager`);
   }
+
+  const assignedClientIds = [
+    ...new Set([
+      ...formUuidList(formData, "assigned_client_ids"),
+      ...(payload.data.client_id ? [payload.data.client_id] : [])
+    ])
+  ];
+
+  await updateAlbumAccessFlags(supabase, payload.data.album_id, {
+    requires_email: payload.data.requires_email,
+    allow_client_password_access: payload.data.allow_client_password_access
+  });
+  await syncAlbumClients(supabase, payload.data.album_id, assignedClientIds);
 
   revalidatePath("/admin");
   revalidatePath("/albums");

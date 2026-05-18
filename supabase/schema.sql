@@ -5,6 +5,7 @@ create table if not exists public.clients (
   name text not null,
   email text,
   phone text,
+  password_hash text,
   created_at timestamptz not null default now()
 );
 
@@ -17,10 +18,19 @@ create table if not exists public.albums (
   is_public boolean not null default false,
   is_password_protected boolean not null default true,
   password_hash text,
+  requires_email boolean not null default false,
+  allow_client_password_access boolean not null default true,
   cover_photo_url text,
   download_zip_url text,
   created_at timestamptz not null default now(),
   expires_at timestamptz
+);
+
+create table if not exists public.album_clients (
+  album_id uuid not null references public.albums(id) on delete cascade,
+  client_id uuid not null references public.clients(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (album_id, client_id)
 );
 
 create table if not exists public.photos (
@@ -45,11 +55,14 @@ create table if not exists public.download_logs (
 );
 
 create index if not exists albums_slug_idx on public.albums(slug);
+create index if not exists album_clients_album_id_idx on public.album_clients(album_id);
+create index if not exists album_clients_client_id_idx on public.album_clients(client_id);
 create index if not exists photos_album_id_idx on public.photos(album_id);
 create index if not exists download_logs_album_id_idx on public.download_logs(album_id);
 
 alter table public.clients enable row level security;
 alter table public.albums enable row level security;
+alter table public.album_clients enable row level security;
 alter table public.photos enable row level security;
 alter table public.download_logs enable row level security;
 
@@ -74,6 +87,11 @@ create policy "Admins can manage clients"
 
 create policy "Admins can manage albums"
   on public.albums for all
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
+
+create policy "Admins can manage album clients"
+  on public.album_clients for all
   using (auth.role() = 'authenticated')
   with check (auth.role() = 'authenticated');
 

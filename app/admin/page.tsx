@@ -63,6 +63,7 @@ type ClientOption = {
   name: string;
   email: string | null;
   phone: string | null;
+  password_hash?: string | null;
   created_at: string;
 };
 
@@ -76,8 +77,15 @@ type AdminAlbum = {
   is_password_protected: boolean;
   cover_photo_url: string | null;
   download_zip_url: string | null;
+  requires_email?: boolean;
+  allow_client_password_access?: boolean;
   created_at: string;
   expires_at: string | null;
+};
+
+type AdminAlbumClient = {
+  album_id: string;
+  client_id: string;
 };
 
 type AdminPhoto = {
@@ -216,6 +224,12 @@ function shareMessage({
   const passwordLine = album.is_password_protected
     ? "Password: [add the password you set for this album]"
     : "No password is required.";
+  const clientPasswordLine = album.allow_client_password_access !== false
+    ? "Assigned clients can also use their email and personal client password."
+    : null;
+  const emailLine = album.requires_email
+    ? "The client will be asked for their email before the gallery opens."
+    : null;
   const zipLine = album.download_zip_url
     ? "You can download individual photos or the full album ZIP."
     : "You can download individual photos now. The full album ZIP will be added separately.";
@@ -226,6 +240,8 @@ function shareMessage({
     `Your ${album.title} gallery is ready.`,
     `Link: ${link}`,
     passwordLine,
+    clientPasswordLine,
+    emailLine,
     `Photos: ${photoCount}`,
     expiryLine,
     zipLine,
@@ -271,17 +287,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     photoCountResult,
     protectedAlbumCountResult,
     downloadCountResult,
-    downloadLogsResult
+    downloadLogsResult,
+    albumClientsResult
   ] = await Promise.all([
     supabase
       .from("clients")
-      .select("id, name, email, phone, created_at")
+      .select("*")
       .order("created_at", { ascending: false }),
     supabase
       .from("albums")
-      .select(
-        "id, client_id, title, slug, event_date, is_public, is_password_protected, cover_photo_url, download_zip_url, created_at, expires_at"
-      )
+      .select("*")
       .order("created_at", { ascending: false }),
     supabase.from("albums").select("id", { count: "exact", head: true }),
     supabase.from("photos").select("id", { count: "exact", head: true }),
@@ -294,11 +309,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       .from("download_logs")
       .select("id, album_id, photo_id, client_email, downloaded_at, ip_address")
       .order("downloaded_at", { ascending: false })
-      .limit(30)
+      .limit(30),
+    supabase.from("album_clients").select("album_id, client_id")
   ]);
 
   const clients = (clientsResult.data ?? []) as ClientOption[];
   const albums = (albumsResult.data ?? []) as AdminAlbum[];
+  const albumClients = (albumClientsResult.data ?? []) as AdminAlbumClient[];
   const selectedAlbum =
     albums.find((album) => album.id === selectedAlbumId) ?? albums[0] ?? null;
   const albumCount = albumCountResult.count ?? 0;
@@ -318,13 +335,29 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     albumPhotoCounts.set(row.album_id, (albumPhotoCounts.get(row.album_id) ?? 0) + 1);
   }
   const clientAlbumCounts = new Map<string, number>();
+  const albumAssignedClientIds = new Map<string, Set<string>>();
+
+  for (const assignment of albumClients) {
+    clientAlbumCounts.set(
+      assignment.client_id,
+      (clientAlbumCounts.get(assignment.client_id) ?? 0) + 1
+    );
+
+    const assignedSet =
+      albumAssignedClientIds.get(assignment.album_id) ?? new Set<string>();
+    assignedSet.add(assignment.client_id);
+    albumAssignedClientIds.set(assignment.album_id, assignedSet);
+  }
 
   for (const album of albums) {
-    if (album.client_id) {
+    if (album.client_id && !albumAssignedClientIds.get(album.id)?.has(album.client_id)) {
       clientAlbumCounts.set(
         album.client_id,
         (clientAlbumCounts.get(album.client_id) ?? 0) + 1
       );
+      const assignedSet = albumAssignedClientIds.get(album.id) ?? new Set<string>();
+      assignedSet.add(album.client_id);
+      albumAssignedClientIds.set(album.id, assignedSet);
     }
   }
 
@@ -351,6 +384,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const selectedClient = selectedAlbum
     ? clients.find((client) => client.id === selectedAlbum.client_id)
     : null;
+  const selectedAssignedClientIds = selectedAlbum
+    ? albumAssignedClientIds.get(selectedAlbum.id) ?? new Set<string>()
+    : new Set<string>();
+  const selectedAssignedClients = clients.filter((client) =>
+    selectedAssignedClientIds.has(client.id)
+  );
   const selectedAlbumPhotoCount = selectedAlbum
     ? albumPhotoCounts.get(selectedAlbum.id) ?? selectedPhotos.length
     : 0;
@@ -494,6 +533,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         <span>{albumPhotoCounts.get(album.id) ?? 0} photos</span>
                         <span>{albumStatus(album, albumPhotoCounts.get(album.id) ?? 0)}</span>
                         <span>{album.is_public ? "Public" : "Private"}</span>
+                        {album.requires_email ? <span>Email</span> : null}
+                        {album.allow_client_password_access !== false ? (
+                          <span>Client PW</span>
+                        ) : null}
                         {album.is_password_protected ? <span>Protected</span> : null}
                         {album.download_zip_url ? <span>ZIP</span> : null}
                       </span>
@@ -554,6 +597,19 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <div>
                         <span className="label">Cover</span>
                         <strong>{selectedAlbum.cover_photo_url ? "Set" : "Not set"}</strong>
+                      </div>
+                      <div>
+                        <span className="label">Assigned clients</span>
+                        <strong>{selectedAssignedClients.length}</strong>
+                      </div>
+                      <div>
+                        <span className="label">Access</span>
+                        <strong>
+                          {selectedAlbum.allow_client_password_access !== false
+                            ? "Client password on"
+                            : "Client password off"}
+                          {selectedAlbum.requires_email ? " + email required" : ""}
+                        </strong>
                       </div>
                     </div>
 
@@ -627,6 +683,24 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         Public album
                       </label>
                       <label className="checkbox-field">
+                        <input
+                          name="requires_email"
+                          type="checkbox"
+                          defaultChecked={Boolean(selectedAlbum.requires_email)}
+                        />
+                        Require email before viewing
+                      </label>
+                      <label className="checkbox-field">
+                        <input
+                          name="allow_client_password_access"
+                          type="checkbox"
+                          defaultChecked={
+                            selectedAlbum.allow_client_password_access !== false
+                          }
+                        />
+                        Assigned clients can use their own password
+                      </label>
+                      <label className="checkbox-field">
                         <input name="remove_password" type="checkbox" />
                         Remove password protection
                       </label>
@@ -638,6 +712,25 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                           defaultValue={dateInputValue(selectedAlbum.expires_at)}
                         />
                       </label>
+                      <div className="assignment-list">
+                        <span className="label">Assigned clients</span>
+                        {clients.map((client) => (
+                          <label className="checkbox-field compact" key={client.id}>
+                            <input
+                              name="assigned_client_ids"
+                              type="checkbox"
+                              value={client.id}
+                              defaultChecked={selectedAssignedClientIds.has(client.id)}
+                            />
+                            {client.name}
+                            {client.email ? ` (${client.email})` : ""}
+                            {client.password_hash ? " · client password set" : ""}
+                          </label>
+                        ))}
+                        {!clients.length ? (
+                          <p className="muted">Create clients first, then assign them here.</p>
+                        ) : null}
+                      </div>
                       <button className="button" type="submit">
                         <Save size={18} />
                         Save album details
@@ -812,6 +905,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 Phone
                 <input name="phone" placeholder="+61" />
               </label>
+              <label className="field">
+                Client password
+                <input name="password" type="password" placeholder="Optional" />
+              </label>
               <button className="button" type="submit">
                 Create client
               </button>
@@ -833,6 +930,20 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     <label className="field">
                       Phone
                       <input name="phone" defaultValue={client.phone ?? ""} />
+                    </label>
+                    <label className="field">
+                      New password
+                      <input
+                        name="password"
+                        type="password"
+                        placeholder={
+                          client.password_hash ? "Leave blank to keep" : "Optional"
+                        }
+                      />
+                    </label>
+                    <label className="checkbox-field compact">
+                      <input name="remove_password" type="checkbox" />
+                      Remove password
                     </label>
                     <div>
                       <span className="label">Albums</span>
@@ -898,6 +1009,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <label className="checkbox-field">
                 <input name="is_public" type="checkbox" />
                 Public album
+              </label>
+              <label className="checkbox-field">
+                <input name="requires_email" type="checkbox" />
+                Require email before viewing
+              </label>
+              <label className="checkbox-field">
+                <input name="allow_client_password_access" type="checkbox" defaultChecked />
+                Assigned clients can use their own password
               </label>
               <label className="field">
                 Expiry date
