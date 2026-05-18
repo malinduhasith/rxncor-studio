@@ -2,9 +2,51 @@ import Link from "next/link";
 import { AlbumCard } from "@/components/AlbumCard";
 import { PhotoTile } from "@/components/PhotoTile";
 import { siteConfig } from "@/config/site";
+import { getPublicAlbumCards, getPublicPortfolioPhotos } from "@/lib/public-gallery";
 import { featuredAlbums, portfolioItems } from "@/lib/sample-data";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+function formatDate(date: string | null) {
+  return date ?? "Public";
+}
+
+export default async function Home() {
+  const [realPortfolioPhotos, realAlbums] = await Promise.all([
+    getPublicPortfolioPhotos(3),
+    getPublicAlbumCards(3)
+  ]);
+  const heroImage = realPortfolioPhotos[0]?.imageUrl ?? realAlbums[0]?.coverUrl ?? null;
+  const portfolioTiles = realPortfolioPhotos.length
+    ? realPortfolioPhotos.map((photo) => (
+        <PhotoTile
+          key={photo.id}
+          title={photo.title}
+          meta={photo.meta}
+          imageUrl={photo.imageUrl}
+        />
+      ))
+    : portfolioItems.slice(0, 3).map((item) => (
+        <PhotoTile
+          key={item.title}
+          title={item.title}
+          meta={item.location}
+          colors={item.colors}
+        />
+      ));
+  const albumTiles = realAlbums.length
+    ? realAlbums.map((album) => (
+        <AlbumCard
+          key={album.slug}
+          title={album.title}
+          slug={album.slug}
+          date={formatDate(album.event_date)}
+          count={album.count}
+          coverUrl={album.coverUrl}
+        />
+      ))
+    : featuredAlbums.map((album) => <AlbumCard key={album.slug} {...album} />);
+
   return (
     <main>
       <section className="shell hero">
@@ -24,7 +66,12 @@ export default function Home() {
             </Link>
           </div>
         </div>
-        <div className="hero-media" aria-label="Featured photography artwork" />
+        <div className="hero-media" aria-label="Featured photography artwork">
+          {heroImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className="photo-img" src={heroImage} alt="Featured photography" />
+          ) : null}
+        </div>
       </section>
 
       <section className="section alt" id="about">
@@ -51,16 +98,7 @@ export default function Home() {
             See all
           </Link>
         </div>
-        <div className="grid">
-          {portfolioItems.slice(0, 3).map((item) => (
-            <PhotoTile
-              key={item.title}
-              title={item.title}
-              meta={item.location}
-              colors={item.colors}
-            />
-          ))}
-        </div>
+        <div className="grid">{portfolioTiles}</div>
       </section>
 
       <section className="section alt">
@@ -74,11 +112,7 @@ export default function Home() {
               Browse albums
             </Link>
           </div>
-          <div className="grid">
-            {featuredAlbums.map((album) => (
-              <AlbumCard key={album.slug} {...album} />
-            ))}
-          </div>
+          <div className="grid">{albumTiles}</div>
         </div>
       </section>
 
@@ -89,18 +123,22 @@ export default function Home() {
             <h2>Bookings and gallery support</h2>
           </div>
           <p>
-            Add your real booking email, Instagram, and enquiry form action when
-            you connect the production account.
+            For bookings, album delivery help, or gallery access support, use the
+            email or Instagram below.
           </p>
         </div>
         <div className="feature-list">
           <div className="feature">
             <h3>Email</h3>
-            <p>{siteConfig.contactEmail}</p>
+            <p>
+              <a href={`mailto:${siteConfig.contactEmail}`}>{siteConfig.contactEmail}</a>
+            </p>
           </div>
           <div className="feature">
             <h3>Instagram</h3>
-            <p>{siteConfig.instagramHandle}</p>
+            <p>
+              <a href={siteConfig.instagramUrl}>{siteConfig.instagramHandle}</a>
+            </p>
           </div>
           <div className="feature">
             <h3>Delivery</h3>

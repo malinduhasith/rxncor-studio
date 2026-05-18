@@ -932,7 +932,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <input name="phone" defaultValue={client.phone ?? ""} />
                     </label>
                     <label className="field">
-                      New password
+                      Reset password
                       <input
                         name="password"
                         type="password"

@@ -38,14 +38,22 @@ Secrets and connection strings live in `.env.local` locally and Vercel Environme
 
 For hosting steps, use [DEPLOYMENT.md](/Users/crazy_taxi/Documents/VsCode/DEPLOYMENT.md).
 
+For day-to-day checks before sending real client galleries, use
+[docs/OPERATIONS.md](/Users/crazy_taxi/Documents/VsCode/docs/OPERATIONS.md).
+
 ## Supabase
 
 Create a Supabase project, then run [supabase/schema.sql](/Users/crazy_taxi/Documents/VsCode/supabase/schema.sql) in the SQL editor.
+
+For existing projects, also run the latest migration:
+
+[supabase/migrations/20260518_access_control_upgrade.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260518_access_control_upgrade.sql)
 
 Tables included:
 
 - `clients`
 - `albums`
+- `album_clients`
 - `photos`
 - `download_logs`
 

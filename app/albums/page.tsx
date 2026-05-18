@@ -1,16 +1,7 @@
 import { AlbumCard } from "@/components/AlbumCard";
-import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getPublicAlbumCards } from "@/lib/public-gallery";
 
 export const dynamic = "force-dynamic";
-
-type PublicAlbum = {
-  id: string;
-  title: string;
-  slug: string;
-  event_date: string | null;
-  cover_photo_url: string | null;
-};
 
 function formatDate(date: string | null) {
   if (!date) {
@@ -21,34 +12,7 @@ function formatDate(date: string | null) {
 }
 
 export default async function AlbumsPage() {
-  const supabase = createSupabaseAdminClient();
-  const { data: albumsData } = await supabase
-    .from("albums")
-    .select("id, title, slug, event_date, cover_photo_url")
-    .eq("is_public", true)
-    .order("event_date", { ascending: false });
-  const albums = (albumsData ?? []) as PublicAlbum[];
-  const { data: photoRows } = albums.length
-    ? await supabase.from("photos").select("album_id").in(
-        "album_id",
-        albums.map((album) => album.id)
-      )
-    : { data: [] };
-  const photoCounts = new Map<string, number>();
-
-  for (const row of (photoRows ?? []) as { album_id: string }[]) {
-    photoCounts.set(row.album_id, (photoCounts.get(row.album_id) ?? 0) + 1);
-  }
-
-  const publicAlbums = await Promise.all(
-    albums.map(async (album) => ({
-      ...album,
-      coverUrl: album.cover_photo_url
-        ? await createDownloadUrl(objectKeyFromPublicUrl(album.cover_photo_url))
-        : null,
-      count: photoCounts.get(album.id) ?? 0
-    }))
-  );
+  const publicAlbums = await getPublicAlbumCards();
 
   return (
     <main className="shell section">

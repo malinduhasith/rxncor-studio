@@ -153,5 +153,7 @@ After deploying, check:
 - `https://rxncor.studio`
 - `https://rxncor.studio/portfolio`
 - `https://rxncor.studio/albums`
-- `https://rxncor.studio/login`
-- `https://rxncor.studio/admin`
+- `https://rxncor.studio/login` for clients
+- `https://rxncor.studio/rxncor-admin` for the private admin login
+
+Use [docs/OPERATIONS.md](/Users/crazy_taxi/Documents/VsCode/docs/OPERATIONS.md) before sending real client galleries.
