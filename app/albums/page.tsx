@@ -1,6 +1,5 @@
 import { AlbumCard } from "@/components/AlbumCard";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
-import { featuredAlbums } from "@/lib/sample-data";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -74,10 +73,10 @@ export default async function AlbumsPage() {
             coverUrl={album.coverUrl}
           />
         ))}
-        {!publicAlbums.length
-          ? featuredAlbums.map((album) => <AlbumCard key={album.slug} {...album} />)
-          : null}
       </div>
+      {!publicAlbums.length ? (
+        <p className="muted">No public albums are live yet.</p>
+      ) : null}
     </main>
   );
 }

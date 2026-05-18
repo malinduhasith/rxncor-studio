@@ -1,4 +1,9 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getR2Env } from "@/config/server-env";
 
@@ -44,6 +49,17 @@ export async function createDownloadUrl(key: string) {
   });
 
   return getSignedUrl(client, command, { expiresIn: 60 * 15 });
+}
+
+export async function deleteR2Object(key: string) {
+  const client = createR2Client();
+  const r2Env = getR2Env();
+  const command = new DeleteObjectCommand({
+    Bucket: r2Env.bucket,
+    Key: key
+  });
+
+  await client.send(command);
 }
 
 export function publicR2Url(key: string) {
