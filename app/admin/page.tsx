@@ -908,6 +908,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <label className="field">
                 Client password
                 <input name="password" type="password" placeholder="Optional" />
+                <small>
+                  Used only on the public client login page. This is separate from
+                  admin login and album passwords.
+                </small>
               </label>
               <button className="button" type="submit">
                 Create client
@@ -944,6 +948,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                           client.password_hash ? "Leave blank to keep" : "Optional"
                         }
                       />
+                      <small>
+                        New client login password. Leave blank to keep the current one.
+                      </small>
                     </label>
                     <label className="checkbox-field compact">
                       <input name="remove_password" type="checkbox" />
