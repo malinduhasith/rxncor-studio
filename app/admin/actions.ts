@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { siteConfig } from "@/config/site";
 import { hashPassword } from "@/lib/password";
 import { deleteR2Object, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -14,7 +15,7 @@ async function requireAdmin() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    redirect(siteConfig.routes.adminLogin);
   }
 
   return supabase;
@@ -576,5 +577,5 @@ export async function removeZipAction(formData: FormData) {
 export async function signOutAction() {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
-  redirect("/login");
+  redirect(siteConfig.routes.adminLogin);
 }

@@ -23,7 +23,9 @@ export const siteConfig = {
     portfolio: "/portfolio",
     albums: "/albums",
     admin: "/admin",
+    adminLogin: "/rxncor-admin",
     login: "/login",
+    clientPortal: "/client-portal",
     clientGallery: "/client"
   }
 } as const;

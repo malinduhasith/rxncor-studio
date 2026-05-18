@@ -8,6 +8,10 @@ export function albumClientEmailCookieName(albumId: string) {
   return `rxncor_album_email_${albumId}`;
 }
 
+export function clientSessionCookieName() {
+  return "rxncor_client_session";
+}
+
 export function createAlbumAccessToken(albumId: string, accessSecret: string) {
   return createHash("sha256")
     .update(`album:${albumId}:${accessSecret}`)
@@ -16,6 +20,30 @@ export function createAlbumAccessToken(albumId: string, accessSecret: string) {
 
 export function createEmailAccessToken(albumId: string, email: string) {
   return createAlbumAccessToken(albumId, `email:${email.toLowerCase().trim()}`);
+}
+
+export function createClientSessionToken(clientId: string, passwordHash: string) {
+  return createHash("sha256")
+    .update(`client:${clientId}:${passwordHash}`)
+    .digest("hex");
+}
+
+export function createClientSessionCookieValue(clientId: string, passwordHash: string) {
+  return `${clientId}.${createClientSessionToken(clientId, passwordHash)}`;
+}
+
+export function parseClientSessionCookie(cookieValue: string | undefined) {
+  if (!cookieValue) {
+    return null;
+  }
+
+  const [clientId, token] = cookieValue.split(".");
+
+  if (!clientId || !token) {
+    return null;
+  }
+
+  return { clientId, token };
 }
 
 export function hasAlbumAccess(

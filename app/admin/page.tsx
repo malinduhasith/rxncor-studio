@@ -277,7 +277,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    redirect(siteConfig.routes.adminLogin);
   }
 
   const [

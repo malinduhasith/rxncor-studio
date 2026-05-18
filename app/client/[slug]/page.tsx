@@ -9,7 +9,10 @@ import {
   albumAccessCookieName,
   albumClientEmailCookieName,
   createAlbumAccessToken,
-  createEmailAccessToken
+  createClientSessionToken,
+  createEmailAccessToken,
+  clientSessionCookieName,
+  parseClientSessionCookie
 } from "@/lib/gallery-access";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -33,6 +36,7 @@ type GalleryAlbum = {
 
 type GalleryClient = {
   id: string;
+  name: string;
   email: string | null;
   password_hash?: string | null;
 };
@@ -94,7 +98,11 @@ export default async function ClientGalleryPage({
   const accessCookie = album
     ? cookieStore.get(albumAccessCookieName(album.id))?.value
     : undefined;
+  const clientSession = parseClientSessionCookie(
+    cookieStore.get(clientSessionCookieName())?.value
+  );
   let hasUnlockedAlbum = false;
+  let portalClientEmail: string | null = null;
 
   if (album && accessCookie) {
     const possibleTokens = [
@@ -131,6 +139,33 @@ export default async function ClientGalleryPage({
     }
 
     hasUnlockedAlbum = possibleTokens.includes(accessCookie);
+  }
+
+  if (album && clientSession && !hasUnlockedAlbum) {
+    const { data: client } = await supabase
+      .from("clients")
+      .select("*")
+      .eq("id", clientSession.clientId)
+      .maybeSingle();
+    const galleryClient = client as GalleryClient | null;
+
+    if (
+      galleryClient?.password_hash &&
+      clientSession.token ===
+        createClientSessionToken(galleryClient.id, galleryClient.password_hash)
+    ) {
+      const { data: assignment } = await supabase
+        .from("album_clients")
+        .select("album_id")
+        .eq("album_id", album.id)
+        .eq("client_id", galleryClient.id)
+        .maybeSingle();
+
+      if (assignment) {
+        hasUnlockedAlbum = true;
+        portalClientEmail = galleryClient.email;
+      }
+    }
   }
 
   const requiresUnlock = Boolean(album?.is_password_protected || album?.requires_email);
@@ -243,7 +278,7 @@ export default async function ClientGalleryPage({
           albumId={album.id}
           photos={galleryPhotos}
           zipObjectKey={zipObjectKey}
-          clientEmail={clientEmail}
+          clientEmail={clientEmail ?? portalClientEmail}
         />
       ) : null}
       <div className="lightbox-grid">
