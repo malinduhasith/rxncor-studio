@@ -1,0 +1,13 @@
+[
+  {
+    "AllowedOrigins": [
+      "https://rxncor.studio",
+      "https://www.rxncor.studio",
+      "https://rxncor-studio.vercel.app"
+    ],
+    "AllowedMethods": ["PUT", "GET", "HEAD"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3000
+  }
+]

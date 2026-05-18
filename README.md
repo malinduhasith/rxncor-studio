@@ -64,6 +64,8 @@ albums/
 
 Use `lib/r2.ts` helpers to create signed upload and download URLs. Keep full-resolution files and ZIPs in R2, not in this repo.
 
+For browser uploads, add the R2 bucket CORS policy from [cloudflare/r2-cors.json](/Users/crazy_taxi/Documents/VsCode/cloudflare/r2-cors.json).
+
 ## DNS launch notes
 
 Keep the domain in Squarespace. After deploying on Vercel, add `rxncor.studio` in Project Settings -> Domains and copy Vercel's DNS records into Squarespace DNS.

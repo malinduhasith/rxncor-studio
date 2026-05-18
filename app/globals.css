@@ -218,6 +218,13 @@ h3 {
   background: linear-gradient(135deg, var(--tile-a), var(--tile-b));
 }
 
+.photo-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
 .tile-caption {
   position: absolute;
   left: 14px;
@@ -340,6 +347,16 @@ h3 {
 .checkbox-field input {
   width: 18px;
   height: 18px;
+}
+
+.upload-form {
+  display: grid;
+  gap: 4px;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
 }
 
 .field textarea {

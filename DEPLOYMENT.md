@@ -91,6 +91,11 @@ albums/
     zip/
 ```
 
+Add this CORS policy to the R2 bucket so browser uploads from the admin page can
+PUT files directly into R2:
+
+[cloudflare/r2-cors.json](/Users/crazy_taxi/Documents/VsCode/cloudflare/r2-cors.json)
+
 ## 5. Vercel
 
 Push this project to GitHub, then import the repo in Vercel.

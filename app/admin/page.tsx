@@ -1,6 +1,7 @@
 import { CalendarDays, ImageUp, Link as LinkIcon, LockKeyhole } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createAlbumAction, createClientAction, signOutAction } from "./actions";
+import { AdminPhotoUpload } from "@/components/admin/AdminPhotoUpload";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +10,8 @@ const notices: Record<string, string> = {
   "client-created": "Client created.",
   "client-error": "Client could not be created. Check the fields and try again.",
   "album-created": "Album created.",
-  "album-error": "Album could not be created. Check the slug is unique and valid."
+  "album-error": "Album could not be created. Check the slug is unique and valid.",
+  "photo-uploaded": "Photo uploaded."
 };
 
 type ClientOption = {
@@ -198,11 +200,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
           <section id="uploads" className="section" style={{ padding: "28px 0" }}>
             <h2 style={{ fontSize: "2rem" }}>Upload workflow</h2>
-            <p className="muted">
-              Export thumbnails, previews, full delivery files, and ZIPs first.
-              Upload them to R2 under albums/[slug]/, then save generated URLs in
-              Supabase.
-            </p>
+            <AdminPhotoUpload albums={albums} />
           </section>
 
           <section id="delivery" className="section" style={{ padding: "28px 0" }}>
