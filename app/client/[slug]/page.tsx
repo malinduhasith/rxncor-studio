@@ -1,6 +1,7 @@
-import { Download, LockKeyhole } from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 import { notFound } from "next/navigation";
 import { featuredAlbums } from "@/lib/sample-data";
+import { GalleryLightbox, type GalleryDisplayPhoto } from "@/components/gallery/GalleryLightbox";
 import { PhotoTile } from "@/components/PhotoTile";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -92,12 +93,23 @@ export default async function ClientGalleryPage({ params }: ClientGalleryPagePro
   const title = album?.title ?? fallbackAlbum?.title ?? "";
   const photoCount = album ? displayPhotos.length : fallbackAlbum?.count ?? 0;
   const isProtected = Boolean(album?.is_password_protected);
+  const galleryLabel = album?.is_public ? "Public Gallery" : "Private Gallery";
+  const zipObjectKey = album?.download_zip_url
+    ? objectKeyFromPublicUrl(album.download_zip_url)
+    : null;
+  const galleryPhotos: GalleryDisplayPhoto[] = displayPhotos.map((photo) => ({
+    id: photo.id,
+    filename: photo.filename,
+    thumbnailDisplayUrl: photo.thumbnailDisplayUrl,
+    previewDisplayUrl: photo.previewDisplayUrl,
+    r2ObjectKey: photo.r2_object_key
+  }));
 
   return (
     <main className="shell section">
       <div className="gallery-bar">
         <div>
-          <p className="eyebrow">Private Gallery</p>
+          <p className="eyebrow">{galleryLabel}</p>
           <h1 style={{ fontSize: "clamp(2.8rem, 8vw, 6rem)" }}>{title}</h1>
           <p className="muted">
             {photoCount} photos
@@ -111,17 +123,6 @@ export default async function ClientGalleryPage({ params }: ClientGalleryPagePro
               Protected
             </button>
           ) : null}
-          {album?.download_zip_url ? (
-            <a className="button" href={album.download_zip_url}>
-              <Download size={18} />
-              Download ZIP
-            </a>
-          ) : (
-            <button className="button" type="button" disabled>
-              <Download size={18} />
-              Download ZIP
-            </button>
-          )}
         </div>
       </div>
 
@@ -141,21 +142,14 @@ export default async function ClientGalleryPage({ params }: ClientGalleryPagePro
         </section>
       ) : null}
 
+      {album && canViewPhotos ? (
+        <GalleryLightbox
+          albumId={album.id}
+          photos={galleryPhotos}
+          zipObjectKey={zipObjectKey}
+        />
+      ) : null}
       <div className="lightbox-grid">
-        {displayPhotos.map((photo) => (
-          <a className="photo-tile" href={photo.previewDisplayUrl} key={photo.id}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              className="photo-img"
-              src={photo.thumbnailDisplayUrl}
-              alt={photo.filename}
-            />
-            <div className="tile-caption">
-              <strong>{photo.filename}</strong>
-              <span>Open</span>
-            </div>
-          </a>
-        ))}
         {!album && fallbackAlbum
           ? Array.from({ length: 12 }, (_, index) => (
               <PhotoTile

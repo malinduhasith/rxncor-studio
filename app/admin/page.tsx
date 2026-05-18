@@ -2,6 +2,7 @@ import { CalendarDays, ImageUp, Link as LinkIcon, LockKeyhole } from "lucide-rea
 import { redirect } from "next/navigation";
 import { createAlbumAction, createClientAction, signOutAction } from "./actions";
 import { AdminPhotoUpload } from "@/components/admin/AdminPhotoUpload";
+import { AdminZipUpload } from "@/components/admin/AdminZipUpload";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,8 @@ const notices: Record<string, string> = {
   "album-created": "Album created.",
   "album-error": "Album could not be created. Check the slug is unique and valid.",
   "photo-uploaded": "Photo uploaded.",
-  "photos-uploaded": "Photos uploaded."
+  "photos-uploaded": "Photos uploaded.",
+  "zip-uploaded": "Album ZIP uploaded."
 };
 
 type ClientOption = {
@@ -27,6 +29,7 @@ type AdminAlbum = {
   slug: string;
   is_public: boolean;
   is_password_protected: boolean;
+  download_zip_url: string | null;
 };
 
 type AdminPageProps = {
@@ -59,7 +62,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     }),
     supabase
       .from("albums")
-      .select("id, title, slug, is_public, is_password_protected, created_at")
+      .select(
+        "id, title, slug, is_public, is_password_protected, download_zip_url, created_at"
+      )
       .order("created_at", { ascending: false })
       .limit(8),
     supabase.from("albums").select("id", { count: "exact", head: true }),
@@ -77,6 +82,17 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const photoCount = photoCountResult.count ?? 0;
   const protectedAlbumCount = protectedAlbumCountResult.count ?? 0;
   const downloadCount = downloadCountResult.count ?? 0;
+  const { data: albumPhotoRows } = albums.length
+    ? await supabase.from("photos").select("album_id").in(
+        "album_id",
+        albums.map((album) => album.id)
+      )
+    : { data: [] };
+  const albumPhotoCounts = new Map<string, number>();
+
+  for (const row of (albumPhotoRows ?? []) as { album_id: string }[]) {
+    albumPhotoCounts.set(row.album_id, (albumPhotoCounts.get(row.album_id) ?? 0) + 1);
+  }
   const noticeMessage = notice ? notices[notice] : undefined;
 
   return (
@@ -201,7 +217,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
           <section id="uploads" className="section" style={{ padding: "28px 0" }}>
             <h2 style={{ fontSize: "2rem" }}>Upload workflow</h2>
+            <h3>Photos</h3>
             <AdminPhotoUpload albums={albums} />
+            <h3 style={{ marginTop: 30 }}>Full album ZIP</h3>
+            <AdminZipUpload albums={albums} />
           </section>
 
           <section id="delivery" className="section" style={{ padding: "28px 0" }}>
@@ -220,10 +239,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   <tr key={album.id}>
                     <td>{album.title}</td>
                     <td>{album.slug}</td>
-                    <td>Upload next</td>
+                    <td>{albumPhotoCounts.get(album.id) ?? 0}</td>
                     <td>
                       {album.is_public ? "Public" : "Private"}
                       {album.is_password_protected ? " + protected" : ""}
+                      {album.download_zip_url ? " + ZIP" : ""}
                     </td>
                   </tr>
                 ))}

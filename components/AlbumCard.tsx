@@ -6,21 +6,34 @@ type AlbumCardProps = {
   slug: string;
   date: string;
   count: number;
-  colors: string[];
+  colors?: string[];
+  coverUrl?: string | null;
 };
 
-export function AlbumCard({ title, slug, date, count, colors }: AlbumCardProps) {
+export function AlbumCard({
+  title,
+  slug,
+  date,
+  count,
+  colors = ["#713d2f", "#d8b35f"],
+  coverUrl
+}: AlbumCardProps) {
   return (
     <Link className="album-card" href={`/client/${slug}`}>
-      <div
-        className="photo-fill"
-        style={
-          {
-            "--tile-a": colors[0],
-            "--tile-b": colors[1]
-          } as CSSProperties
-        }
-      />
+      {coverUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="photo-img" src={coverUrl} alt={title} />
+      ) : (
+        <div
+          className="photo-fill"
+          style={
+            {
+              "--tile-a": colors[0],
+              "--tile-b": colors[1]
+            } as CSSProperties
+          }
+        />
+      )}
       <div className="album-meta">
         <p className="eyebrow">{date}</p>
         <h3>{title}</h3>
