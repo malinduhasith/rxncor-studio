@@ -1,5 +1,16 @@
 import type { NextConfig } from "next";
-import { siteConfig } from "./config/site";
+
+function getHostname(value: string | undefined, fallback: string) {
+  if (!value) {
+    return fallback;
+  }
+
+  try {
+    return new URL(value).hostname;
+  } catch {
+    return fallback;
+  }
+}
 
 const nextConfig: NextConfig = {
   images: {
@@ -10,7 +21,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: new URL(siteConfig.r2PublicBaseUrl).hostname
+        hostname: getHostname(
+          process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL,
+          "cdn.rxncor.studio"
+        )
       }
     ]
   }
