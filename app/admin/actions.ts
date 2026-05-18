@@ -34,6 +34,11 @@ const clientUpdateSchema = clientSchema.extend({
   remove_password: z.boolean()
 });
 
+const clientPasswordResetSchema = z.object({
+  client_id: z.string().uuid(),
+  password: z.string().trim().min(4)
+});
+
 const clientIdSchema = z.object({
   client_id: z.string().uuid()
 });
@@ -65,6 +70,11 @@ const albumIdSchema = z.object({
 
 const photoIdSchema = z.object({
   photo_id: z.string().uuid()
+});
+
+const inquiryStatusSchema = z.object({
+  inquiry_id: z.string().uuid(),
+  status: z.enum(["new", "replied", "archived"])
 });
 
 function emptyToNull(value: string | undefined) {
@@ -199,7 +209,7 @@ export async function updateClientAction(formData: FormData) {
     name: formData.get("name"),
     email: formData.get("email"),
     phone: formData.get("phone"),
-    password: formData.get("password"),
+    password: String(formData.get("password") ?? ""),
     remove_password: formData.get("remove_password") === "on"
   });
 
@@ -252,6 +262,37 @@ export async function updateClientAction(formData: FormData) {
 
   revalidatePath("/admin");
   redirect("/admin?notice=client-updated#clients");
+}
+
+export async function resetClientPasswordAction(formData: FormData) {
+  const supabase = await requireAdmin();
+  const payload = clientPasswordResetSchema.safeParse({
+    client_id: formData.get("client_id"),
+    password: formData.get("password")
+  });
+
+  if (!payload.success) {
+    redirect("/admin?notice=client-password-error#clients");
+  }
+
+  const passwordHash = hashPassword(payload.data.password);
+  const { data: updatedClient, error } = await supabase
+    .from("clients")
+    .update({ password_hash: passwordHash })
+    .eq("id", payload.data.client_id)
+    .select("password_hash")
+    .single();
+
+  if (
+    error ||
+    !updatedClient ||
+    !verifyPassword(payload.data.password, updatedClient.password_hash)
+  ) {
+    redirect("/admin?notice=client-password-error#clients");
+  }
+
+  revalidatePath("/admin");
+  redirect("/admin?notice=client-password-reset#clients");
 }
 
 export async function deleteClientAction(formData: FormData) {
@@ -627,6 +668,30 @@ export async function removeZipAction(formData: FormData) {
 
   revalidatePath("/admin");
   redirect(`/admin?notice=zip-removed&album=${payload.data.album_id}#manager`);
+}
+
+export async function updateInquiryStatusAction(formData: FormData) {
+  const supabase = await requireAdmin();
+  const payload = inquiryStatusSchema.safeParse({
+    inquiry_id: formData.get("inquiry_id"),
+    status: formData.get("status")
+  });
+
+  if (!payload.success) {
+    redirect("/admin?notice=inquiry-error#inquiries");
+  }
+
+  const { error } = await supabase
+    .from("contact_inquiries")
+    .update({ status: payload.data.status })
+    .eq("id", payload.data.inquiry_id);
+
+  if (error) {
+    redirect("/admin?notice=inquiry-error#inquiries");
+  }
+
+  revalidatePath("/admin");
+  redirect("/admin?notice=inquiry-updated#inquiries");
 }
 
 export async function signOutAction() {

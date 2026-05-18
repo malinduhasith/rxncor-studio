@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { LogIn } from "lucide-react";
 import { clientLoginAction } from "./actions";
+
+export const metadata: Metadata = {
+  title: "Client Login",
+  description: "Client gallery login for rxncor.studio."
+};
 
 type LoginPageProps = {
   searchParams: Promise<{

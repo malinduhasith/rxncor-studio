@@ -5,8 +5,38 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
-  title: siteConfig.name,
-  description: siteConfig.description
+  title: {
+    default: `${siteConfig.name} | Photography and Client Galleries`,
+    template: `%s | ${siteConfig.name}`
+  },
+  description: siteConfig.description,
+  alternates: {
+    canonical: "/"
+  },
+  openGraph: {
+    title: `${siteConfig.name} | Photography and Client Galleries`,
+    description: siteConfig.description,
+    url: siteConfig.url,
+    siteName: siteConfig.name,
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: siteConfig.name
+      }
+    ],
+    type: "website"
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${siteConfig.name} | Photography and Client Galleries`,
+    description: siteConfig.description,
+    images: ["/opengraph-image"]
+  },
+  icons: {
+    icon: "/icon.svg"
+  }
 };
 
 export default function RootLayout({
@@ -33,10 +63,14 @@ export default function RootLayout({
         </header>
         {children}
         <footer className="footer">
-          <div className="shell">
+          <div className="shell footer-inner">
             <p>
               {siteConfig.name} · Portfolio, private galleries, and client delivery.
             </p>
+            <div className="footer-links">
+              <Link href="/privacy">Privacy</Link>
+              <Link href="/terms">Terms</Link>
+            </div>
           </div>
         </footer>
       </body>

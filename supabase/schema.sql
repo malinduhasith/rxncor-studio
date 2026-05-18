@@ -54,6 +54,18 @@ create table if not exists public.download_logs (
   ip_address inet
 );
 
+create table if not exists public.contact_inquiries (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  email text not null,
+  phone text,
+  message text not null,
+  status text not null default 'new'
+    check (status in ('new', 'replied', 'archived')),
+  created_at timestamptz not null default now(),
+  ip_address inet
+);
+
 create index if not exists albums_slug_idx on public.albums(slug);
 create unique index if not exists clients_email_lower_unique_idx
   on public.clients (lower(email))
@@ -63,12 +75,17 @@ create index if not exists album_clients_client_id_idx on public.album_clients(c
 create index if not exists photos_album_id_idx on public.photos(album_id);
 create index if not exists download_logs_photo_id_idx on public.download_logs(photo_id);
 create index if not exists download_logs_album_id_idx on public.download_logs(album_id);
+create index if not exists contact_inquiries_created_at_idx
+  on public.contact_inquiries(created_at desc);
+create index if not exists contact_inquiries_status_idx
+  on public.contact_inquiries(status);
 
 alter table public.clients enable row level security;
 alter table public.albums enable row level security;
 alter table public.album_clients enable row level security;
 alter table public.photos enable row level security;
 alter table public.download_logs enable row level security;
+alter table public.contact_inquiries enable row level security;
 
 create policy "Public albums are readable"
   on public.albums for select
@@ -111,3 +128,8 @@ create policy "Admins can read download logs"
 create policy "Downloads can be logged by app"
   on public.download_logs for insert
   with check (true);
+
+create policy "Admins can manage contact inquiries"
+  on public.contact_inquiries for all
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');

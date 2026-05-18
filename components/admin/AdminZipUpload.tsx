@@ -40,6 +40,20 @@ async function signZipUpload(albumId: string, file: File) {
   return (await response.json()) as SignedUpload;
 }
 
+async function cleanupUploadedKeys(keys: string[]) {
+  if (!keys.length) {
+    return;
+  }
+
+  await fetch("/api/uploads/cleanup", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ keys })
+  }).catch(() => null);
+}
+
 export function AdminZipUpload({ albums }: AdminZipUploadProps) {
   const [status, setStatus] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -78,32 +92,38 @@ export function AdminZipUpload({ albums }: AdminZipUploadProps) {
       const signedUpload = await signZipUpload(albumId, zipFile);
       setStatus("Uploading ZIP to R2...");
 
-      const uploadResponse = await fetch(signedUpload.uploadUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": zipFile.type || "application/zip"
-        },
-        body: zipFile
-      });
+      try {
+        const uploadResponse = await fetch(signedUpload.uploadUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": zipFile.type || "application/zip"
+          },
+          body: zipFile
+        });
 
-      if (!uploadResponse.ok) {
-        throw new Error("ZIP upload failed.");
-      }
+        if (!uploadResponse.ok) {
+          throw new Error("ZIP upload failed.");
+        }
 
-      setStatus("Saving ZIP link...");
-      const saveResponse = await fetch("/api/albums/zip", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          album_id: albumId,
-          download_zip_url: signedUpload.publicUrl
-        })
-      });
+        setStatus("Saving ZIP link...");
+        const saveResponse = await fetch("/api/albums/zip", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            album_id: albumId,
+            download_zip_url: signedUpload.publicUrl
+          })
+        });
 
-      if (!saveResponse.ok) {
-        throw new Error("ZIP link could not be saved.");
+        if (!saveResponse.ok) {
+          await cleanupUploadedKeys([signedUpload.key]);
+          throw new Error("ZIP link could not be saved. R2 file was cleaned up.");
+        }
+      } catch (error) {
+        await cleanupUploadedKeys([signedUpload.key]);
+        throw error;
       }
 
       window.location.assign("/admin?notice=zip-uploaded#uploads");

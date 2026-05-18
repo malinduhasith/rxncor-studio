@@ -61,6 +61,20 @@ async function uploadToR2(signedUpload: SignedUpload, file: File) {
   }
 }
 
+async function cleanupUploadedKeys(keys: string[]) {
+  if (!keys.length) {
+    return;
+  }
+
+  await fetch("/api/uploads/cleanup", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ keys })
+  }).catch(() => null);
+}
+
 function fileList(formData: FormData, name: string) {
   return formData
     .getAll(name)
@@ -135,30 +149,42 @@ async function uploadPhotoSet(albumId: string, photoSet: PhotoSet) {
     signUpload(albumId, "previews", photoSet.preview),
     signUpload(albumId, "full", photoSet.full)
   ]);
+  const uploadedKeys = [thumbnailUpload.key, previewUpload.key, fullUpload.key];
 
-  await Promise.all([
-    uploadToR2(thumbnailUpload, photoSet.thumbnail),
-    uploadToR2(previewUpload, photoSet.preview),
-    uploadToR2(fullUpload, photoSet.full)
-  ]);
+  try {
+    const uploadResults = await Promise.allSettled([
+      uploadToR2(thumbnailUpload, photoSet.thumbnail),
+      uploadToR2(previewUpload, photoSet.preview),
+      uploadToR2(fullUpload, photoSet.full)
+    ]);
 
-  const photoResponse = await fetch("/api/photos", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      album_id: albumId,
-      filename: photoSet.full.name,
-      thumbnail_url: thumbnailUpload.publicUrl,
-      preview_url: previewUpload.publicUrl,
-      full_res_url: fullUpload.publicUrl,
-      r2_object_key: fullUpload.key
-    })
-  });
+    if (uploadResults.some((result) => result.status === "rejected")) {
+      await cleanupUploadedKeys(uploadedKeys);
+      throw new Error(`Could not upload all files for ${photoSet.full.name}.`);
+    }
 
-  if (!photoResponse.ok) {
-    throw new Error(`Could not save ${photoSet.full.name}.`);
+    const photoResponse = await fetch("/api/photos", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        album_id: albumId,
+        filename: photoSet.full.name,
+        thumbnail_url: thumbnailUpload.publicUrl,
+        preview_url: previewUpload.publicUrl,
+        full_res_url: fullUpload.publicUrl,
+        r2_object_key: fullUpload.key
+      })
+    });
+
+    if (!photoResponse.ok) {
+      await cleanupUploadedKeys(uploadedKeys);
+      throw new Error(`Could not save ${photoSet.full.name}. R2 files were cleaned up.`);
+    }
+  } catch (error) {
+    await cleanupUploadedKeys(uploadedKeys);
+    throw error;
   }
 }
 

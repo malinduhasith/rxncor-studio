@@ -1,9 +1,11 @@
 import {
   CalendarDays,
+  DatabaseBackup,
   Download,
   ExternalLink,
   FileArchive,
   ImageUp,
+  KeyRound,
   Link as LinkIcon,
   LockKeyhole,
   Save,
@@ -11,6 +13,7 @@ import {
   Star,
   Trash2
 } from "lucide-react";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import {
   createAlbumAction,
@@ -19,11 +22,13 @@ import {
   deleteAlbumAction,
   deletePhotoAction,
   removeZipAction,
+  resetClientPasswordAction,
   setCoverPhotoAction,
   signOutAction,
   togglePhotoSelectedAction,
   updateAlbumAction,
-  updateClientAction
+  updateClientAction,
+  updateInquiryStatusAction
 } from "./actions";
 import { AdminPhotoUpload } from "@/components/admin/AdminPhotoUpload";
 import { AdminZipUpload } from "@/components/admin/AdminZipUpload";
@@ -36,10 +41,19 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+export const metadata: Metadata = {
+  title: "Admin",
+  robots: {
+    index: false,
+    follow: false
+  }
+};
+
 const notices: Record<string, string> = {
   "client-created": "Client created. Use that exact email and client password on /login.",
   "client-updated":
     "Client updated. If you reset the password, use the new client password on /login.",
+  "client-password-reset": "Client password updated. Share the new password with the client.",
   "client-deleted": "Client deleted.",
   "client-error": "Client could not be created. Check the fields and try again.",
   "client-duplicate-email": "Another client already uses that email address.",
@@ -58,7 +72,9 @@ const notices: Record<string, string> = {
   "photo-error": "Photo action could not be completed.",
   "zip-uploaded": "Album ZIP uploaded.",
   "zip-removed": "Album ZIP removed.",
-  "zip-error": "ZIP action could not be completed."
+  "zip-error": "ZIP action could not be completed.",
+  "inquiry-updated": "Inquiry status updated.",
+  "inquiry-error": "Inquiry could not be updated."
 };
 
 type ClientOption = {
@@ -117,6 +133,17 @@ type DownloadLog = {
   photo_id: string | null;
   client_email: string | null;
   downloaded_at: string;
+  ip_address: string | null;
+};
+
+type ContactInquiry = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  message: string;
+  status: "new" | "replied" | "archived";
+  created_at: string;
   ip_address: string | null;
 };
 
@@ -255,6 +282,40 @@ function shareMessage({
     .join("\n");
 }
 
+function clientLoginDetailsMessage({
+  album,
+  client,
+  albumLink,
+  photoCount
+}: {
+  album: AdminAlbum;
+  client: ClientOption;
+  albumLink: string;
+  photoCount: number;
+}) {
+  const loginUrl = `${siteConfig.url}${siteConfig.routes.login}`;
+  const expiryLine = album.expires_at
+    ? `Available until: ${dateInputValue(album.expires_at)}`
+    : null;
+
+  return [
+    `Hi ${client.name},`,
+    "",
+    `Your ${album.title} gallery is ready.`,
+    `Gallery link: ${albumLink}`,
+    `Client login: ${loginUrl}`,
+    `Email: ${client.email ?? "[add client email]"}`,
+    "Password: [paste the client password you set/reset]",
+    `Photos: ${photoCount}`,
+    expiryLine,
+    "You can open the gallery link directly, or sign in to see all albums assigned to you.",
+    "",
+    "Thank you,"
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
+}
+
 async function signedObjectUrl(urlOrKey: string | null) {
   if (!urlOrKey) {
     return null;
@@ -291,7 +352,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     protectedAlbumCountResult,
     downloadCountResult,
     downloadLogsResult,
-    albumClientsResult
+    albumClientsResult,
+    inquiriesResult
   ] = await Promise.all([
     supabase
       .from("clients")
@@ -313,7 +375,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       .select("id, album_id, photo_id, client_email, downloaded_at, ip_address")
       .order("downloaded_at", { ascending: false })
       .limit(30),
-    supabase.from("album_clients").select("album_id, client_id")
+    supabase.from("album_clients").select("album_id, client_id"),
+    supabase
+      .from("contact_inquiries")
+      .select("id, name, email, phone, message, status, created_at, ip_address")
+      .order("created_at", { ascending: false })
+      .limit(20)
   ]);
 
   const clients = (clientsResult.data ?? []) as ClientOption[];
@@ -326,6 +393,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const protectedAlbumCount = protectedAlbumCountResult.count ?? 0;
   const downloadCount = downloadCountResult.count ?? 0;
   const downloadLogs = (downloadLogsResult.data ?? []) as DownloadLog[];
+  const inquiries = (inquiriesResult.data ?? []) as ContactInquiry[];
   const { data: albumPhotoRows } = albums.length
     ? await supabase.from("photos").select("album_id").in(
         "album_id",
@@ -374,6 +442,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         .order("uploaded_at", { ascending: true })
     : { data: [] };
   const selectedPhotos = (selectedPhotoRows ?? []) as AdminPhoto[];
+  const { data: selectedAlbumLogRows } = selectedAlbum
+    ? await supabase
+        .from("download_logs")
+        .select("id, album_id, photo_id, client_email, downloaded_at, ip_address")
+        .eq("album_id", selectedAlbum.id)
+        .order("downloaded_at", { ascending: false })
+        .limit(50)
+    : { data: [] };
+  const selectedAlbumLogs = (selectedAlbumLogRows ?? []) as DownloadLog[];
   const displayPhotos: DisplayPhoto[] = await Promise.all(
     selectedPhotos.map(async (photo) => ({
       ...photo,
@@ -417,7 +494,22 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     )
   );
   const logAlbumTitles = new Map(albums.map((album) => [album.id, album.title]));
-  const selectedPhotoNames = new Map(selectedPhotos.map((photo) => [photo.id, photo.filename]));
+  const logPhotoIds = [
+    ...new Set(
+      [...downloadLogs, ...selectedAlbumLogs]
+        .map((log) => log.photo_id)
+        .filter((photoId): photoId is string => Boolean(photoId))
+    )
+  ];
+  const { data: logPhotoRows } = logPhotoIds.length
+    ? await supabase.from("photos").select("id, filename").in("id", logPhotoIds)
+    : { data: [] };
+  const logPhotoNames = new Map(
+    [
+      ...selectedPhotos.map((photo) => ({ id: photo.id, filename: photo.filename })),
+      ...((logPhotoRows ?? []) as { id: string; filename: string }[])
+    ].map((photo) => [photo.id, photo.filename])
+  );
   const noticeMessage = notice ? notices[notice] : undefined;
 
   return (
@@ -431,6 +523,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <a href="#uploads">Uploads</a>
           <a href="#delivery">Delivery</a>
           <a href="#logs">Download logs</a>
+          <a href="#inquiries">Inquiries</a>
+          <a href="#backups">Backups</a>
         </aside>
 
         <section className="dashboard-panel">
@@ -628,6 +722,30 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         <CopyTextButton text={selectedShareMessage} label="Copy message" />
                       </div>
                       <pre>{selectedShareMessage}</pre>
+                      <div className="copy-detail-list">
+                        {selectedAssignedClients.map((client) => (
+                          <div className="copy-detail-row" key={client.id}>
+                            <div>
+                              <strong>{client.name}</strong>
+                              <small>{client.email ?? "No email saved"}</small>
+                            </div>
+                            <CopyTextButton
+                              label="Copy login details"
+                              text={clientLoginDetailsMessage({
+                                album: selectedAlbum,
+                                client,
+                                albumLink: selectedClientLink,
+                                photoCount: selectedAlbumPhotoCount
+                              })}
+                            />
+                          </div>
+                        ))}
+                        {!selectedAssignedClients.length ? (
+                          <p className="muted">
+                            Assign clients below to generate client-specific login messages.
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
 
                     <form action={updateAlbumAction} className="compact-form">
@@ -891,6 +1009,51 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </div>
               </div>
             ) : null}
+
+            {selectedAlbum ? (
+              <div className="manager-panel file-panel">
+                <div className="panel-title-row">
+                  <div>
+                    <h3>Download history for {selectedAlbum.title}</h3>
+                    <p className="muted">
+                      Per-album download history for client support and delivery checks.
+                    </p>
+                  </div>
+                  <span className="pill">{selectedAlbumLogs.length} recent</span>
+                </div>
+                <div className="table-wrap">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>When</th>
+                        <th>File</th>
+                        <th>Email</th>
+                        <th>IP</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedAlbumLogs.map((log) => (
+                        <tr key={log.id}>
+                          <td>{formatDateTime(log.downloaded_at)}</td>
+                          <td>
+                            {log.photo_id
+                              ? logPhotoNames.get(log.photo_id) ?? log.photo_id.slice(0, 8)
+                              : "Album ZIP"}
+                          </td>
+                          <td>{log.client_email ?? "Not captured"}</td>
+                          <td>{log.ip_address ?? "Not captured"}</td>
+                        </tr>
+                      ))}
+                      {!selectedAlbumLogs.length ? (
+                        <tr>
+                          <td colSpan={4}>No downloads for this album yet.</td>
+                        </tr>
+                      ) : null}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : null}
           </section>
 
           <section id="clients" className="admin-section">
@@ -942,23 +1105,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       Phone
                       <input name="phone" defaultValue={client.phone ?? ""} />
                     </label>
-                    <label className="field">
-                      Reset password
-                      <input
-                        name="password"
-                        type="password"
-                        placeholder={
-                          client.password_hash ? "Leave blank to keep" : "Optional"
-                        }
-                      />
-                      <small>
-                        New client login password. Leave blank to keep the current one.
-                      </small>
-                    </label>
-                    <label className="checkbox-field compact">
-                      <input name="remove_password" type="checkbox" />
-                      Remove password
-                    </label>
                     <div>
                       <span className="label">Albums</span>
                       <strong>{clientAlbumCounts.get(client.id) ?? 0}</strong>
@@ -967,6 +1113,32 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <Save size={16} />
                       Save
                     </button>
+                  </form>
+                  <form action={resetClientPasswordAction} className="password-reset-row">
+                    <input name="client_id" type="hidden" value={client.id} />
+                    <label className="field">
+                      Set new password
+                      <input
+                        name="password"
+                        type="password"
+                        minLength={4}
+                        placeholder="New client password"
+                        required
+                      />
+                    </label>
+                    <button className="button secondary small" type="submit">
+                      <KeyRound size={16} />
+                      Set password
+                    </button>
+                    <CopyTextButton
+                      label="Copy login"
+                      text={[
+                        `Client login: ${siteConfig.url}${siteConfig.routes.login}`,
+                        `Email: ${client.email ?? "[add client email]"}`,
+                        "Password: [paste the new password]",
+                        "Use this login to view all albums assigned to you."
+                      ].join("\n")}
+                    />
                   </form>
                   <form action={deleteClientAction}>
                     <input name="client_id" type="hidden" value={client.id} />
@@ -1123,7 +1295,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <td>{logAlbumTitles.get(log.album_id) ?? log.album_id}</td>
                       <td>
                         {log.photo_id
-                          ? selectedPhotoNames.get(log.photo_id) ?? log.photo_id.slice(0, 8)
+                          ? logPhotoNames.get(log.photo_id) ?? log.photo_id.slice(0, 8)
                           : "Album ZIP"}
                       </td>
                       <td>{log.client_email ?? "Not captured"}</td>
@@ -1137,6 +1309,96 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   ) : null}
                 </tbody>
               </table>
+            </div>
+          </section>
+
+          <section id="inquiries" className="admin-section">
+            <div className="panel-title-row">
+              <div>
+                <h2 style={{ fontSize: "2rem" }}>Booking inquiries</h2>
+                <p className="muted">
+                  Messages from the homepage contact form. Reply from your email,
+                  then update the status here.
+                </p>
+              </div>
+              <span className="pill">{inquiries.length} recent</span>
+            </div>
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>When</th>
+                    <th>Client</th>
+                    <th>Message</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {inquiries.map((inquiry) => (
+                    <tr key={inquiry.id}>
+                      <td>{formatDateTime(inquiry.created_at)}</td>
+                      <td>
+                        <strong>{inquiry.name}</strong>
+                        <small>{inquiry.email}</small>
+                        {inquiry.phone ? <small>{inquiry.phone}</small> : null}
+                      </td>
+                      <td>
+                        <p className="table-message">{inquiry.message}</p>
+                        <small>{inquiry.ip_address ?? "IP not captured"}</small>
+                      </td>
+                      <td>
+                        <form action={updateInquiryStatusAction} className="status-form">
+                          <input name="inquiry_id" type="hidden" value={inquiry.id} />
+                          <select name="status" defaultValue={inquiry.status}>
+                            <option value="new">New</option>
+                            <option value="replied">Replied</option>
+                            <option value="archived">Archived</option>
+                          </select>
+                          <button className="button secondary small" type="submit">
+                            Save
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  ))}
+                  {!inquiries.length ? (
+                    <tr>
+                      <td colSpan={4}>No booking inquiries yet.</td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="backups" className="admin-section">
+            <div className="panel-title-row">
+              <div>
+                <h2 style={{ fontSize: "2rem" }}>Backup checklist</h2>
+                <p className="muted">
+                  R2 is delivery storage. Keep Lightroom/Capture One exports and
+                  delivered ZIP files somewhere you control.
+                </p>
+              </div>
+              <DatabaseBackup size={26} />
+            </div>
+            <div className="feature-list backup-list">
+              <div className="feature">
+                <h3>Supabase export</h3>
+                <p>Export clients, albums, album_clients, photos, downloads, and inquiries weekly.</p>
+              </div>
+              <div className="feature">
+                <h3>R2 delivery files</h3>
+                <p>Keep a local or external backup of each final album ZIP before deleting R2 files.</p>
+              </div>
+              <div className="feature">
+                <h3>Before sending</h3>
+                <p>Confirm cover, assigned client, password, expiry date, photos, ZIP, and test download.</p>
+              </div>
+              <div className="feature">
+                <h3>After sending</h3>
+                <p>Check per-album download history and update inquiry/client notes outside this MVP.</p>
+              </div>
             </div>
           </section>
         </section>

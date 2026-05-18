@@ -6,7 +6,8 @@ export const siteConfig = {
   name: "rxncor.studio",
   domain: "rxncor.studio",
   url: publicEnv("NEXT_PUBLIC_SITE_URL", "https://rxncor.studio"),
-  description: "Photography portfolio and private client galleries.",
+  description:
+    "Photography portfolio, booking enquiries, and private client gallery delivery.",
   contactEmail: publicEnv("NEXT_PUBLIC_CONTACT_EMAIL", "hello@rxncor.studio"),
   instagramHandle: publicEnv("NEXT_PUBLIC_INSTAGRAM_HANDLE", "@rxncor.studio"),
   instagramUrl: publicEnv(

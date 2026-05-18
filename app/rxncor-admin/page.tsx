@@ -1,5 +1,14 @@
+import type { Metadata } from "next";
 import { LogIn } from "lucide-react";
 import { signInAction } from "./actions";
+
+export const metadata: Metadata = {
+  title: "Private Admin Login",
+  robots: {
+    index: false,
+    follow: false
+  }
+};
 
 type AdminLoginPageProps = {
   searchParams: Promise<{

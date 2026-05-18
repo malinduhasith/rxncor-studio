@@ -1,7 +1,9 @@
 import { LockKeyhole } from "lucide-react";
 import { cookies } from "next/headers";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { unlockGalleryAction } from "./actions";
+import { siteConfig } from "@/config/site";
 import { featuredAlbums } from "@/lib/sample-data";
 import { GalleryLightbox, type GalleryDisplayPhoto } from "@/components/gallery/GalleryLightbox";
 import { PhotoTile } from "@/components/PhotoTile";
@@ -76,7 +78,28 @@ export default async function ClientGalleryPage({
   }
 
   if (album?.expires_at && new Date(album.expires_at) < new Date()) {
-    notFound();
+    return (
+      <main className="shell section">
+        <div className="form-panel">
+          <p className="eyebrow">Gallery Expired</p>
+          <h1 style={{ fontSize: "clamp(2.6rem, 8vw, 5.8rem)" }}>
+            {album.title}
+          </h1>
+          <p className="form-note">
+            This gallery expired on {album.expires_at.slice(0, 10)}. Contact
+            rxncor.studio if you need the gallery reopened or the ZIP resent.
+          </p>
+          <div className="inline-actions">
+            <a className="button" href={`mailto:${siteConfig.contactEmail}`}>
+              Contact
+            </a>
+            <Link className="button secondary" href={siteConfig.routes.login}>
+              Client login
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   const cookieStore = await cookies();

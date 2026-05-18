@@ -24,6 +24,8 @@ Run the latest migration in Supabase SQL Editor:
 
 [supabase/migrations/20260519_production_hardening.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260519_production_hardening.sql)
 
+[supabase/migrations/20260519_contact_inquiries.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260519_contact_inquiries.sql)
+
 These add:
 
 - client passwords
@@ -32,6 +34,7 @@ These add:
 - client-password gallery access
 - duplicate-email protection for client logins
 - a faster download-log lookup index
+- homepage contact/booking inquiries
 
 ## Full Client Test
 
@@ -46,15 +49,17 @@ These add:
 9. Open the assigned album.
 10. Download one photo and the ZIP.
 11. Check admin download logs.
+12. Submit the homepage contact form and mark the inquiry replied in admin.
 
 ## Backup Habit
 
 Do this weekly while the site is active:
 
-1. Supabase Dashboard -> Table Editor -> export `clients`, `albums`, `album_clients`, `photos`, and `download_logs`.
+1. Supabase Dashboard -> Table Editor -> export `clients`, `albums`, `album_clients`, `photos`, `download_logs`, and `contact_inquiries`.
 2. Keep a local copy of delivered ZIP files.
 3. Do not rely on the website project as your photo backup. R2 is delivery storage.
 4. Before deleting an album, confirm you have the Lightroom/Capture One exports and ZIP elsewhere.
+5. Keep a monthly copy of the R2 album ZIPs on another drive or cloud backup.
 
 ## Real Client Readiness
 

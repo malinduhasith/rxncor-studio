@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { submitContactAction } from "./actions";
 import { AlbumCard } from "@/components/AlbumCard";
 import { PhotoTile } from "@/components/PhotoTile";
 import { siteConfig } from "@/config/site";
@@ -7,11 +8,18 @@ import { featuredAlbums, portfolioItems } from "@/lib/sample-data";
 
 export const dynamic = "force-dynamic";
 
+type HomePageProps = {
+  searchParams: Promise<{
+    contact?: string;
+  }>;
+};
+
 function formatDate(date: string | null) {
   return date ?? "Public";
 }
 
-export default async function Home() {
+export default async function Home({ searchParams }: HomePageProps) {
+  const { contact } = await searchParams;
   const [realPortfolioPhotos, realAlbums] = await Promise.all([
     getPublicPortfolioPhotos(3),
     getPublicAlbumCards(3)
@@ -127,26 +135,60 @@ export default async function Home() {
             email or Instagram below.
           </p>
         </div>
-        <div className="feature-list">
-          <div className="feature">
-            <h3>Email</h3>
-            <p>
-              <a href={`mailto:${siteConfig.contactEmail}`}>{siteConfig.contactEmail}</a>
-            </p>
-          </div>
-          <div className="feature">
-            <h3>Instagram</h3>
-            <p>
-              <a href={siteConfig.instagramUrl}>{siteConfig.instagramHandle}</a>
-            </p>
-          </div>
-          <div className="feature">
-            <h3>Delivery</h3>
-            <p>Private galleries with single photo and ZIP downloads.</p>
-          </div>
-          <div className="feature">
-            <h3>Storage</h3>
-            <p>Photos live in Cloudflare R2, not inside the website project.</p>
+        <div className="contact-grid">
+          <form action={submitContactAction} className="form-panel contact-form">
+            <h3>Send an enquiry</h3>
+            {contact === "sent" ? (
+              <p className="alert success">Message sent. I will reply as soon as I can.</p>
+            ) : null}
+            {contact === "error" ? (
+              <p className="alert">Could not send that message. Check the fields and try again.</p>
+            ) : null}
+            <label className="field">
+              Name
+              <input name="name" autoComplete="name" required />
+            </label>
+            <label className="field">
+              Email
+              <input name="email" type="email" autoComplete="email" required />
+            </label>
+            <label className="field">
+              Phone
+              <input name="phone" autoComplete="tel" placeholder="+61" />
+            </label>
+            <label className="field">
+              Message
+              <textarea
+                name="message"
+                placeholder="Tell me the date, location, and what you need photographed."
+                required
+              />
+            </label>
+            <button className="button" type="submit">
+              Send enquiry
+            </button>
+          </form>
+          <div className="feature-list contact-details">
+            <div className="feature">
+              <h3>Email</h3>
+              <p>
+                <a href={`mailto:${siteConfig.contactEmail}`}>{siteConfig.contactEmail}</a>
+              </p>
+            </div>
+            <div className="feature">
+              <h3>Instagram</h3>
+              <p>
+                <a href={siteConfig.instagramUrl}>{siteConfig.instagramHandle}</a>
+              </p>
+            </div>
+            <div className="feature">
+              <h3>Delivery</h3>
+              <p>Private galleries with single photo and ZIP downloads.</p>
+            </div>
+            <div className="feature">
+              <h3>Storage</h3>
+              <p>Photos live in Cloudflare R2, not inside the website project.</p>
+            </div>
           </div>
         </div>
       </section>

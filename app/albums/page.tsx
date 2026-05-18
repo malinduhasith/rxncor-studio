@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { AlbumCard } from "@/components/AlbumCard";
 import { getPublicAlbumCards } from "@/lib/public-gallery";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Public Albums",
+  description: "Featured public albums from rxncor.studio."
+};
 
 function formatDate(date: string | null) {
   if (!date) {
