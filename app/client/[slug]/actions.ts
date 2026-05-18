@@ -85,20 +85,35 @@ export async function unlockGalleryAction(formData: FormData) {
       .select("client_id")
       .eq("album_id", unlockAlbum.id);
     const assignedClientIds = (assignments ?? []).map((row) => row.client_id);
-    const { data: client } = assignedClientIds.length
-      ? await supabase
-          .from("clients")
-          .select("*")
-          .in("id", assignedClientIds)
-          .ilike("email", email)
-          .maybeSingle()
-      : { data: null };
-    const unlockClient = client as UnlockClient | null;
+    const { data: clients } = await supabase
+      .from("clients")
+      .select("id, email, password_hash")
+      .ilike("email", email)
+      .limit(2);
+    const matchingClients = (clients ?? []) as UnlockClient[];
+    const unlockClient = matchingClients[0] ?? null;
 
-    if (
-      unlockClient?.password_hash &&
-      verifyPassword(password, unlockClient.password_hash)
-    ) {
+    if (!unlockClient) {
+      redirect(`/client/${payload.data.slug}?notice=client-not-found`);
+    }
+
+    if (matchingClients.length > 1) {
+      redirect(`/client/${payload.data.slug}?notice=duplicate-client`);
+    }
+
+    if (!unlockClient.password_hash) {
+      redirect(`/client/${payload.data.slug}?notice=client-no-password`);
+    }
+
+    if (!verifyPassword(password, unlockClient.password_hash)) {
+      redirect(`/client/${payload.data.slug}?notice=wrong-password`);
+    }
+
+    if (!assignedClientIds.includes(unlockClient.id)) {
+      redirect(`/client/${payload.data.slug}?notice=client-not-assigned`);
+    }
+
+    if (unlockClient.password_hash) {
       accessToken = createAlbumAccessToken(
         unlockAlbum.id,
         `client:${unlockClient.id}:${unlockClient.password_hash}`

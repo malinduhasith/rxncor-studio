@@ -245,6 +245,21 @@ export default async function ClientGalleryPage({
           {notice === "wrong-password" ? (
             <p className="alert">That password did not match. Try again.</p>
           ) : null}
+          {notice === "client-not-found" ? (
+            <p className="alert">No client profile was found for that email address.</p>
+          ) : null}
+          {notice === "client-no-password" ? (
+            <p className="alert">This client does not have a client login password set yet.</p>
+          ) : null}
+          {notice === "client-not-assigned" ? (
+            <p className="alert">That client login is not assigned to this gallery.</p>
+          ) : null}
+          {notice === "duplicate-client" ? (
+            <p className="alert">
+              More than one client uses that email. Update the duplicate client records
+              in admin.
+            </p>
+          ) : null}
           {notice === "email-required" ? (
             <p className="alert">Enter your email before opening this gallery.</p>
           ) : null}
