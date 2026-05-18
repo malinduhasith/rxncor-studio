@@ -91,6 +91,43 @@ export async function getPublicAlbumCards(limit?: number) {
 
 export async function getPublicPortfolioPhotos(limit = 9) {
   const supabase = createSupabaseAdminClient();
+  const { data: selectedAlbumRows } = await supabase
+    .from("albums")
+    .select("id, title, event_date, expires_at")
+    .order("event_date", { ascending: false });
+  const selectedAlbums = ((selectedAlbumRows ?? []) as {
+    id: string;
+    title: string;
+    event_date: string | null;
+    expires_at: string | null;
+  }[]).filter(activeAlbumFilter);
+  const selectedAlbumIds = selectedAlbums.map((album) => album.id);
+
+  if (selectedAlbumIds.length) {
+    const selectedAlbumTitles = new Map(
+      selectedAlbums.map((album) => [album.id, album.title])
+    );
+    const { data: selectedPhotoRows } = await supabase
+      .from("photos")
+      .select("id, album_id, filename, preview_url, uploaded_at")
+      .in("album_id", selectedAlbumIds)
+      .eq("is_selected", true)
+      .order("uploaded_at", { ascending: false })
+      .limit(limit);
+    const selectedPhotos = (selectedPhotoRows ?? []) as PublicPhotoRow[];
+
+    if (selectedPhotos.length) {
+      return Promise.all(
+        selectedPhotos.map(async (photo) => ({
+          id: photo.id,
+          title: photo.filename.replace(/\.[^.]+$/, ""),
+          meta: selectedAlbumTitles.get(photo.album_id) ?? "Portfolio",
+          imageUrl: await signedUrl(photo.preview_url)
+        }))
+      );
+    }
+  }
+
   const { data: albumRows } = await supabase
     .from("albums")
     .select("id, title, event_date, expires_at")

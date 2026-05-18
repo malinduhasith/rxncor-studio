@@ -449,6 +449,7 @@ export async function deleteAlbumAction(formData: FormData) {
 
   revalidatePath("/admin");
   revalidatePath("/albums");
+  revalidatePath("/portfolio");
   redirect("/admin?notice=album-deleted#manager");
 }
 
@@ -483,6 +484,7 @@ export async function setCoverPhotoAction(formData: FormData) {
 
   revalidatePath("/admin");
   revalidatePath("/albums");
+  revalidatePath("/portfolio");
   redirect(`/admin?notice=cover-updated&album=${photo.album_id}#manager`);
 }
 
@@ -516,6 +518,7 @@ export async function togglePhotoSelectedAction(formData: FormData) {
   }
 
   revalidatePath("/admin");
+  revalidatePath("/portfolio");
   redirect(`/admin?notice=photo-updated&album=${photo.album_id}#manager`);
 }
 
@@ -585,6 +588,7 @@ export async function deletePhotoAction(formData: FormData) {
 
   revalidatePath("/admin");
   revalidatePath("/albums");
+  revalidatePath("/portfolio");
   redirect(`/admin?notice=photo-deleted&album=${photo.album_id}#manager`);
 }
 
