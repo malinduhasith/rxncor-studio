@@ -66,6 +66,20 @@ Use `lib/r2.ts` helpers to create signed upload and download URLs. Keep full-res
 
 For browser uploads, add the R2 bucket CORS policy from [cloudflare/r2-cors.json](/Users/crazy_taxi/Documents/VsCode/cloudflare/r2-cors.json).
 
+The admin uploader accepts full-album batches. Export three groups from Lightroom:
+
+- thumbnails, 400px long edge
+- previews, 2048px long edge
+- full-res delivery JPEGs
+
+Use matching filenames so the uploader can pair them:
+
+```text
+img_001_thumb.jpg
+img_001_preview.jpg
+img_001.jpg
+```
+
 ## DNS launch notes
 
 Keep the domain in Squarespace. After deploying on Vercel, add `rxncor.studio` in Project Settings -> Domains and copy Vercel's DNS records into Squarespace DNS.

@@ -11,7 +11,8 @@ const notices: Record<string, string> = {
   "client-error": "Client could not be created. Check the fields and try again.",
   "album-created": "Album created.",
   "album-error": "Album could not be created. Check the slug is unique and valid.",
-  "photo-uploaded": "Photo uploaded."
+  "photo-uploaded": "Photo uploaded.",
+  "photos-uploaded": "Photos uploaded."
 };
 
 type ClientOption = {

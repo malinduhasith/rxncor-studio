@@ -19,6 +19,13 @@ type AdminPhotoUploadProps = {
   albums: UploadAlbum[];
 };
 
+type PhotoSet = {
+  baseName: string;
+  thumbnail: File;
+  preview: File;
+  full: File;
+};
+
 async function signUpload(albumId: string, kind: string, file: File) {
   const response = await fetch("/api/uploads/sign", {
     method: "POST",
@@ -54,6 +61,130 @@ async function uploadToR2(signedUpload: SignedUpload, file: File) {
   }
 }
 
+function fileList(formData: FormData, name: string) {
+  return formData
+    .getAll(name)
+    .filter((file): file is File => file instanceof File && file.size > 0);
+}
+
+function baseName(filename: string) {
+  const cleanName = filename.split(/[/\\]/).pop() ?? filename;
+  const extensionIndex = cleanName.lastIndexOf(".");
+  const withoutExtension =
+    extensionIndex > 0 ? cleanName.slice(0, extensionIndex) : cleanName;
+
+  return withoutExtension
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[-_](thumb|thumbnail|preview|web|screen|full|large)$/i, "");
+}
+
+function filesByBaseName(files: File[]) {
+  return new Map(files.map((file) => [baseName(file.name), file]));
+}
+
+function sortByName(files: File[]) {
+  return [...files].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function buildPhotoSets(thumbnails: File[], previews: File[], fulls: File[]) {
+  const thumbnailMap = filesByBaseName(thumbnails);
+  const previewMap = filesByBaseName(previews);
+  const matched = fulls
+    .map((full) => {
+      const key = baseName(full.name);
+      const thumbnail = thumbnailMap.get(key);
+      const preview = previewMap.get(key);
+
+      if (!thumbnail || !preview) {
+        return null;
+      }
+
+      return {
+        baseName: key,
+        thumbnail,
+        preview,
+        full
+      };
+    })
+    .filter((set): set is PhotoSet => Boolean(set));
+
+  if (matched.length > 0) {
+    return matched;
+  }
+
+  if (thumbnails.length === previews.length && previews.length === fulls.length) {
+    const sortedThumbnails = sortByName(thumbnails);
+    const sortedPreviews = sortByName(previews);
+    const sortedFulls = sortByName(fulls);
+
+    return sortedFulls.map((full, index) => ({
+      baseName: baseName(full.name),
+      thumbnail: sortedThumbnails[index],
+      preview: sortedPreviews[index],
+      full
+    }));
+  }
+
+  return [];
+}
+
+async function uploadPhotoSet(albumId: string, photoSet: PhotoSet) {
+  const [thumbnailUpload, previewUpload, fullUpload] = await Promise.all([
+    signUpload(albumId, "thumbnails", photoSet.thumbnail),
+    signUpload(albumId, "previews", photoSet.preview),
+    signUpload(albumId, "full", photoSet.full)
+  ]);
+
+  await Promise.all([
+    uploadToR2(thumbnailUpload, photoSet.thumbnail),
+    uploadToR2(previewUpload, photoSet.preview),
+    uploadToR2(fullUpload, photoSet.full)
+  ]);
+
+  const photoResponse = await fetch("/api/photos", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      album_id: albumId,
+      filename: photoSet.full.name,
+      thumbnail_url: thumbnailUpload.publicUrl,
+      preview_url: previewUpload.publicUrl,
+      full_res_url: fullUpload.publicUrl,
+      r2_object_key: fullUpload.key
+    })
+  });
+
+  if (!photoResponse.ok) {
+    throw new Error(`Could not save ${photoSet.full.name}.`);
+  }
+}
+
+async function uploadWithLimit(
+  photoSets: PhotoSet[],
+  limit: number,
+  upload: (photoSet: PhotoSet) => Promise<void>,
+  onProgress: (completed: number) => void
+) {
+  let nextIndex = 0;
+  let completed = 0;
+  const workerCount = Math.min(limit, photoSets.length);
+
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < photoSets.length) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+        await upload(photoSets[currentIndex]);
+        completed += 1;
+        onProgress(completed);
+      }
+    })
+  );
+}
+
 export function AdminPhotoUpload({ albums }: AdminPhotoUploadProps) {
   const [status, setStatus] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -80,54 +211,45 @@ export function AdminPhotoUpload({ albums }: AdminPhotoUploadProps) {
     const form = event.currentTarget;
     const formData = new FormData(form);
     const albumId = String(formData.get("album_id") ?? "");
-    const filename = String(formData.get("filename") ?? "").trim();
-    const thumbnail = formData.get("thumbnail") as File | null;
-    const preview = formData.get("preview") as File | null;
-    const full = formData.get("full") as File | null;
+    const thumbnails = fileList(formData, "thumbnails");
+    const previews = fileList(formData, "previews");
+    const fulls = fileList(formData, "fulls");
 
-    if (!albumId || !thumbnail?.size || !preview?.size || !full?.size) {
-      setStatus("Choose an album and all three photo files.");
+    if (!albumId || !thumbnails.length || !previews.length || !fulls.length) {
+      setStatus("Choose an album and all three export groups.");
+      return;
+    }
+
+    const photoSets = buildPhotoSets(thumbnails, previews, fulls);
+
+    if (!photoSets.length) {
+      setStatus(
+        "No matching files found. Use matching names like img_001_thumb.jpg, img_001_preview.jpg, and img_001.jpg."
+      );
+      return;
+    }
+
+    if (photoSets.length !== fulls.length) {
+      setStatus(
+        `Matched ${photoSets.length}/${fulls.length} full-res files. Check thumbnail and preview filenames before uploading.`
+      );
       return;
     }
 
     setIsUploading(true);
-    setStatus("Creating upload links...");
+    setStatus(`Uploading 0/${photoSets.length} photos...`);
 
     try {
-      const [thumbnailUpload, previewUpload, fullUpload] = await Promise.all([
-        signUpload(albumId, "thumbnails", thumbnail),
-        signUpload(albumId, "previews", preview),
-        signUpload(albumId, "full", full)
-      ]);
-
-      setStatus("Uploading to R2...");
-      await Promise.all([
-        uploadToR2(thumbnailUpload, thumbnail),
-        uploadToR2(previewUpload, preview),
-        uploadToR2(fullUpload, full)
-      ]);
-
-      setStatus("Saving photo...");
-      const photoResponse = await fetch("/api/photos", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
+      await uploadWithLimit(
+        photoSets,
+        3,
+        (photoSet) => uploadPhotoSet(albumId, photoSet),
+        (completed) => {
+          setStatus(`Uploaded ${completed}/${photoSets.length} photos...`);
         },
-        body: JSON.stringify({
-          album_id: albumId,
-          filename: filename || full.name,
-          thumbnail_url: thumbnailUpload.publicUrl,
-          preview_url: previewUpload.publicUrl,
-          full_res_url: fullUpload.publicUrl,
-          r2_object_key: fullUpload.key
-        })
-      });
+      );
 
-      if (!photoResponse.ok) {
-        throw new Error("Photo metadata could not be saved.");
-      }
-
-      window.location.assign("/admin?notice=photo-uploaded#uploads");
+      window.location.assign("/admin?notice=photos-uploaded#uploads");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Upload failed.");
       setIsUploading(false);
@@ -143,24 +265,38 @@ export function AdminPhotoUpload({ albums }: AdminPhotoUploadProps) {
         </select>
       </label>
       <label className="field">
-        Display filename
-        <input name="filename" placeholder="img_001.jpg" />
+        Thumbnail images
+        <input
+          name="thumbnails"
+          type="file"
+          accept="image/jpeg,image/jpg,image/webp,image/*"
+          multiple
+          required
+        />
       </label>
       <label className="field">
-        Thumbnail WebP
-        <input name="thumbnail" type="file" accept="image/webp,image/*" required />
+        Preview images
+        <input
+          name="previews"
+          type="file"
+          accept="image/jpeg,image/jpg,image/webp,image/*"
+          multiple
+          required
+        />
       </label>
       <label className="field">
-        Preview WebP
-        <input name="preview" type="file" accept="image/webp,image/*" required />
-      </label>
-      <label className="field">
-        Full-res JPEG
-        <input name="full" type="file" accept="image/jpeg,image/jpg,image/*" required />
+        Full-res images
+        <input
+          name="fulls"
+          type="file"
+          accept="image/jpeg,image/jpg,image/*"
+          multiple
+          required
+        />
       </label>
       <button className="button" type="submit" disabled={!hasAlbums || isUploading}>
         <UploadCloud size={18} />
-        {isUploading ? "Uploading" : "Upload photo"}
+        {isUploading ? "Uploading" : "Upload album photos"}
       </button>
       {status ? <p className="muted">{status}</p> : null}
     </form>
