@@ -7,6 +7,7 @@ import {
   Link as LinkIcon,
   LockKeyhole,
   Save,
+  Search,
   Star,
   Trash2
 } from "lucide-react";
@@ -14,18 +15,21 @@ import { redirect } from "next/navigation";
 import {
   createAlbumAction,
   createClientAction,
+  deleteClientAction,
   deleteAlbumAction,
   deletePhotoAction,
   removeZipAction,
   setCoverPhotoAction,
   signOutAction,
   togglePhotoSelectedAction,
-  updateAlbumAction
+  updateAlbumAction,
+  updateClientAction
 } from "./actions";
 import { AdminPhotoUpload } from "@/components/admin/AdminPhotoUpload";
 import { AdminZipUpload } from "@/components/admin/AdminZipUpload";
 import { ConfirmSubmitButton } from "@/components/admin/ConfirmSubmitButton";
 import { CopyLinkButton } from "@/components/admin/CopyLinkButton";
+import { CopyTextButton } from "@/components/admin/CopyTextButton";
 import { siteConfig } from "@/config/site";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -34,6 +38,8 @@ export const dynamic = "force-dynamic";
 
 const notices: Record<string, string> = {
   "client-created": "Client created.",
+  "client-updated": "Client updated.",
+  "client-deleted": "Client deleted.",
   "client-error": "Client could not be created. Check the fields and try again.",
   "album-created": "Album created.",
   "album-error": "Album could not be created. Check the slug is unique and valid.",
@@ -57,6 +63,7 @@ type ClientOption = {
   name: string;
   email: string | null;
   phone: string | null;
+  created_at: string;
 };
 
 type AdminAlbum = {
@@ -93,10 +100,21 @@ type DisplayPhoto = AdminPhoto & {
   fileType: string;
 };
 
+type DownloadLog = {
+  id: string;
+  album_id: string;
+  photo_id: string | null;
+  client_email: string | null;
+  downloaded_at: string;
+  ip_address: string | null;
+};
+
 type AdminPageProps = {
   searchParams: Promise<{
     notice?: string;
     album?: string;
+    q?: string;
+    status?: string;
   }>;
 };
 
@@ -121,6 +139,103 @@ function fileType(filename: string) {
   return extension ? extension.toUpperCase() : "File";
 }
 
+function albumStatus(album: AdminAlbum, photoCount: number) {
+  if (album.expires_at && new Date(album.expires_at) < new Date()) {
+    return "Expired";
+  }
+
+  if (!photoCount) {
+    return "Draft";
+  }
+
+  if (!album.download_zip_url) {
+    return "Needs ZIP";
+  }
+
+  return "Ready";
+}
+
+function matchesAlbumFilter(
+  album: AdminAlbum,
+  query: string,
+  status: string,
+  photoCount: number,
+  client: ClientOption | undefined
+) {
+  const normalizedQuery = query.trim().toLowerCase();
+  const statusLabel = albumStatus(album, photoCount).toLowerCase();
+  const searchableText = [
+    album.title,
+    album.slug,
+    album.event_date,
+    client?.name,
+    client?.email,
+    statusLabel
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  const queryMatch = !normalizedQuery || searchableText.includes(normalizedQuery);
+
+  if (!queryMatch) {
+    return false;
+  }
+
+  switch (status) {
+    case "public":
+      return album.is_public;
+    case "private":
+      return !album.is_public;
+    case "protected":
+      return album.is_password_protected;
+    case "draft":
+    case "ready":
+    case "expired":
+    case "needs zip":
+      return statusLabel === status;
+    default:
+      return true;
+  }
+}
+
+function shareMessage({
+  album,
+  client,
+  link,
+  photoCount
+}: {
+  album: AdminAlbum;
+  client: ClientOption | null | undefined;
+  link: string;
+  photoCount: number;
+}) {
+  const greeting = client?.name ? `Hi ${client.name},` : "Hi,";
+  const expiryLine = album.expires_at
+    ? `This gallery will be available until ${dateInputValue(album.expires_at)}.`
+    : null;
+  const passwordLine = album.is_password_protected
+    ? "Password: [add the password you set for this album]"
+    : "No password is required.";
+  const zipLine = album.download_zip_url
+    ? "You can download individual photos or the full album ZIP."
+    : "You can download individual photos now. The full album ZIP will be added separately.";
+
+  return [
+    greeting,
+    "",
+    `Your ${album.title} gallery is ready.`,
+    `Link: ${link}`,
+    passwordLine,
+    `Photos: ${photoCount}`,
+    expiryLine,
+    zipLine,
+    "",
+    "Thank you,"
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
+}
+
 async function signedObjectUrl(urlOrKey: string | null) {
   if (!urlOrKey) {
     return null;
@@ -135,7 +250,12 @@ async function signedObjectUrl(urlOrKey: string | null) {
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const supabase = await createSupabaseServerClient();
-  const { notice, album: selectedAlbumId } = await searchParams;
+  const {
+    notice,
+    album: selectedAlbumId,
+    q: albumQuery = "",
+    status: albumStatusFilter = "all"
+  } = await searchParams;
   const {
     data: { user }
   } = await supabase.auth.getUser();
@@ -150,11 +270,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     albumCountResult,
     photoCountResult,
     protectedAlbumCountResult,
-    downloadCountResult
+    downloadCountResult,
+    downloadLogsResult
   ] = await Promise.all([
     supabase
       .from("clients")
-      .select("id, name, email, phone")
+      .select("id, name, email, phone, created_at")
       .order("created_at", { ascending: false }),
     supabase
       .from("albums")
@@ -168,7 +289,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       .from("albums")
       .select("id", { count: "exact", head: true })
       .eq("is_password_protected", true),
-    supabase.from("download_logs").select("id", { count: "exact", head: true })
+    supabase.from("download_logs").select("id", { count: "exact", head: true }),
+    supabase
+      .from("download_logs")
+      .select("id, album_id, photo_id, client_email, downloaded_at, ip_address")
+      .order("downloaded_at", { ascending: false })
+      .limit(30)
   ]);
 
   const clients = (clientsResult.data ?? []) as ClientOption[];
@@ -179,6 +305,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const photoCount = photoCountResult.count ?? 0;
   const protectedAlbumCount = protectedAlbumCountResult.count ?? 0;
   const downloadCount = downloadCountResult.count ?? 0;
+  const downloadLogs = (downloadLogsResult.data ?? []) as DownloadLog[];
   const { data: albumPhotoRows } = albums.length
     ? await supabase.from("photos").select("album_id").in(
         "album_id",
@@ -189,6 +316,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   for (const row of (albumPhotoRows ?? []) as { album_id: string }[]) {
     albumPhotoCounts.set(row.album_id, (albumPhotoCounts.get(row.album_id) ?? 0) + 1);
+  }
+  const clientAlbumCounts = new Map<string, number>();
+
+  for (const album of albums) {
+    if (album.client_id) {
+      clientAlbumCounts.set(
+        album.client_id,
+        (clientAlbumCounts.get(album.client_id) ?? 0) + 1
+      );
+    }
   }
 
   const { data: selectedPhotoRows } = selectedAlbum
@@ -220,6 +357,25 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const selectedClientLink = selectedAlbum
     ? `${siteConfig.url}/client/${selectedAlbum.slug}`
     : "";
+  const selectedShareMessage = selectedAlbum
+    ? shareMessage({
+        album: selectedAlbum,
+        client: selectedClient,
+        link: selectedClientLink,
+        photoCount: selectedAlbumPhotoCount
+      })
+    : "";
+  const visibleAlbums = albums.filter((album) =>
+    matchesAlbumFilter(
+      album,
+      albumQuery,
+      albumStatusFilter.toLowerCase(),
+      albumPhotoCounts.get(album.id) ?? 0,
+      clients.find((client) => client.id === album.client_id)
+    )
+  );
+  const logAlbumTitles = new Map(albums.map((album) => [album.id, album.title]));
+  const selectedPhotoNames = new Map(selectedPhotos.map((photo) => [photo.id, photo.filename]));
   const noticeMessage = notice ? notices[notice] : undefined;
 
   return (
@@ -232,6 +388,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <a href="#albums">Create album</a>
           <a href="#uploads">Uploads</a>
           <a href="#delivery">Delivery</a>
+          <a href="#logs">Download logs</a>
         </aside>
 
         <section className="dashboard-panel">
@@ -288,10 +445,40 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <div className="manager-panel">
                 <div className="panel-title-row">
                   <h3>Album list</h3>
-                  <span className="pill">{albums.length} total</span>
+                  <span className="pill">
+                    {visibleAlbums.length}/{albums.length} shown
+                  </span>
                 </div>
+                <form className="filter-bar" action="/admin" method="get">
+                  <input name="album" type="hidden" value={selectedAlbum?.id ?? ""} />
+                  <label className="field">
+                    Search
+                    <input
+                      name="q"
+                      placeholder="Album, slug, client"
+                      defaultValue={albumQuery}
+                    />
+                  </label>
+                  <label className="field">
+                    Filter
+                    <select name="status" defaultValue={albumStatusFilter}>
+                      <option value="all">All albums</option>
+                      <option value="ready">Ready</option>
+                      <option value="draft">Draft</option>
+                      <option value="needs zip">Needs ZIP</option>
+                      <option value="expired">Expired</option>
+                      <option value="public">Public</option>
+                      <option value="private">Private</option>
+                      <option value="protected">Protected</option>
+                    </select>
+                  </label>
+                  <button className="button secondary small" type="submit">
+                    <Search size={16} />
+                    Apply
+                  </button>
+                </form>
                 <div className="album-list">
-                  {albums.map((album) => (
+                  {visibleAlbums.map((album) => (
                     <a
                       className={`album-list-row ${
                         selectedAlbum?.id === album.id ? "active" : ""
@@ -305,6 +492,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       </span>
                       <span className="album-badges">
                         <span>{albumPhotoCounts.get(album.id) ?? 0} photos</span>
+                        <span>{albumStatus(album, albumPhotoCounts.get(album.id) ?? 0)}</span>
                         <span>{album.is_public ? "Public" : "Private"}</span>
                         {album.is_password_protected ? <span>Protected</span> : null}
                         {album.download_zip_url ? <span>ZIP</span> : null}
@@ -312,6 +500,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     </a>
                   ))}
                   {!albums.length ? <p className="muted">No albums yet.</p> : null}
+                  {albums.length && !visibleAlbums.length ? (
+                    <p className="muted">No albums match this filter.</p>
+                  ) : null}
                 </div>
               </div>
 
@@ -347,6 +538,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         <code className="code-line">{selectedClientLink}</code>
                       </div>
                       <div>
+                        <span className="label">Status</span>
+                        <strong>
+                          {albumStatus(selectedAlbum, selectedAlbumPhotoCount)}
+                        </strong>
+                      </div>
+                      <div>
                         <span className="label">Created</span>
                         <strong>{formatDateTime(selectedAlbum.created_at)}</strong>
                       </div>
@@ -358,6 +555,20 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         <span className="label">Cover</span>
                         <strong>{selectedAlbum.cover_photo_url ? "Set" : "Not set"}</strong>
                       </div>
+                    </div>
+
+                    <div className="share-box">
+                      <div className="panel-title-row">
+                        <div>
+                          <h3>Send to client</h3>
+                          <p className="muted">
+                            Copy this message into Gmail, Instagram, or SMS. For password
+                            albums, add the password you set.
+                          </p>
+                        </div>
+                        <CopyTextButton text={selectedShareMessage} label="Copy message" />
+                      </div>
+                      <pre>{selectedShareMessage}</pre>
                     </div>
 
                     <form action={updateAlbumAction} className="compact-form">
@@ -606,30 +817,45 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </button>
             </form>
 
-            <div className="table-wrap" style={{ marginTop: 24 }}>
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Client</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {clients.map((client) => (
-                    <tr key={client.id}>
-                      <td>{client.name}</td>
-                      <td>{client.email ?? "Not set"}</td>
-                      <td>{client.phone ?? "Not set"}</td>
-                    </tr>
-                  ))}
-                  {!clients.length ? (
-                    <tr>
-                      <td colSpan={3}>No clients yet.</td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
+            <div className="client-list">
+              {clients.map((client) => (
+                <div className="client-card" key={client.id}>
+                  <form action={updateClientAction} className="client-edit-row">
+                    <input name="client_id" type="hidden" value={client.id} />
+                    <label className="field">
+                      Name
+                      <input name="name" defaultValue={client.name} required />
+                    </label>
+                    <label className="field">
+                      Email
+                      <input name="email" type="email" defaultValue={client.email ?? ""} />
+                    </label>
+                    <label className="field">
+                      Phone
+                      <input name="phone" defaultValue={client.phone ?? ""} />
+                    </label>
+                    <div>
+                      <span className="label">Albums</span>
+                      <strong>{clientAlbumCounts.get(client.id) ?? 0}</strong>
+                    </div>
+                    <button className="button secondary small" type="submit">
+                      <Save size={16} />
+                      Save
+                    </button>
+                  </form>
+                  <form action={deleteClientAction}>
+                    <input name="client_id" type="hidden" value={client.id} />
+                    <ConfirmSubmitButton
+                      className="button danger small"
+                      confirmMessage={`Delete ${client.name}? Albums will stay, but this client will be removed from them.`}
+                    >
+                      <Trash2 size={16} />
+                      Delete
+                    </ConfirmSubmitButton>
+                  </form>
+                </div>
+              ))}
+              {!clients.length ? <p className="muted">No clients yet.</p> : null}
             </div>
           </section>
 
@@ -711,6 +937,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <td>{album.slug}</td>
                       <td>{albumPhotoCounts.get(album.id) ?? 0}</td>
                       <td>
+                        {albumStatus(album, albumPhotoCounts.get(album.id) ?? 0)}
+                        {" · "}
                         {album.is_public ? "Public" : "Private"}
                         {album.is_password_protected ? " + protected" : ""}
                         {album.download_zip_url ? " + ZIP" : ""}
@@ -726,6 +954,52 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   {!albums.length ? (
                     <tr>
                       <td colSpan={5}>No albums yet.</td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="logs" className="admin-section">
+            <div className="panel-title-row">
+              <div>
+                <h2 style={{ fontSize: "2rem" }}>Download logs</h2>
+                <p className="muted">
+                  Latest downloads from client galleries. Private galleries can capture
+                  client email during unlock.
+                </p>
+              </div>
+              <span className="pill">{downloadLogs.length} recent</span>
+            </div>
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>When</th>
+                    <th>Album</th>
+                    <th>Photo</th>
+                    <th>Email</th>
+                    <th>IP</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {downloadLogs.map((log) => (
+                    <tr key={log.id}>
+                      <td>{formatDateTime(log.downloaded_at)}</td>
+                      <td>{logAlbumTitles.get(log.album_id) ?? log.album_id}</td>
+                      <td>
+                        {log.photo_id
+                          ? selectedPhotoNames.get(log.photo_id) ?? log.photo_id.slice(0, 8)
+                          : "Album ZIP"}
+                      </td>
+                      <td>{log.client_email ?? "Not captured"}</td>
+                      <td>{log.ip_address ?? "Not captured"}</td>
+                    </tr>
+                  ))}
+                  {!downloadLogs.length ? (
+                    <tr>
+                      <td colSpan={5}>No downloads logged yet.</td>
                     </tr>
                   ) : null}
                 </tbody>

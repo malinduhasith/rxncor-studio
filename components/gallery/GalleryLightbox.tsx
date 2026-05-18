@@ -15,9 +15,15 @@ type GalleryLightboxProps = {
   albumId: string;
   photos: GalleryDisplayPhoto[];
   zipObjectKey?: string | null;
+  clientEmail?: string | null;
 };
 
-async function requestDownload(albumId: string, r2ObjectKey: string, photoId?: string) {
+async function requestDownload(
+  albumId: string,
+  r2ObjectKey: string,
+  photoId?: string,
+  clientEmail?: string | null
+) {
   const response = await fetch("/api/downloads", {
     method: "POST",
     headers: {
@@ -26,7 +32,8 @@ async function requestDownload(albumId: string, r2ObjectKey: string, photoId?: s
     body: JSON.stringify({
       album_id: albumId,
       photo_id: photoId,
-      r2_object_key: r2ObjectKey
+      r2_object_key: r2ObjectKey,
+      client_email: clientEmail || undefined
     })
   });
 
@@ -41,7 +48,8 @@ async function requestDownload(albumId: string, r2ObjectKey: string, photoId?: s
 export function GalleryLightbox({
   albumId,
   photos,
-  zipObjectKey
+  zipObjectKey,
+  clientEmail
 }: GalleryLightboxProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [status, setStatus] = useState("");
@@ -77,7 +85,7 @@ export function GalleryLightbox({
   async function downloadPhoto(photo: GalleryDisplayPhoto) {
     setStatus("Preparing download...");
     try {
-      await requestDownload(albumId, photo.r2ObjectKey, photo.id);
+      await requestDownload(albumId, photo.r2ObjectKey, photo.id, clientEmail);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Download failed.");
     }
@@ -90,7 +98,7 @@ export function GalleryLightbox({
 
     setStatus("Preparing album ZIP...");
     try {
-      await requestDownload(albumId, zipObjectKey);
+      await requestDownload(albumId, zipObjectKey, undefined, clientEmail);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "ZIP download failed.");
     }

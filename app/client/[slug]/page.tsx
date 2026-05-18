@@ -5,7 +5,11 @@ import { unlockGalleryAction } from "./actions";
 import { featuredAlbums } from "@/lib/sample-data";
 import { GalleryLightbox, type GalleryDisplayPhoto } from "@/components/gallery/GalleryLightbox";
 import { PhotoTile } from "@/components/PhotoTile";
-import { albumAccessCookieName, hasAlbumAccess } from "@/lib/gallery-access";
+import {
+  albumAccessCookieName,
+  albumClientEmailCookieName,
+  hasAlbumAccess
+} from "@/lib/gallery-access";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -84,6 +88,9 @@ export default async function ClientGalleryPage({
         cookieStore.get(albumAccessCookieName(album.id))?.value
       )
     : false;
+  const clientEmail = album
+    ? cookieStore.get(albumClientEmailCookieName(album.id))?.value ?? null
+    : null;
   const canViewPhotos =
     Boolean(user) || !album?.is_password_protected || hasUnlockedAlbum;
   const { data: dbPhotos } =
@@ -160,6 +167,10 @@ export default async function ClientGalleryPage({
             <input name="album_id" type="hidden" value={album.id} />
             <input name="slug" type="hidden" value={album.slug} />
             <label className="field">
+              Email
+              <input name="client_email" type="email" placeholder="you@example.com" />
+            </label>
+            <label className="field">
               Gallery password
               <input type="password" name="password" required />
             </label>
@@ -175,6 +186,7 @@ export default async function ClientGalleryPage({
           albumId={album.id}
           photos={galleryPhotos}
           zipObjectKey={zipObjectKey}
+          clientEmail={clientEmail}
         />
       ) : null}
       <div className="lightbox-grid">

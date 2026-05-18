@@ -26,6 +26,14 @@ const clientSchema = z.object({
   phone: z.string().trim().optional()
 });
 
+const clientUpdateSchema = clientSchema.extend({
+  client_id: z.string().uuid()
+});
+
+const clientIdSchema = z.object({
+  client_id: z.string().uuid()
+});
+
 const albumSchema = z.object({
   client_id: z.string().uuid().optional().or(z.literal("")),
   title: z.string().trim().min(1),
@@ -89,6 +97,56 @@ export async function createClientAction(formData: FormData) {
 
   revalidatePath("/admin");
   redirect("/admin?notice=client-created#clients");
+}
+
+export async function updateClientAction(formData: FormData) {
+  const supabase = await requireAdmin();
+  const payload = clientUpdateSchema.safeParse({
+    client_id: formData.get("client_id"),
+    name: formData.get("name"),
+    email: formData.get("email"),
+    phone: formData.get("phone")
+  });
+
+  if (!payload.success) {
+    redirect("/admin?notice=client-error#clients");
+  }
+
+  const { error } = await supabase
+    .from("clients")
+    .update({
+      name: payload.data.name,
+      email: emptyToNull(payload.data.email),
+      phone: emptyToNull(payload.data.phone)
+    })
+    .eq("id", payload.data.client_id);
+
+  if (error) {
+    redirect("/admin?notice=client-error#clients");
+  }
+
+  revalidatePath("/admin");
+  redirect("/admin?notice=client-updated#clients");
+}
+
+export async function deleteClientAction(formData: FormData) {
+  const supabase = await requireAdmin();
+  const payload = clientIdSchema.safeParse({
+    client_id: formData.get("client_id")
+  });
+
+  if (!payload.success) {
+    redirect("/admin?notice=client-error#clients");
+  }
+
+  const { error } = await supabase.from("clients").delete().eq("id", payload.data.client_id);
+
+  if (error) {
+    redirect("/admin?notice=client-error#clients");
+  }
+
+  revalidatePath("/admin");
+  redirect("/admin?notice=client-deleted#clients");
 }
 
 export async function createAlbumAction(formData: FormData) {

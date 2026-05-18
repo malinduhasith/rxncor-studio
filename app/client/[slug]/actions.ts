@@ -3,13 +3,18 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createAlbumAccessToken, albumAccessCookieName } from "@/lib/gallery-access";
+import {
+  albumAccessCookieName,
+  albumClientEmailCookieName,
+  createAlbumAccessToken
+} from "@/lib/gallery-access";
 import { verifyPassword } from "@/lib/password";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const unlockSchema = z.object({
   album_id: z.string().uuid(),
   slug: z.string().min(1),
+  client_email: z.string().trim().email().optional().or(z.literal("")),
   password: z.string().min(1)
 });
 
@@ -17,6 +22,7 @@ export async function unlockGalleryAction(formData: FormData) {
   const payload = unlockSchema.safeParse({
     album_id: formData.get("album_id"),
     slug: formData.get("slug"),
+    client_email: formData.get("client_email"),
     password: formData.get("password")
   });
 
@@ -52,6 +58,16 @@ export async function unlockGalleryAction(formData: FormData) {
       secure: process.env.NODE_ENV === "production"
     }
   );
+
+  if (payload.data.client_email) {
+    cookieStore.set(albumClientEmailCookieName(album.id), payload.data.client_email, {
+      httpOnly: true,
+      maxAge: 60 * 60 * 24 * 14,
+      path: `/client/${album.slug}`,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production"
+    });
+  }
 
   redirect(`/client/${album.slug}`);
 }

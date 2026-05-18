@@ -4,6 +4,10 @@ export function albumAccessCookieName(albumId: string) {
   return `rxncor_album_${albumId}`;
 }
 
+export function albumClientEmailCookieName(albumId: string) {
+  return `rxncor_album_email_${albumId}`;
+}
+
 export function createAlbumAccessToken(albumId: string, passwordHash: string) {
   return createHash("sha256")
     .update(`album:${albumId}:${passwordHash}`)
