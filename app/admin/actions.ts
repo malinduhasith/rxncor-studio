@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { siteConfig } from "@/config/site";
-import { hashPassword } from "@/lib/password";
+import { hashPassword, verifyPassword } from "@/lib/password";
 import { deleteR2Object, objectKeyFromPublicUrl } from "@/lib/r2";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 async function requireAdmin() {
@@ -18,7 +19,7 @@ async function requireAdmin() {
     redirect(siteConfig.routes.adminLogin);
   }
 
-  return supabase;
+  return createSupabaseAdminClient();
 }
 
 const clientSchema = z.object({
@@ -95,14 +96,6 @@ async function deleteR2Objects(keys: string[]) {
   await Promise.allSettled(keys.map((key) => deleteR2Object(key)));
 }
 
-async function updateClientPassword(
-  supabase: Awaited<ReturnType<typeof requireAdmin>>,
-  clientId: string,
-  passwordHash: string | null
-) {
-  await supabase.from("clients").update({ password_hash: passwordHash }).eq("id", clientId);
-}
-
 async function updateAlbumAccessFlags(
   supabase: Awaited<ReturnType<typeof requireAdmin>>,
   albumId: string,
@@ -145,22 +138,24 @@ export async function createClientAction(formData: FormData) {
     redirect("/admin?notice=client-error#clients");
   }
 
+  const passwordHash = rawPassword ? hashPassword(rawPassword) : null;
   const { data: client, error } = await supabase
     .from("clients")
     .insert({
       name: payload.data.name,
       email: emailToNull(payload.data.email),
-      phone: emptyToNull(payload.data.phone)
+      phone: emptyToNull(payload.data.phone),
+      password_hash: passwordHash
     })
-    .select("id")
+    .select("id, password_hash")
     .single();
 
   if (error || !client) {
     redirect("/admin?notice=client-error#clients");
   }
 
-  if (rawPassword) {
-    await updateClientPassword(supabase, client.id, hashPassword(rawPassword));
+  if (rawPassword && !verifyPassword(rawPassword, client.password_hash)) {
+    redirect("/admin?notice=client-password-error#clients");
   }
 
   revalidatePath("/admin");
@@ -182,25 +177,41 @@ export async function updateClientAction(formData: FormData) {
     redirect("/admin?notice=client-error#clients");
   }
 
-  const { error } = await supabase
-    .from("clients")
-    .update({
-      name: payload.data.name,
-      email: emailToNull(payload.data.email),
-      phone: emptyToNull(payload.data.phone)
-    })
-    .eq("id", payload.data.client_id);
+  const rawPassword = String(payload.data.password ?? "").trim();
+  const clientUpdates: {
+    name: string;
+    email: string | null;
+    phone: string | null;
+    password_hash?: string | null;
+  } = {
+    name: payload.data.name,
+    email: emailToNull(payload.data.email),
+    phone: emptyToNull(payload.data.phone)
+  };
 
-  if (error) {
+  if (rawPassword) {
+    clientUpdates.password_hash = hashPassword(rawPassword);
+  } else if (payload.data.remove_password) {
+    clientUpdates.password_hash = null;
+  }
+
+  const { data: updatedClient, error } = await supabase
+    .from("clients")
+    .update(clientUpdates)
+    .eq("id", payload.data.client_id)
+    .select("password_hash")
+    .single();
+
+  if (error || !updatedClient) {
     redirect("/admin?notice=client-error#clients");
   }
 
-  const rawPassword = String(payload.data.password ?? "").trim();
+  if (rawPassword && !verifyPassword(rawPassword, updatedClient.password_hash)) {
+    redirect("/admin?notice=client-password-error#clients");
+  }
 
-  if (rawPassword) {
-    await updateClientPassword(supabase, payload.data.client_id, hashPassword(rawPassword));
-  } else if (payload.data.remove_password) {
-    await updateClientPassword(supabase, payload.data.client_id, null);
+  if (payload.data.remove_password && updatedClient.password_hash) {
+    redirect("/admin?notice=client-password-error#clients");
   }
 
   revalidatePath("/admin");

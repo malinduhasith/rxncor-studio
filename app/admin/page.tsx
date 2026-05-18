@@ -37,10 +37,12 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 const notices: Record<string, string> = {
-  "client-created": "Client created.",
-  "client-updated": "Client updated.",
+  "client-created": "Client created. Use that exact email and client password on /login.",
+  "client-updated":
+    "Client updated. If you reset the password, use the new client password on /login.",
   "client-deleted": "Client deleted.",
   "client-error": "Client could not be created. Check the fields and try again.",
+  "client-password-error": "Client password could not be saved. Set it again and try login.",
   "album-created": "Album created.",
   "album-error": "Album could not be created. Check the slug is unique and valid.",
   "album-updated": "Album updated.",
