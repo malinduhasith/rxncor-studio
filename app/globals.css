@@ -291,6 +291,12 @@ h3 {
   line-height: 1.45;
 }
 
+.alert.success {
+  border-color: #80965f;
+  background: #f1f7eb;
+  color: #3f552f;
+}
+
 .admin-topbar {
   display: flex;
   align-items: flex-start;
@@ -312,6 +318,7 @@ h3 {
 }
 
 .field input,
+.field select,
 .field textarea {
   width: 100%;
   min-height: 44px;
@@ -320,6 +327,19 @@ h3 {
   padding: 10px 12px;
   background: var(--paper);
   color: var(--ink);
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  color: var(--muted);
+}
+
+.checkbox-field input {
+  width: 18px;
+  height: 18px;
 }
 
 .field textarea {

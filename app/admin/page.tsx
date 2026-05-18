@@ -1,18 +1,40 @@
 import { CalendarDays, ImageUp, Link as LinkIcon, LockKeyhole } from "lucide-react";
 import { redirect } from "next/navigation";
-import { signOutAction } from "./actions";
+import { createAlbumAction, createClientAction, signOutAction } from "./actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-const recentAlbums = [
-  ["Chaya Birthday", "chaya-birthday-2026", "128 photos", "Protected"],
-  ["Studio Portrait Selects", "a8f3k2x9", "42 photos", "Protected"],
-  ["Family Afternoon", "family-afternoon", "86 photos", "Public"]
-];
+const notices: Record<string, string> = {
+  "client-created": "Client created.",
+  "client-error": "Client could not be created. Check the fields and try again.",
+  "album-created": "Album created.",
+  "album-error": "Album could not be created. Check the slug is unique and valid."
+};
 
-export default async function AdminPage() {
+type ClientOption = {
+  id: string;
+  name: string;
+  email: string | null;
+};
+
+type AdminAlbum = {
+  id: string;
+  title: string;
+  slug: string;
+  is_public: boolean;
+  is_password_protected: boolean;
+};
+
+type AdminPageProps = {
+  searchParams: Promise<{
+    notice?: string;
+  }>;
+};
+
+export default async function AdminPage({ searchParams }: AdminPageProps) {
   const supabase = await createSupabaseServerClient();
+  const { notice } = await searchParams;
   const {
     data: { user }
   } = await supabase.auth.getUser();
@@ -20,6 +42,39 @@ export default async function AdminPage() {
   if (!user) {
     redirect("/login");
   }
+
+  const [
+    clientsResult,
+    albumsResult,
+    albumCountResult,
+    photoCountResult,
+    protectedAlbumCountResult,
+    downloadCountResult
+  ] = await Promise.all([
+    supabase.from("clients").select("id, name, email").order("created_at", {
+      ascending: false
+    }),
+    supabase
+      .from("albums")
+      .select("id, title, slug, is_public, is_password_protected, created_at")
+      .order("created_at", { ascending: false })
+      .limit(8),
+    supabase.from("albums").select("id", { count: "exact", head: true }),
+    supabase.from("photos").select("id", { count: "exact", head: true }),
+    supabase
+      .from("albums")
+      .select("id", { count: "exact", head: true })
+      .eq("is_password_protected", true),
+    supabase.from("download_logs").select("id", { count: "exact", head: true })
+  ]);
+
+  const clients = (clientsResult.data ?? []) as ClientOption[];
+  const albums = (albumsResult.data ?? []) as AdminAlbum[];
+  const albumCount = albumCountResult.count ?? 0;
+  const photoCount = photoCountResult.count ?? 0;
+  const protectedAlbumCount = protectedAlbumCountResult.count ?? 0;
+  const downloadCount = downloadCountResult.count ?? 0;
+  const noticeMessage = notice ? notices[notice] : undefined;
 
   return (
     <main className="shell section">
@@ -45,36 +100,37 @@ export default async function AdminPage() {
             </form>
           </div>
           <h1 style={{ fontSize: "clamp(2.6rem, 8vw, 5.8rem)" }}>Gallery control</h1>
+          {noticeMessage ? <p className="alert success">{noticeMessage}</p> : null}
 
           <div className="stat-grid">
             <div className="stat">
               <CalendarDays size={20} />
-              <strong>3</strong>
+              <strong>{albumCount}</strong>
               <span>Albums</span>
             </div>
             <div className="stat">
               <ImageUp size={20} />
-              <strong>256</strong>
+              <strong>{photoCount}</strong>
               <span>Photos</span>
             </div>
             <div className="stat">
               <LockKeyhole size={20} />
-              <strong>2</strong>
+              <strong>{protectedAlbumCount}</strong>
               <span>Protected</span>
             </div>
             <div className="stat">
               <LinkIcon size={20} />
-              <strong>5</strong>
+              <strong>{downloadCount}</strong>
               <span>Downloads</span>
             </div>
           </div>
 
           <section id="clients" className="section" style={{ padding: "28px 0" }}>
             <h2 style={{ fontSize: "2rem" }}>Create client</h2>
-            <form>
+            <form action={createClientAction}>
               <label className="field">
                 Client name
-                <input name="name" placeholder="Client name" />
+                <input name="name" placeholder="Client name" required />
               </label>
               <label className="field">
                 Email
@@ -92,18 +148,43 @@ export default async function AdminPage() {
 
           <section id="albums" className="section" style={{ padding: "28px 0" }}>
             <h2 style={{ fontSize: "2rem" }}>Create album</h2>
-            <form>
+            <form action={createAlbumAction}>
+              <label className="field">
+                Client
+                <select name="client_id" defaultValue="">
+                  <option value="">No client selected</option>
+                  {clients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.name}
+                      {client.email ? ` (${client.email})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label className="field">
                 Album title
-                <input name="title" placeholder="Chaya Birthday 2026" />
+                <input name="title" placeholder="Chaya Birthday 2026" required />
               </label>
               <label className="field">
                 Slug
-                <input name="slug" placeholder="chaya-birthday-2026 or a8f3k2x9" />
+                <input
+                  name="slug"
+                  pattern="[a-z0-9-]+"
+                  placeholder="chaya-birthday-2026 or a8f3k2x9"
+                  required
+                />
+              </label>
+              <label className="field">
+                Event date
+                <input name="event_date" type="date" />
               </label>
               <label className="field">
                 Password
                 <input name="password" type="password" />
+              </label>
+              <label className="checkbox-field">
+                <input name="is_public" type="checkbox" />
+                Public album
               </label>
               <label className="field">
                 Expiry date
@@ -136,13 +217,22 @@ export default async function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {recentAlbums.map((album) => (
-                  <tr key={album[1]}>
-                    {album.map((value) => (
-                      <td key={value}>{value}</td>
-                    ))}
+                {albums.map((album) => (
+                  <tr key={album.id}>
+                    <td>{album.title}</td>
+                    <td>{album.slug}</td>
+                    <td>Upload next</td>
+                    <td>
+                      {album.is_public ? "Public" : "Private"}
+                      {album.is_password_protected ? " + protected" : ""}
+                    </td>
                   </tr>
                 ))}
+                {!albums.length ? (
+                  <tr>
+                    <td colSpan={4}>No albums yet.</td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </section>
