@@ -40,12 +40,23 @@ export async function createUploadUrl(key: string, contentType: string) {
   return getSignedUrl(client, command, { expiresIn: 60 * 10 });
 }
 
-export async function createDownloadUrl(key: string) {
+function downloadDisposition(filename: string) {
+  const safeFilename = filename
+    .trim()
+    .replace(/[/\\"]/g, "-")
+    .replace(/[\r\n]/g, "")
+    .replace(/\s+/g, " ");
+
+  return `attachment; filename="${safeFilename || "download"}"`;
+}
+
+export async function createDownloadUrl(key: string, filename?: string) {
   const client = createR2Client();
   const r2Env = getR2Env();
   const command = new GetObjectCommand({
     Bucket: r2Env.bucket,
-    Key: key
+    Key: key,
+    ResponseContentDisposition: filename ? downloadDisposition(filename) : undefined
   });
 
   return getSignedUrl(client, command, { expiresIn: 60 * 15 });

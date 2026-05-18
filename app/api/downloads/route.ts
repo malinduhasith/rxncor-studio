@@ -49,23 +49,26 @@ export async function POST(request: Request) {
   }
 
   let verifiedObjectKey: string | null = null;
+  let downloadFilename = "download";
 
   if (payload.photo_id) {
     const { data: photo } = await supabase
       .from("photos")
-      .select("id, album_id, r2_object_key")
+      .select("id, album_id, filename, r2_object_key")
       .eq("id", payload.photo_id)
       .eq("album_id", payload.album_id)
       .maybeSingle();
 
     if (photo?.r2_object_key === payload.r2_object_key) {
       verifiedObjectKey = photo.r2_object_key;
+      downloadFilename = photo.filename;
     }
   } else if (album.download_zip_url) {
     const zipObjectKey = objectKeyFromPublicUrl(album.download_zip_url);
 
     if (zipObjectKey === payload.r2_object_key) {
       verifiedObjectKey = zipObjectKey;
+      downloadFilename = zipObjectKey.split("/").pop() ?? "album.zip";
     }
   }
 
@@ -91,7 +94,7 @@ export async function POST(request: Request) {
     ip_address: ipAddress
   });
 
-  const url = await createDownloadUrl(verifiedObjectKey);
+  const url = await createDownloadUrl(verifiedObjectKey, downloadFilename);
 
   return NextResponse.json({ url });
 }
