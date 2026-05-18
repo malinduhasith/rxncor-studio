@@ -55,3 +55,12 @@ export function publicR2Url(key: string) {
 
   return `${r2Env.publicBaseUrl.replace(/\/$/, "")}/${key}`;
 }
+
+export function objectKeyFromPublicUrl(url: string) {
+  try {
+    const parsedUrl = new URL(url);
+    return decodeURIComponent(parsedUrl.pathname.replace(/^\/+/, ""));
+  } catch {
+    return url.replace(/^\/+/, "");
+  }
+}

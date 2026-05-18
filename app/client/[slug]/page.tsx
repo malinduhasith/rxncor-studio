@@ -2,6 +2,7 @@ import { Download, LockKeyhole } from "lucide-react";
 import { notFound } from "next/navigation";
 import { featuredAlbums } from "@/lib/sample-data";
 import { PhotoTile } from "@/components/PhotoTile";
+import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -24,6 +25,12 @@ type GalleryPhoto = {
   thumbnail_url: string;
   preview_url: string;
   full_res_url: string;
+  r2_object_key: string;
+};
+
+type DisplayPhoto = GalleryPhoto & {
+  thumbnailDisplayUrl: string;
+  previewDisplayUrl: string;
 };
 
 type ClientGalleryPageProps = {
@@ -63,13 +70,27 @@ export default async function ClientGalleryPage({ params }: ClientGalleryPagePro
     album && canViewPhotos
       ? await supabase
           .from("photos")
-          .select("id, filename, thumbnail_url, preview_url, full_res_url")
+          .select(
+            "id, filename, thumbnail_url, preview_url, full_res_url, r2_object_key"
+          )
           .eq("album_id", album.id)
           .order("uploaded_at", { ascending: true })
       : { data: [] };
   const photos = (dbPhotos ?? []) as GalleryPhoto[];
+  const displayPhotos: DisplayPhoto[] = await Promise.all(
+    photos.map(async (photo) => {
+      const thumbnailKey = objectKeyFromPublicUrl(photo.thumbnail_url);
+      const previewKey = objectKeyFromPublicUrl(photo.preview_url);
+
+      return {
+        ...photo,
+        thumbnailDisplayUrl: await createDownloadUrl(thumbnailKey),
+        previewDisplayUrl: await createDownloadUrl(previewKey)
+      };
+    })
+  );
   const title = album?.title ?? fallbackAlbum?.title ?? "";
-  const photoCount = album ? photos.length : fallbackAlbum?.count ?? 0;
+  const photoCount = album ? displayPhotos.length : fallbackAlbum?.count ?? 0;
   const isProtected = Boolean(album?.is_password_protected);
 
   return (
@@ -121,10 +142,14 @@ export default async function ClientGalleryPage({ params }: ClientGalleryPagePro
       ) : null}
 
       <div className="lightbox-grid">
-        {photos.map((photo) => (
-          <a className="photo-tile" href={photo.preview_url} key={photo.id}>
+        {displayPhotos.map((photo) => (
+          <a className="photo-tile" href={photo.previewDisplayUrl} key={photo.id}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="photo-img" src={photo.thumbnail_url} alt={photo.filename} />
+            <img
+              className="photo-img"
+              src={photo.thumbnailDisplayUrl}
+              alt={photo.filename}
+            />
             <div className="tile-caption">
               <strong>{photo.filename}</strong>
               <span>Open</span>
