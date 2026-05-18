@@ -55,7 +55,7 @@ export async function unlockGalleryAction(formData: FormData) {
     .maybeSingle();
   const unlockAlbum = album as UnlockAlbum | null;
   const email = String(payload.data.client_email ?? "").trim().toLowerCase();
-  const password = String(payload.data.password ?? "");
+  const password = String(payload.data.password ?? "").trim();
   let accessToken: string | null = null;
 
   if (!unlockAlbum) {

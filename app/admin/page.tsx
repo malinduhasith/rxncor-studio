@@ -919,6 +919,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <div className="client-card" key={client.id}>
                   <form action={updateClientAction} className="client-edit-row">
                     <input name="client_id" type="hidden" value={client.id} />
+                    <div>
+                      <span className="label">Client login</span>
+                      <strong>{client.password_hash ? "Password set" : "No password"}</strong>
+                    </div>
                     <label className="field">
                       Name
                       <input name="name" defaultValue={client.name} required />

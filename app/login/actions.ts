@@ -18,25 +18,39 @@ type LoginClient = {
 
 export async function clientLoginAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const password = String(formData.get("password") ?? "");
+  const password = String(formData.get("password") ?? "").trim();
 
   if (!email || !password) {
     redirect(`${siteConfig.routes.login}?error=missing`);
   }
 
   const supabase = createSupabaseAdminClient();
-  const { data: client } = await supabase
+  const { data: clients, error } = await supabase
     .from("clients")
-    .select("*")
+    .select("id, email, password_hash")
     .ilike("email", email)
-    .maybeSingle();
-  const loginClient = client as LoginClient | null;
+    .limit(2);
+  const matchingClients = (clients ?? []) as LoginClient[];
+  const loginClient = matchingClients[0] ?? null;
 
-  if (
-    !loginClient?.password_hash ||
-    !verifyPassword(password, loginClient.password_hash)
-  ) {
-    redirect(`${siteConfig.routes.login}?error=invalid`);
+  if (error) {
+    redirect(`${siteConfig.routes.login}?error=lookup`);
+  }
+
+  if (!loginClient) {
+    redirect(`${siteConfig.routes.login}?error=no-client`);
+  }
+
+  if (matchingClients.length > 1) {
+    redirect(`${siteConfig.routes.login}?error=duplicate-client`);
+  }
+
+  if (!loginClient.password_hash) {
+    redirect(`${siteConfig.routes.login}?error=no-password`);
+  }
+
+  if (!verifyPassword(password, loginClient.password_hash)) {
+    redirect(`${siteConfig.routes.login}?error=wrong-password`);
   }
 
   const cookieStore = await cookies();

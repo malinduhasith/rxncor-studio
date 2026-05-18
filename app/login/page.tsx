@@ -8,8 +8,14 @@ type LoginPageProps = {
 };
 
 const errorMessages: Record<string, string> = {
+  "duplicate-client":
+    "More than one client uses this email. Open the admin panel and remove or edit the duplicate client.",
   invalid: "The email or password did not match a client profile.",
+  lookup: "Client login could not be checked right now. Try again in a moment.",
   missing: "Enter both email and password.",
+  "no-client": "No client profile was found for that email address.",
+  "no-password": "This client does not have a client login password set yet.",
+  "wrong-password": "That password does not match this client profile.",
   session: "Sign in again to view your albums."
 };
 
