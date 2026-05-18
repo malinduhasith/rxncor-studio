@@ -133,7 +133,7 @@ export async function unlockGalleryAction(formData: FormData) {
   cookieStore.set(albumAccessCookieName(unlockAlbum.id), accessToken, {
     httpOnly: true,
     maxAge: 60 * 60 * 24 * 14,
-    path: `/client/${unlockAlbum.slug}`,
+    path: "/",
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production"
   });
@@ -142,7 +142,7 @@ export async function unlockGalleryAction(formData: FormData) {
     cookieStore.set(albumClientEmailCookieName(unlockAlbum.id), email, {
       httpOnly: true,
       maxAge: 60 * 60 * 24 * 14,
-      path: `/client/${unlockAlbum.slug}`,
+      path: "/",
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production"
     });

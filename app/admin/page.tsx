@@ -42,6 +42,7 @@ const notices: Record<string, string> = {
     "Client updated. If you reset the password, use the new client password on /login.",
   "client-deleted": "Client deleted.",
   "client-error": "Client could not be created. Check the fields and try again.",
+  "client-duplicate-email": "Another client already uses that email address.",
   "client-password-error": "Client password could not be saved. Set it again and try login.",
   "album-created": "Album created.",
   "album-error": "Album could not be created. Check the slug is unique and valid.",

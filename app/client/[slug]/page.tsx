@@ -6,14 +6,9 @@ import { featuredAlbums } from "@/lib/sample-data";
 import { GalleryLightbox, type GalleryDisplayPhoto } from "@/components/gallery/GalleryLightbox";
 import { PhotoTile } from "@/components/PhotoTile";
 import {
-  albumAccessCookieName,
-  albumClientEmailCookieName,
-  createAlbumAccessToken,
-  createClientSessionToken,
-  createEmailAccessToken,
-  clientSessionCookieName,
-  parseClientSessionCookie
-} from "@/lib/gallery-access";
+  albumRequiresUnlock,
+  getGalleryAccessForCookies
+} from "@/lib/gallery-security";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -32,13 +27,6 @@ type GalleryAlbum = {
   allow_client_password_access?: boolean;
   expires_at: string | null;
   download_zip_url: string | null;
-};
-
-type GalleryClient = {
-  id: string;
-  name: string;
-  email: string | null;
-  password_hash?: string | null;
 };
 
 type GalleryPhoto = {
@@ -92,85 +80,17 @@ export default async function ClientGalleryPage({
   }
 
   const cookieStore = await cookies();
-  const clientEmail = album
-    ? cookieStore.get(albumClientEmailCookieName(album.id))?.value ?? null
-    : null;
-  const accessCookie = album
-    ? cookieStore.get(albumAccessCookieName(album.id))?.value
-    : undefined;
-  const clientSession = parseClientSessionCookie(
-    cookieStore.get(clientSessionCookieName())?.value
-  );
-  let hasUnlockedAlbum = false;
-  let portalClientEmail: string | null = null;
-
-  if (album && accessCookie) {
-    const possibleTokens = [
-      album.password_hash ? createAlbumAccessToken(album.id, album.password_hash) : null,
-      clientEmail && album.requires_email
-        ? createEmailAccessToken(album.id, clientEmail)
-        : null
-    ];
-
-    if (clientEmail && album.allow_client_password_access !== false) {
-      const { data: assignments } = await supabase
-        .from("album_clients")
-        .select("client_id")
-        .eq("album_id", album.id);
-      const assignedClientIds = (assignments ?? []).map((row) => row.client_id);
-      const { data: client } = assignedClientIds.length
-        ? await supabase
-            .from("clients")
-            .select("*")
-            .in("id", assignedClientIds)
-            .ilike("email", clientEmail)
-            .maybeSingle()
-        : { data: null };
-      const galleryClient = client as GalleryClient | null;
-
-      if (galleryClient?.password_hash) {
-        possibleTokens.push(
-          createAlbumAccessToken(
-            album.id,
-            `client:${galleryClient.id}:${galleryClient.password_hash}`
-          )
-        );
-      }
-    }
-
-    hasUnlockedAlbum = possibleTokens.includes(accessCookie);
-  }
-
-  if (album && clientSession && !hasUnlockedAlbum) {
-    const { data: client } = await supabase
-      .from("clients")
-      .select("*")
-      .eq("id", clientSession.clientId)
-      .maybeSingle();
-    const galleryClient = client as GalleryClient | null;
-
-    if (
-      galleryClient?.password_hash &&
-      clientSession.token ===
-        createClientSessionToken(galleryClient.id, galleryClient.password_hash)
-    ) {
-      const { data: assignment } = await supabase
-        .from("album_clients")
-        .select("album_id")
-        .eq("album_id", album.id)
-        .eq("client_id", galleryClient.id)
-        .maybeSingle();
-
-      if (assignment) {
-        hasUnlockedAlbum = true;
-        portalClientEmail = galleryClient.email;
-      }
-    }
-  }
-
-  const requiresUnlock = Boolean(album?.is_password_protected || album?.requires_email);
+  const galleryAccess = album
+    ? await getGalleryAccessForCookies({
+        supabase,
+        album,
+        cookieStore,
+        adminBypass: Boolean(user)
+      })
+    : { canAccess: false, clientEmail: null };
+  const requiresUnlock = album ? albumRequiresUnlock(album) : false;
   const canViewPhotos =
-    Boolean(user) || !requiresUnlock || hasUnlockedAlbum;
+    Boolean(user) || !requiresUnlock || galleryAccess.canAccess;
   const { data: dbPhotos } =
     album && canViewPhotos
       ? await supabase
@@ -293,7 +213,7 @@ export default async function ClientGalleryPage({
           albumId={album.id}
           photos={galleryPhotos}
           zipObjectKey={zipObjectKey}
-          clientEmail={clientEmail ?? portalClientEmail}
+          clientEmail={galleryAccess.clientEmail}
         />
       ) : null}
       <div className="lightbox-grid">

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getVerifiedAdminApiClient } from "@/lib/api-auth";
+import { objectKeyFromPublicUrl } from "@/lib/r2";
 
 const photoSchema = z.object({
   album_id: z.string().uuid(),
@@ -12,14 +13,39 @@ const photoSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const payload = photoSchema.parse(await request.json());
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  const parsed = photoSchema.safeParse(await request.json().catch(() => null));
 
-  if (!user) {
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid photo request" }, { status: 400 });
+  }
+
+  const payload = parsed.data;
+  const supabase = await getVerifiedAdminApiClient();
+
+  if (!supabase) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { data: album } = await supabase
+    .from("albums")
+    .select("id, slug, cover_photo_url")
+    .eq("id", payload.album_id)
+    .maybeSingle();
+
+  if (!album) {
+    return NextResponse.json({ error: "Album not found" }, { status: 404 });
+  }
+
+  const albumPrefix = `albums/${album.slug}/`;
+  const uploadKeys = [
+    objectKeyFromPublicUrl(payload.thumbnail_url),
+    objectKeyFromPublicUrl(payload.preview_url),
+    objectKeyFromPublicUrl(payload.full_res_url),
+    payload.r2_object_key
+  ];
+
+  if (!uploadKeys.every((key) => key.startsWith(albumPrefix))) {
+    return NextResponse.json({ error: "Photo files do not match album" }, { status: 400 });
   }
 
   const { data: photo, error } = await supabase
@@ -32,13 +58,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  const { data: album } = await supabase
-    .from("albums")
-    .select("cover_photo_url")
-    .eq("id", payload.album_id)
-    .single();
-
-  if (album && !album.cover_photo_url) {
+  if (!album.cover_photo_url) {
     await supabase
       .from("albums")
       .update({ cover_photo_url: payload.preview_url })

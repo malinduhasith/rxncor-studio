@@ -55,9 +55,13 @@ create table if not exists public.download_logs (
 );
 
 create index if not exists albums_slug_idx on public.albums(slug);
+create unique index if not exists clients_email_lower_unique_idx
+  on public.clients (lower(email))
+  where email is not null;
 create index if not exists album_clients_album_id_idx on public.album_clients(album_id);
 create index if not exists album_clients_client_id_idx on public.album_clients(client_id);
 create index if not exists photos_album_id_idx on public.photos(album_id);
+create index if not exists download_logs_photo_id_idx on public.download_logs(photo_id);
 create index if not exists download_logs_album_id_idx on public.download_logs(album_id);
 
 alter table public.clients enable row level security;

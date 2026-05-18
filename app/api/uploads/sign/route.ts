@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getVerifiedAdminApiClient } from "@/lib/api-auth";
 import { albumObjectKey, createUploadUrl, publicR2Url } from "@/lib/r2";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const uploadSchema = z.object({
   albumId: z.string().uuid(),
@@ -20,15 +20,38 @@ function safeFilename(filename: string) {
   return cleaned || `upload-${Date.now()}`;
 }
 
-export async function POST(request: Request) {
-  const payload = uploadSchema.parse(await request.json());
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+function allowedContentType(kind: z.infer<typeof uploadSchema>["kind"], contentType: string) {
+  const normalized = contentType.toLowerCase();
 
-  if (!user) {
+  if (kind === "zip") {
+    return ["application/zip", "application/x-zip-compressed", "application/octet-stream"].includes(
+      normalized
+    );
+  }
+
+  if (kind === "full") {
+    return ["image/jpeg", "image/jpg", "image/webp", "image/png"].includes(normalized);
+  }
+
+  return ["image/webp", "image/jpeg", "image/jpg", "image/png"].includes(normalized);
+}
+
+export async function POST(request: Request) {
+  const parsed = uploadSchema.safeParse(await request.json().catch(() => null));
+
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid upload request" }, { status: 400 });
+  }
+
+  const payload = parsed.data;
+  const supabase = await getVerifiedAdminApiClient();
+
+  if (!supabase) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!allowedContentType(payload.kind, payload.contentType)) {
+    return NextResponse.json({ error: "File type is not allowed" }, { status: 400 });
   }
 
   const { data: album, error: albumError } = await supabase

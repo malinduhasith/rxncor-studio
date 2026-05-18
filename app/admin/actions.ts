@@ -72,7 +72,7 @@ function emptyToNull(value: string | undefined) {
 }
 
 function emailToNull(value: string | undefined) {
-  return value ? value.toLowerCase() : null;
+  return value ? value.trim().toLowerCase() : null;
 }
 
 function uniqueKeys(values: Array<string | null | undefined>) {
@@ -124,6 +124,30 @@ async function syncAlbumClients(
   }
 }
 
+async function clientEmailExists(
+  supabase: Awaited<ReturnType<typeof requireAdmin>>,
+  email: string | null,
+  exceptClientId?: string
+) {
+  if (!email) {
+    return false;
+  }
+
+  let query = supabase.from("clients").select("id").ilike("email", email).limit(1);
+
+  if (exceptClientId) {
+    query = query.neq("id", exceptClientId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    return true;
+  }
+
+  return Boolean(data?.length);
+}
+
 export async function createClientAction(formData: FormData) {
   const supabase = await requireAdmin();
   const rawPassword = String(formData.get("password") ?? "").trim();
@@ -138,12 +162,18 @@ export async function createClientAction(formData: FormData) {
     redirect("/admin?notice=client-error#clients");
   }
 
+  const email = emailToNull(payload.data.email);
+
+  if (await clientEmailExists(supabase, email)) {
+    redirect("/admin?notice=client-duplicate-email#clients");
+  }
+
   const passwordHash = rawPassword ? hashPassword(rawPassword) : null;
   const { data: client, error } = await supabase
     .from("clients")
     .insert({
       name: payload.data.name,
-      email: emailToNull(payload.data.email),
+      email,
       phone: emptyToNull(payload.data.phone),
       password_hash: passwordHash
     })
@@ -178,6 +208,12 @@ export async function updateClientAction(formData: FormData) {
   }
 
   const rawPassword = String(payload.data.password ?? "").trim();
+  const email = emailToNull(payload.data.email);
+
+  if (await clientEmailExists(supabase, email, payload.data.client_id)) {
+    redirect("/admin?notice=client-duplicate-email#clients");
+  }
+
   const clientUpdates: {
     name: string;
     email: string | null;
@@ -185,7 +221,7 @@ export async function updateClientAction(formData: FormData) {
     password_hash?: string | null;
   } = {
     name: payload.data.name,
-    email: emailToNull(payload.data.email),
+    email,
     phone: emptyToNull(payload.data.phone)
   };
 
@@ -240,7 +276,7 @@ export async function deleteClientAction(formData: FormData) {
 
 export async function createAlbumAction(formData: FormData) {
   const supabase = await requireAdmin();
-  const rawPassword = String(formData.get("password") ?? "");
+  const rawPassword = String(formData.get("password") ?? "").trim();
   const payload = albumSchema.safeParse({
     client_id: formData.get("client_id"),
     title: formData.get("title"),
