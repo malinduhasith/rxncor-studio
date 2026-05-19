@@ -145,9 +145,10 @@ export default async function AboutPage() {
         </div>
         <div className="about-statement-grid">
           {aboutValues.map((value, index) => (
-            <article className="about-statement" key={value}>
+            <article className="about-statement" key={value.line}>
               <span>{String(index + 1).padStart(2, "0")}</span>
-              <strong>{value}</strong>
+              <strong>{value.line}</strong>
+              <small>{value.reference}</small>
             </article>
           ))}
         </div>

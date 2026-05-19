@@ -269,7 +269,7 @@ h3 {
 }
 
 .about-hero::before {
-  content: "RXNCOR / PERSON / SYSTEM / IMAGE";
+  content: "look first\Ahold lightly\Abuild clean\Aleave room";
   position: absolute;
   right: -6%;
   top: 42px;
@@ -279,6 +279,7 @@ h3 {
   font-size: 6.2rem;
   font-weight: 900;
   line-height: 0.82;
+  white-space: pre-line;
   pointer-events: none;
 }
 
@@ -495,6 +496,17 @@ h3 {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.4rem;
   line-height: 1;
+}
+
+.about-statement small {
+  display: block;
+  margin-top: 18px;
+  color: var(--accent-strong);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1.35;
+  text-transform: uppercase;
 }
 
 .about-timeline-section .section-head {

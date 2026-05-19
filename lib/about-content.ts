@@ -60,12 +60,30 @@ export const aboutSections = [
 ];
 
 export const aboutValues = [
-  "Observe first",
-  "Build with intention",
-  "Let the image breathe",
-  "Keep the human feeling",
-  "Make systems feel simple",
-  "Keep learning in public"
+  {
+    line: "Look first. Let the frame answer before I do.",
+    reference: "Street / documentary observation"
+  },
+  {
+    line: "Hold it lightly. Nothing needs to become a cage.",
+    reference: "Secular Buddhism / non-attachment"
+  },
+  {
+    line: "If life is strange, let the image admit it.",
+    reference: "Absurdism / Camus"
+  },
+  {
+    line: "Leave some air around the person. The quiet part matters.",
+    reference: "Portraiture / human presence"
+  },
+  {
+    line: "Build the boring parts well, so the work can move.",
+    reference: "Systems thinking / delivery"
+  },
+  {
+    line: "Do not polish the life out of it.",
+    reference: "Wabi-sabi / imperfect beauty"
+  }
 ];
 
 export const aboutTimeline = [
