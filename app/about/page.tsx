@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
+  aboutBrandNote,
   aboutProfile,
   aboutSections,
   aboutTechStack,
@@ -119,16 +120,12 @@ export default async function AboutPage() {
       </section>
 
       <section className="shell section">
-        <div className="section-head numbered" data-index="04">
+        <div className="section-head numbered" data-index="RXNCOR">
           <div>
-            <p className="eyebrow">Approach</p>
-            <h2>Small rules for making things.</h2>
+            <p className="eyebrow">{aboutBrandNote.label}</p>
+            <h2>{aboutBrandNote.title}</h2>
           </div>
-          <p>
-            A simple set of reminders I come back to while making photographs,
-            interfaces, client galleries, automations, and the quiet details
-            between them.
-          </p>
+          <p>{aboutBrandNote.body}</p>
         </div>
         <div className="about-statement-grid">
           {aboutValues.map((value, index) => (
@@ -142,7 +139,7 @@ export default async function AboutPage() {
 
       <section className="section alt">
         <div className="shell about-timeline-section">
-          <div className="section-head numbered" data-index="05">
+          <div className="section-head numbered" data-index="PATH">
             <div>
               <p className="eyebrow">Background</p>
               <h2>A work in progress through media, software, and Melbourne light.</h2>
