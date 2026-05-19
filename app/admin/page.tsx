@@ -651,7 +651,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </button>
             </form>
           </div>
-          <h1 style={{ fontSize: "clamp(2.6rem, 8vw, 5.8rem)" }}>Gallery control</h1>
+          <h1 className="admin-title">Gallery control</h1>
           {noticeMessage ? <p className="alert success">{noticeMessage}</p> : null}
 
           <div className="stat-grid">
@@ -1210,7 +1210,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </section>
 
           <section id="clients" className="admin-section">
-            <h2 style={{ fontSize: "2rem" }}>Create client</h2>
+            <h2 className="section-title">Create client</h2>
             <form action={createClientAction}>
               <label className="field">
                 Client name
@@ -1293,7 +1293,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </section>
 
           <section id="albums" className="admin-section">
-            <h2 style={{ fontSize: "2rem" }}>Create album</h2>
+            <h2 className="section-title">Create album</h2>
             <form action={createAlbumAction}>
               <label className="field">
                 Client
@@ -1369,15 +1369,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </section>
 
           <section id="uploads" className="admin-section">
-            <h2 style={{ fontSize: "2rem" }}>Upload workflow</h2>
+            <h2 className="section-title">Upload workflow</h2>
             <h3>Photos</h3>
             <AdminPhotoUpload albums={albums} />
-            <h3 style={{ marginTop: 30 }}>Full album ZIP</h3>
+            <h3 className="subsection-title">Full album ZIP</h3>
             <AdminZipUpload albums={albums} />
           </section>
 
           <section id="delivery" className="admin-section">
-            <h2 style={{ fontSize: "2rem" }}>Delivery overview</h2>
+            <h2 className="section-title">Delivery overview</h2>
             <div className="table-wrap">
               <table className="table">
                 <thead>
@@ -1423,7 +1423,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <section id="logs" className="admin-section">
             <div className="panel-title-row">
               <div>
-                <h2 style={{ fontSize: "2rem" }}>Download logs</h2>
+                <h2 className="section-title">Download logs</h2>
                 <p className="muted">
                   Latest downloads from client galleries. Private galleries can capture
                   client email during unlock.
@@ -1469,7 +1469,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <section id="shoot-requests" className="admin-section">
             <div className="panel-title-row">
               <div>
-                <h2 style={{ fontSize: "2rem" }}>Shoot requests</h2>
+                <h2 className="section-title">Shoot requests</h2>
                 <p className="muted">
                   Review client shoot requests, adjust timing, accept work, and create
                   client/gallery records when needed.
@@ -1624,7 +1624,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <section id="inquiries" className="admin-section">
             <div className="panel-title-row">
               <div>
-                <h2 style={{ fontSize: "2rem" }}>Booking inquiries</h2>
+                <h2 className="section-title">Booking inquiries</h2>
                 <p className="muted">
                   Messages from the homepage contact form. Reply from your email,
                   then update the status here.
@@ -1690,7 +1690,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <section id="backups" className="admin-section">
             <div className="panel-title-row">
               <div>
-                <h2 style={{ fontSize: "2rem" }}>Backup checklist</h2>
+                <h2 className="section-title">Backup checklist</h2>
                 <p className="muted">
                   R2 is delivery storage. Keep Lightroom/Capture One exports and
                   delivered ZIP files somewhere you control.

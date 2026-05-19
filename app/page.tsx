@@ -59,14 +59,14 @@ export default async function Home({ searchParams }: HomePageProps) {
   return (
     <main>
       <section className="shell hero">
-        <div>
+        <div className="hero-copy">
           <p className="eyebrow">Melbourne photography and client delivery</p>
           <h1>{siteConfig.name}</h1>
           <p className="lede">
             Public portfolio, curated featured albums, and private client galleries
             with password-protected delivery and download-ready photo sets.
           </p>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 28 }}>
+          <div className="hero-actions">
             <Link className="button" href={siteConfig.routes.portfolio}>
               View Portfolio
             </Link>
@@ -81,13 +81,23 @@ export default async function Home({ searchParams }: HomePageProps) {
         <div className="hero-media" aria-label="Featured photography artwork">
           {heroImage ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img className="photo-img" src={heroImage} alt="Featured photography" />
+            <img
+              className="photo-img"
+              src={heroImage}
+              alt="Featured photography"
+              loading="eager"
+              decoding="async"
+            />
           ) : null}
+          <div className="hero-stamp" aria-hidden="true">
+            <span>RX</span>
+            <span>Archive ready</span>
+          </div>
         </div>
       </section>
 
       <section className="section alt" id="about">
-        <div className="shell section-head">
+        <div className="shell section-head numbered" data-index="01">
           <div>
             <p className="eyebrow">About</p>
             <h2>Made for polished galleries, bookings, and clean client access.</h2>
@@ -101,7 +111,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       </section>
 
       <section className="shell section">
-        <div className="section-head">
+        <div className="section-head numbered" data-index="02">
           <div>
             <p className="eyebrow">Portfolio</p>
             <h2>Recent work</h2>
@@ -115,7 +125,7 @@ export default async function Home({ searchParams }: HomePageProps) {
 
       <section className="section alt">
         <div className="shell">
-          <div className="section-head">
+          <div className="section-head numbered" data-index="03">
             <div>
               <p className="eyebrow">Featured Albums</p>
               <h2>Client-ready collections</h2>
@@ -129,7 +139,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       </section>
 
       <section className="shell section" id="book">
-        <div className="section-head">
+        <div className="section-head numbered" data-index="04">
           <div>
             <p className="eyebrow">Book</p>
             <h2>Request a shoot</h2>

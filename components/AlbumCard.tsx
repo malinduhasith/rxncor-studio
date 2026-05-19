@@ -22,7 +22,13 @@ export function AlbumCard({
     <Link className="album-card" href={`/client/${slug}`}>
       {coverUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img className="photo-img" src={coverUrl} alt={title} />
+        <img
+          className="photo-img"
+          src={coverUrl}
+          alt={title}
+          loading="lazy"
+          decoding="async"
+        />
       ) : (
         <div
           className="photo-fill"
@@ -34,10 +40,14 @@ export function AlbumCard({
           }
         />
       )}
+      <div className="album-card-top">
+        <span>Archive</span>
+        <span>{date}</span>
+      </div>
       <div className="album-meta">
-        <p className="eyebrow">{date}</p>
+        <p className="eyebrow">Client project</p>
         <h3>{title}</h3>
-        <p>{count} photos</p>
+        <p>{count} photos · private delivery ready</p>
       </div>
     </Link>
   );

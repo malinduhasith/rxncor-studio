@@ -82,9 +82,7 @@ export default async function ClientGalleryPage({
       <main className="shell section">
         <div className="form-panel">
           <p className="eyebrow">Gallery Expired</p>
-          <h1 style={{ fontSize: "clamp(2.6rem, 8vw, 5.8rem)" }}>
-            {album.title}
-          </h1>
+          <h1 className="page-title">{album.title}</h1>
           <p className="form-note">
             This gallery expired on {album.expires_at.slice(0, 10)}. Contact
             rxncor.studio if you need the gallery reopened or the ZIP resent.
@@ -165,17 +163,17 @@ export default async function ClientGalleryPage({
   }));
 
   return (
-    <main className="shell section">
+    <main className="shell section gallery-page">
       <div className="gallery-bar">
         <div>
           <p className="eyebrow">{galleryLabel}</p>
-          <h1 style={{ fontSize: "clamp(2.8rem, 8vw, 6rem)" }}>{title}</h1>
+          <h1 className="page-title gallery-title">{title}</h1>
           <p className="muted">
             {photoSummary}
             {album?.event_date ? ` · ${album.event_date}` : ""}
           </p>
         </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div className="gallery-inline-actions">
           {isProtected ? (
             <button className="button secondary" type="button">
               <LockKeyhole size={18} />
@@ -185,9 +183,33 @@ export default async function ClientGalleryPage({
         </div>
       </div>
 
+      {album && canViewPhotos && displayPhotos.length ? (
+        <section className="album-hero-collage" aria-label="Album preview collage">
+          <div className="collage-copy">
+            <span className="label">Album view</span>
+            <p>
+              Browse previews, open the lightbox, download selected frames, or
+              collect the delivered ZIP when it is attached.
+            </p>
+          </div>
+          <div className="collage-stack">
+            {displayPhotos.slice(0, 5).map((photo, index) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={photo.id}
+                src={photo.previewDisplayUrl}
+                alt={`${title} preview ${index + 1}`}
+                loading={index === 0 ? "eager" : "lazy"}
+                decoding="async"
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {album && isProtected && !canViewPhotos ? (
-        <section className="gallery-gate" style={{ marginBottom: 26 }}>
-          <h2 style={{ fontSize: "1.7rem" }}>Password protection</h2>
+        <section className="gallery-gate">
+          <h2 className="gate-title">Password protection</h2>
           <p className="form-note">
             {album?.is_password_protected
               ? "Enter the album password, or use your client email and personal client password if one was assigned."

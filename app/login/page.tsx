@@ -33,7 +33,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     <main className="shell section">
       <div className="form-panel">
         <p className="eyebrow">Client Login</p>
-        <h1 style={{ fontSize: "clamp(2.4rem, 7vw, 4.5rem)" }}>Your galleries</h1>
+        <h1 className="panel-title">Your galleries</h1>
         <p className="form-note">
           Sign in with the client email and password provided by rxncor.studio.
         </p>

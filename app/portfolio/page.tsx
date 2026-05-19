@@ -21,18 +21,18 @@ export default async function PortfolioPage() {
   ));
 
   return (
-    <main className="shell section">
-      <div className="section-head">
+    <main className="shell section editorial-page">
+      <div className="section-head numbered" data-index="01">
         <div>
           <p className="eyebrow">Portfolio</p>
-          <h1 style={{ fontSize: "clamp(3rem, 9vw, 7rem)" }}>Selected work</h1>
+          <h1 className="page-title">Selected work</h1>
         </div>
         <p>
           A rotating selection from public client albums and featured studio work.
         </p>
       </div>
       {portfolioTiles.length ? (
-        <div className="grid">{portfolioTiles}</div>
+        <div className="grid portfolio-gallery-grid">{portfolioTiles}</div>
       ) : (
         <div className="form-panel">
           <p className="eyebrow">Portfolio Empty</p>

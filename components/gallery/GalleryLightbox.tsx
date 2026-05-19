@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, X } from "lucide-react";
 
 export type GalleryDisplayPhoto = {
   id: string;
@@ -104,6 +104,16 @@ export function GalleryLightbox({
     }
   }
 
+  function previousPhoto() {
+    setSelectedIndex((current) => (current === null ? current : Math.max(current - 1, 0)));
+  }
+
+  function nextPhoto() {
+    setSelectedIndex((current) =>
+      current === null ? current : Math.min(current + 1, photos.length - 1)
+    );
+  }
+
   return (
     <>
       <div className="gallery-actions">
@@ -122,11 +132,20 @@ export function GalleryLightbox({
             type="button"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="photo-img" src={photo.thumbnailDisplayUrl} alt={photo.filename} />
+            <img
+              className="photo-img"
+              src={photo.thumbnailDisplayUrl}
+              alt={photo.filename}
+              loading="lazy"
+              decoding="async"
+            />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className="watermark watermark-logo" src="/sig.png" alt="" aria-hidden="true" />
             <div className="tile-caption">
-              <strong>{photo.filename}</strong>
+              <span>
+                <small>Delivered image</small>
+                <strong>{photo.filename}</strong>
+              </span>
               <span>Open</span>
             </div>
           </button>
@@ -135,8 +154,29 @@ export function GalleryLightbox({
       {selectedPhoto ? (
         <div className="lightbox-modal" role="dialog" aria-modal="true">
           <div className="lightbox-toolbar">
-            <strong>{selectedPhoto.filename}</strong>
+            <div>
+              <span className="label">Preview</span>
+              <strong>{selectedPhoto.filename}</strong>
+            </div>
             <div className="lightbox-toolbar-actions">
+              <button
+                className="icon-button"
+                onClick={previousPhoto}
+                type="button"
+                aria-label="Previous image"
+                disabled={selectedIndex === 0}
+              >
+                <ChevronLeft size={22} />
+              </button>
+              <button
+                className="icon-button"
+                onClick={nextPhoto}
+                type="button"
+                aria-label="Next image"
+                disabled={selectedIndex === photos.length - 1}
+              >
+                <ChevronRight size={22} />
+              </button>
               <button
                 className="button secondary"
                 onClick={() => downloadPhoto(selectedPhoto)}
@@ -160,6 +200,7 @@ export function GalleryLightbox({
             className="lightbox-image"
             src={selectedPhoto.previewDisplayUrl}
             alt={selectedPhoto.filename}
+            decoding="async"
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

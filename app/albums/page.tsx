@@ -21,18 +21,18 @@ export default async function AlbumsPage() {
   const publicAlbums = await getPublicAlbumCards();
 
   return (
-    <main className="shell section">
-      <div className="section-head">
+    <main className="shell section editorial-page">
+      <div className="section-head numbered" data-index="01">
         <div>
           <p className="eyebrow">Featured Albums</p>
-          <h1 style={{ fontSize: "clamp(3rem, 9vw, 7rem)" }}>Public albums</h1>
+          <h1 className="page-title">Public albums</h1>
         </div>
         <p>
           Public albums can be shown here. Private albums should stay discoverable
           only by direct client link.
         </p>
       </div>
-      <div className="grid">
+      <div className="grid album-gallery-grid">
         {publicAlbums.map((album) => (
           <AlbumCard
             key={album.slug}

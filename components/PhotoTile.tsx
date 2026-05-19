@@ -17,7 +17,13 @@ export function PhotoTile({
     <article className="photo-tile">
       {imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img className="photo-img" src={imageUrl} alt={title} />
+        <img
+          className="photo-img"
+          src={imageUrl}
+          alt={title}
+          loading="lazy"
+          decoding="async"
+        />
       ) : (
         <div
           className="photo-fill"
@@ -30,7 +36,10 @@ export function PhotoTile({
         />
       )}
       <div className="tile-caption">
-        <strong>{title}</strong>
+        <span>
+          <small>Selected frame</small>
+          <strong>{title}</strong>
+        </span>
         <span>{meta}</span>
       </div>
     </article>

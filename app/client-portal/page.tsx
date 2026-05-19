@@ -106,11 +106,11 @@ export default async function ClientPortalPage() {
   );
 
   return (
-    <main className="shell section">
-      <div className="section-head">
+    <main className="shell section editorial-page">
+      <div className="section-head numbered" data-index="01">
         <div>
           <p className="eyebrow">Client Portal</p>
-          <h1 style={{ fontSize: "clamp(3rem, 9vw, 7rem)" }}>Your albums</h1>
+          <h1 className="page-title">Your albums</h1>
           <p className="muted">Signed in as {portalClient.email ?? portalClient.name}</p>
         </div>
         <form action={clientSignOutAction}>
@@ -119,7 +119,7 @@ export default async function ClientPortalPage() {
           </button>
         </form>
       </div>
-      <div className="grid">
+      <div className="grid album-gallery-grid">
         {displayAlbums.map((album) => (
           <AlbumCard
             key={album.id}

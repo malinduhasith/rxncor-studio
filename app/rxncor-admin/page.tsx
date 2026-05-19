@@ -29,7 +29,7 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
     <main className="shell section">
       <div className="form-panel">
         <p className="eyebrow">Private Admin Login</p>
-        <h1 style={{ fontSize: "clamp(2.4rem, 7vw, 4.5rem)" }}>Studio access</h1>
+        <h1 className="panel-title">Studio access</h1>
         <p className="form-note">
           This private page is for the rxncor.studio admin dashboard.
         </p>
