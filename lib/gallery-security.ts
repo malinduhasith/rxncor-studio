@@ -15,6 +15,7 @@ type CookieReader = {
 
 export type AccessAlbum = {
   id: string;
+  is_public?: boolean;
   is_password_protected: boolean;
   password_hash: string | null;
   requires_email?: boolean;
@@ -33,7 +34,9 @@ export type GalleryAccess = {
 };
 
 export function albumRequiresUnlock(album: AccessAlbum) {
-  return Boolean(album.is_password_protected || album.requires_email);
+  return Boolean(
+    album.is_public === false || album.is_password_protected || album.requires_email
+  );
 }
 
 async function assignedClientByEmail(

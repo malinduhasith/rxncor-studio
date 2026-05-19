@@ -1,11 +1,12 @@
 import {
   CalendarDays,
+  CircleAlert,
+  CircleCheck,
   DatabaseBackup,
   Download,
   ExternalLink,
   FileArchive,
   ImageUp,
-  KeyRound,
   Link as LinkIcon,
   LockKeyhole,
   Save,
@@ -21,6 +22,7 @@ import {
   deleteClientAction,
   deleteAlbumAction,
   deletePhotoAction,
+  removeClientPasswordAction,
   removeZipAction,
   resetClientPasswordAction,
   setCoverPhotoAction,
@@ -32,6 +34,7 @@ import {
 } from "./actions";
 import { AdminPhotoUpload } from "@/components/admin/AdminPhotoUpload";
 import { AdminZipUpload } from "@/components/admin/AdminZipUpload";
+import { ClientPasswordResetForm } from "@/components/admin/ClientPasswordResetForm";
 import { ConfirmSubmitButton } from "@/components/admin/ConfirmSubmitButton";
 import { CopyLinkButton } from "@/components/admin/CopyLinkButton";
 import { CopyTextButton } from "@/components/admin/CopyTextButton";
@@ -54,6 +57,7 @@ const notices: Record<string, string> = {
   "client-updated":
     "Client updated. If you reset the password, use the new client password on /login.",
   "client-password-reset": "Client password updated. Share the new password with the client.",
+  "client-password-removed": "Client password removed.",
   "client-deleted": "Client deleted.",
   "client-error": "Client could not be created. Check the fields and try again.",
   "client-duplicate-email": "Another client already uses that email address.",
@@ -254,7 +258,7 @@ function shareMessage({
   const passwordLine = album.is_password_protected
     ? "Password: [add the password you set for this album]"
     : "No password is required.";
-  const clientPasswordLine = album.allow_client_password_access !== false
+  const clientPasswordLine = !album.is_public && album.allow_client_password_access !== false
     ? "Assigned clients can also use their email and personal client password."
     : null;
   const emailLine = album.requires_email
@@ -314,6 +318,60 @@ function clientLoginDetailsMessage({
   ]
     .filter((line): line is string => line !== null)
     .join("\n");
+}
+
+function readinessItems({
+  album,
+  photoCount,
+  assignedClientCount
+}: {
+  album: AdminAlbum;
+  photoCount: number;
+  assignedClientCount: number;
+}) {
+  return [
+    {
+      label: "Client access",
+      detail: album.is_public
+        ? "Public album"
+        : assignedClientCount
+          ? `${assignedClientCount} assigned`
+          : "Assign at least one client",
+      complete: album.is_public || assignedClientCount > 0
+    },
+    {
+      label: "Gallery protection",
+      detail: album.is_password_protected
+        ? "Album password set"
+        : album.allow_client_password_access !== false
+          ? "Client password access"
+          : "No password",
+      complete:
+        album.is_public ||
+        album.is_password_protected ||
+        album.allow_client_password_access !== false
+    },
+    {
+      label: "Photos",
+      detail: photoCount ? `${photoCount} uploaded` : "Upload the album",
+      complete: photoCount > 0
+    },
+    {
+      label: "Cover",
+      detail: album.cover_photo_url ? "Cover selected" : "Choose a cover",
+      complete: Boolean(album.cover_photo_url)
+    },
+    {
+      label: "Full ZIP",
+      detail: album.download_zip_url ? "ZIP ready" : "Upload the delivery ZIP",
+      complete: Boolean(album.download_zip_url)
+    },
+    {
+      label: "Expiry",
+      detail: album.expires_at ? dateInputValue(album.expires_at) : "No expiry set",
+      complete: true
+    }
+  ];
 }
 
 async function signedObjectUrl(urlOrKey: string | null) {
@@ -484,6 +542,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         photoCount: selectedAlbumPhotoCount
       })
     : "";
+  const selectedReadinessItems = selectedAlbum
+    ? readinessItems({
+        album: selectedAlbum,
+        photoCount: selectedAlbumPhotoCount,
+        assignedClientCount: selectedAssignedClients.length
+      })
+    : [];
+  const selectedReadinessComplete = selectedReadinessItems.filter(
+    (item) => item.complete
+  ).length;
   const visibleAlbums = albums.filter((album) =>
     matchesAlbumFilter(
       album,
@@ -511,6 +579,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     ].map((photo) => [photo.id, photo.filename])
   );
   const noticeMessage = notice ? notices[notice] : undefined;
+  const inquiriesUnavailable = Boolean(inquiriesResult.error);
 
   return (
     <main className="shell section">
@@ -564,6 +633,47 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <span>Downloads</span>
             </div>
           </div>
+
+          {selectedAlbum ? (
+            <section className="workflow-panel" aria-label="Selected album readiness">
+              <div className="panel-title-row">
+                <div>
+                  <p className="eyebrow">Selected Album</p>
+                  <h2>{selectedAlbum.title}</h2>
+                  <p className="muted">
+                    {selectedReadinessComplete}/{selectedReadinessItems.length} delivery checks
+                    ready for {selectedAlbum.is_public ? "public viewing" : "client delivery"}.
+                  </p>
+                </div>
+                <div className="inline-actions">
+                  <a className="button secondary small" href="#manager">
+                    Edit album
+                  </a>
+                  <a className="button secondary small" href="#uploads">
+                    Upload files
+                  </a>
+                  <a className="button small" href={`/client/${selectedAlbum.slug}`}>
+                    <ExternalLink size={16} />
+                    View gallery
+                  </a>
+                </div>
+              </div>
+              <div className="readiness-grid">
+                {selectedReadinessItems.map((item) => (
+                  <div
+                    className={`readiness-item ${item.complete ? "complete" : "attention"}`}
+                    key={item.label}
+                  >
+                    {item.complete ? <CircleCheck size={18} /> : <CircleAlert size={18} />}
+                    <span>
+                      <strong>{item.label}</strong>
+                      <small>{item.detail}</small>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           <section id="manager" className="admin-section">
             <div className="section-head compact">
@@ -1114,32 +1224,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       Save
                     </button>
                   </form>
-                  <form action={resetClientPasswordAction} className="password-reset-row">
-                    <input name="client_id" type="hidden" value={client.id} />
-                    <label className="field">
-                      Set new password
-                      <input
-                        name="password"
-                        type="password"
-                        minLength={4}
-                        placeholder="New client password"
-                        required
-                      />
-                    </label>
-                    <button className="button secondary small" type="submit">
-                      <KeyRound size={16} />
-                      Set password
-                    </button>
-                    <CopyTextButton
-                      label="Copy login"
-                      text={[
-                        `Client login: ${siteConfig.url}${siteConfig.routes.login}`,
-                        `Email: ${client.email ?? "[add client email]"}`,
-                        "Password: [paste the new password]",
-                        "Use this login to view all albums assigned to you."
-                      ].join("\n")}
-                    />
-                  </form>
+                  <ClientPasswordResetForm
+                    clientId={client.id}
+                    clientEmail={client.email}
+                    clientName={client.name}
+                    hasPassword={Boolean(client.password_hash)}
+                    loginUrl={`${siteConfig.url}${siteConfig.routes.login}`}
+                    resetAction={resetClientPasswordAction}
+                    removeAction={removeClientPasswordAction}
+                  />
                   <form action={deleteClientAction}>
                     <input name="client_id" type="hidden" value={client.id} />
                     <ConfirmSubmitButton
@@ -1208,6 +1301,24 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 Expiry date
                 <input name="expires_at" type="date" />
               </label>
+              <div className="assignment-list">
+                <span className="label">Assign clients</span>
+                <p className="muted">
+                  Choose everyone who should see this album in their client login.
+                  The primary client above is included automatically.
+                </p>
+                {clients.map((client) => (
+                  <label className="checkbox-field compact" key={client.id}>
+                    <input name="assigned_client_ids" type="checkbox" value={client.id} />
+                    {client.name}
+                    {client.email ? ` (${client.email})` : ""}
+                    {client.password_hash ? " · password set" : " · needs password"}
+                  </label>
+                ))}
+                {!clients.length ? (
+                  <p className="muted">Create clients first, then assign them here.</p>
+                ) : null}
+              </div>
               <button className="button" type="submit">
                 Save album
               </button>
@@ -1323,6 +1434,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </div>
               <span className="pill">{inquiries.length} recent</span>
             </div>
+            {inquiriesUnavailable ? (
+              <p className="alert">
+                Booking inquiries are not available yet. Run the contact inquiries
+                Supabase migration, then redeploy or refresh this page.
+              </p>
+            ) : null}
             <div className="table-wrap">
               <table className="table">
                 <thead>

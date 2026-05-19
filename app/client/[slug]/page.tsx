@@ -140,6 +140,14 @@ export default async function ClientGalleryPage({
   const title = album?.title ?? fallbackAlbum?.title ?? "";
   const isProtected = requiresUnlock;
   const galleryLabel = album?.is_public ? "Public Gallery" : "Private Gallery";
+  const canUseClientPassword =
+    Boolean(album) && album?.allow_client_password_access !== false;
+  const needsClientEmail =
+    Boolean(album?.requires_email) ||
+    Boolean(album && !album.is_password_protected && canUseClientPassword);
+  const needsPassword =
+    Boolean(album?.is_password_protected) ||
+    Boolean(album && !album.is_password_protected && canUseClientPassword);
   const photoSummary = album
     ? canViewPhotos
       ? `${displayPhotos.length} photos`
@@ -183,8 +191,30 @@ export default async function ClientGalleryPage({
           <p className="form-note">
             {album?.is_password_protected
               ? "Enter the album password, or use your client email and personal client password if one was assigned."
-              : "Enter your email to view and download this album."}
+              : canUseClientPassword
+                ? "Use your client email and personal client password to view and download this album."
+                : "Enter your email to view and download this album."}
           </p>
+          <div className="access-options">
+            {album?.is_password_protected ? (
+              <div>
+                <strong>Gallery password</strong>
+                <span>Use the shared album password. Email is optional unless requested.</span>
+              </div>
+            ) : null}
+            {canUseClientPassword ? (
+              <div>
+                <strong>Client login</strong>
+                <span>Enter your client email and personal password to unlock assigned galleries.</span>
+              </div>
+            ) : null}
+            {!album?.is_password_protected && !canUseClientPassword ? (
+              <div>
+                <strong>Access not ready</strong>
+                <span>This private gallery needs an album password or assigned client access.</span>
+              </div>
+            ) : null}
+          </div>
           {notice === "wrong-password" ? (
             <p className="alert">That password did not match. Try again.</p>
           ) : null}
@@ -215,16 +245,16 @@ export default async function ClientGalleryPage({
                 name="client_email"
                 type="email"
                 placeholder="you@example.com"
-                required={Boolean(album?.requires_email)}
+                required={needsClientEmail}
               />
             </label>
-            {album?.is_password_protected ? (
+            {needsPassword ? (
               <label className="field">
-                Gallery or client password
+                {album?.is_password_protected ? "Gallery or client password" : "Client password"}
                 <input type="password" name="password" required />
               </label>
             ) : null}
-            <button className="button" type="submit">
+            <button className="button" type="submit" disabled={!needsPassword && !needsClientEmail}>
               Unlock gallery
             </button>
           </form>

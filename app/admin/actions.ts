@@ -9,6 +9,8 @@ import { deleteR2Object, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+type AdminSupabaseClient = Awaited<ReturnType<typeof requireAdmin>>;
+
 async function requireAdmin() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -107,35 +109,48 @@ async function deleteR2Objects(keys: string[]) {
 }
 
 async function updateAlbumAccessFlags(
-  supabase: Awaited<ReturnType<typeof requireAdmin>>,
+  supabase: AdminSupabaseClient,
   albumId: string,
   accessFlags: {
     requires_email: boolean;
     allow_client_password_access: boolean;
   }
 ) {
-  await supabase.from("albums").update(accessFlags).eq("id", albumId);
+  const { error } = await supabase.from("albums").update(accessFlags).eq("id", albumId);
+
+  return error;
 }
 
 async function syncAlbumClients(
-  supabase: Awaited<ReturnType<typeof requireAdmin>>,
+  supabase: AdminSupabaseClient,
   albumId: string,
   clientIds: string[]
 ) {
-  await supabase.from("album_clients").delete().eq("album_id", albumId);
+  const { error: deleteError } = await supabase
+    .from("album_clients")
+    .delete()
+    .eq("album_id", albumId);
+
+  if (deleteError) {
+    return deleteError;
+  }
 
   if (clientIds.length) {
-    await supabase.from("album_clients").insert(
+    const { error } = await supabase.from("album_clients").insert(
       clientIds.map((clientId) => ({
         album_id: albumId,
         client_id: clientId
       }))
     );
+
+    return error;
   }
+
+  return null;
 }
 
 async function clientEmailExists(
-  supabase: Awaited<ReturnType<typeof requireAdmin>>,
+  supabase: AdminSupabaseClient,
   email: string | null,
   exceptClientId?: string
 ) {
@@ -295,6 +310,29 @@ export async function resetClientPasswordAction(formData: FormData) {
   redirect("/admin?notice=client-password-reset#clients");
 }
 
+export async function removeClientPasswordAction(formData: FormData) {
+  const supabase = await requireAdmin();
+  const payload = clientIdSchema.safeParse({
+    client_id: formData.get("client_id")
+  });
+
+  if (!payload.success) {
+    redirect("/admin?notice=client-password-error#clients");
+  }
+
+  const { error } = await supabase
+    .from("clients")
+    .update({ password_hash: null })
+    .eq("id", payload.data.client_id);
+
+  if (error) {
+    redirect("/admin?notice=client-password-error#clients");
+  }
+
+  revalidatePath("/admin");
+  redirect("/admin?notice=client-password-removed#clients");
+}
+
 export async function deleteClientAction(formData: FormData) {
   const supabase = await requireAdmin();
   const payload = clientIdSchema.safeParse({
@@ -354,13 +392,25 @@ export async function createAlbumAction(formData: FormData) {
     redirect("/admin?notice=album-error#albums");
   }
 
-  await updateAlbumAccessFlags(supabase, album.id, {
+  const accessError = await updateAlbumAccessFlags(supabase, album.id, {
     requires_email: payload.data.requires_email,
     allow_client_password_access: payload.data.allow_client_password_access
   });
 
-  if (payload.data.client_id) {
-    await syncAlbumClients(supabase, album.id, [payload.data.client_id]);
+  if (accessError) {
+    redirect("/admin?notice=album-error#albums");
+  }
+
+  const assignedClientIds = [
+    ...new Set([
+      ...formUuidList(formData, "assigned_client_ids"),
+      ...(payload.data.client_id ? [payload.data.client_id] : [])
+    ])
+  ];
+  const assignmentError = await syncAlbumClients(supabase, album.id, assignedClientIds);
+
+  if (assignmentError) {
+    redirect("/admin?notice=album-error#albums");
   }
 
   revalidatePath("/admin");
@@ -430,11 +480,19 @@ export async function updateAlbumAction(formData: FormData) {
     ])
   ];
 
-  await updateAlbumAccessFlags(supabase, payload.data.album_id, {
+  const accessError = await updateAlbumAccessFlags(supabase, payload.data.album_id, {
     requires_email: payload.data.requires_email,
     allow_client_password_access: payload.data.allow_client_password_access
   });
-  await syncAlbumClients(supabase, payload.data.album_id, assignedClientIds);
+  const assignmentError = await syncAlbumClients(
+    supabase,
+    payload.data.album_id,
+    assignedClientIds
+  );
+
+  if (accessError || assignmentError) {
+    redirect(`/admin?notice=album-update-error&album=${payload.data.album_id}#manager`);
+  }
 
   revalidatePath("/admin");
   revalidatePath("/albums");
@@ -476,13 +534,13 @@ export async function deleteAlbumAction(formData: FormData) {
     ])
   ]);
 
-  await deleteR2Objects(r2Keys);
-
   const { error } = await supabase.from("albums").delete().eq("id", payload.data.album_id);
 
   if (error) {
     redirect(`/admin?notice=album-delete-error&album=${payload.data.album_id}#manager`);
   }
+
+  await deleteR2Objects(r2Keys);
 
   if (album?.slug) {
     revalidatePath(`/client/${album.slug}`);
@@ -585,15 +643,6 @@ export async function deletePhotoAction(formData: FormData) {
     redirect("/admin?notice=photo-error#manager");
   }
 
-  await deleteR2Objects(
-    uniqueKeys([
-      objectKeyFromPublicUrl(photo.thumbnail_url),
-      objectKeyFromPublicUrl(photo.preview_url),
-      objectKeyFromPublicUrl(photo.full_res_url),
-      photo.r2_object_key
-    ])
-  );
-
   const { data: album } = await supabase
     .from("albums")
     .select("slug, cover_photo_url")
@@ -623,6 +672,15 @@ export async function deletePhotoAction(formData: FormData) {
       .eq("id", photo.album_id);
   }
 
+  await deleteR2Objects(
+    uniqueKeys([
+      objectKeyFromPublicUrl(photo.thumbnail_url),
+      objectKeyFromPublicUrl(photo.preview_url),
+      objectKeyFromPublicUrl(photo.full_res_url),
+      photo.r2_object_key
+    ])
+  );
+
   if (album?.slug) {
     revalidatePath(`/client/${album.slug}`);
   }
@@ -649,9 +707,9 @@ export async function removeZipAction(formData: FormData) {
     .eq("id", payload.data.album_id)
     .maybeSingle();
 
-  if (album?.download_zip_url) {
-    await deleteR2Objects([objectKeyFromPublicUrl(album.download_zip_url)]);
-  }
+  const zipKey = album?.download_zip_url
+    ? objectKeyFromPublicUrl(album.download_zip_url)
+    : null;
 
   const { error } = await supabase
     .from("albums")
@@ -660,6 +718,10 @@ export async function removeZipAction(formData: FormData) {
 
   if (error) {
     redirect(`/admin?notice=zip-error&album=${payload.data.album_id}#uploads`);
+  }
+
+  if (zipKey) {
+    await deleteR2Objects([zipKey]);
   }
 
   if (album?.slug) {

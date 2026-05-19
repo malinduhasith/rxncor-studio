@@ -19,6 +19,10 @@ type AdminZipUploadProps = {
   albums: UploadAlbum[];
 };
 
+function fileSizeLabel(bytes: number) {
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
 async function signZipUpload(albumId: string, file: File) {
   const response = await fetch("/api/uploads/sign", {
     method: "POST",
@@ -57,6 +61,7 @@ async function cleanupUploadedKeys(keys: string[]) {
 export function AdminZipUpload({ albums }: AdminZipUploadProps) {
   const [status, setStatus] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [zipSummary, setZipSummary] = useState("");
   const hasAlbums = albums.length > 0;
   const defaultAlbumId = albums[0]?.id ?? "";
   const albumOptions = useMemo(
@@ -141,14 +146,29 @@ export function AdminZipUpload({ albums }: AdminZipUploadProps) {
           {hasAlbums ? albumOptions : <option value="">Create an album first</option>}
         </select>
       </label>
+      <div className="upload-guidance">
+        <strong>Use one final delivery ZIP</strong>
+        <span>The ZIP should contain the full-resolution files you want the client to keep.</span>
+      </div>
       <label className="field">
         Full album ZIP
-        <input name="zip" type="file" accept=".zip,application/zip" required />
+        <input
+          name="zip"
+          type="file"
+          accept=".zip,application/zip"
+          required
+          onChange={(event) => {
+            const file = event.currentTarget.files?.[0];
+            setZipSummary(file ? `${file.name} · ${fileSizeLabel(file.size)}` : "");
+          }}
+        />
       </label>
       <button className="button secondary" type="submit" disabled={!hasAlbums || isUploading}>
         <FileArchive size={18} />
         {isUploading ? "Uploading ZIP" : "Upload ZIP"}
       </button>
+      {zipSummary ? <p className="muted">{zipSummary}</p> : null}
+      {isUploading ? <progress className="upload-progress" /> : null}
       {status ? <p className="muted">{status}</p> : null}
     </form>
   );

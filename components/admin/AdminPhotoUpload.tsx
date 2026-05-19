@@ -26,6 +26,14 @@ type PhotoSet = {
   full: File;
 };
 
+type SelectionSummary = {
+  thumbnails: number;
+  previews: number;
+  fulls: number;
+  matched: number;
+  fullSize: number;
+};
+
 async function signUpload(albumId: string, kind: string, file: File) {
   const response = await fetch("/api/uploads/sign", {
     method: "POST",
@@ -99,6 +107,10 @@ function filesByBaseName(files: File[]) {
 
 function sortByName(files: File[]) {
   return [...files].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function fileSizeLabel(bytes: number) {
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function buildPhotoSets(thumbnails: File[], previews: File[], fulls: File[]) {
@@ -214,6 +226,15 @@ async function uploadWithLimit(
 export function AdminPhotoUpload({ albums }: AdminPhotoUploadProps) {
   const [status, setStatus] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [completedCount, setCompletedCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [selection, setSelection] = useState<SelectionSummary>({
+    thumbnails: 0,
+    previews: 0,
+    fulls: 0,
+    matched: 0,
+    fullSize: 0
+  });
   const defaultAlbumId = albums[0]?.id ?? "";
   const hasAlbums = albums.length > 0;
 
@@ -226,6 +247,22 @@ export function AdminPhotoUpload({ albums }: AdminPhotoUploadProps) {
       )),
     [albums]
   );
+
+  function updateSelectionSummary(form: HTMLFormElement) {
+    const formData = new FormData(form);
+    const thumbnails = fileList(formData, "thumbnails");
+    const previews = fileList(formData, "previews");
+    const fulls = fileList(formData, "fulls");
+    const matched = buildPhotoSets(thumbnails, previews, fulls);
+
+    setSelection({
+      thumbnails: thumbnails.length,
+      previews: previews.length,
+      fulls: fulls.length,
+      matched: matched.length,
+      fullSize: fulls.reduce((total, file) => total + file.size, 0)
+    });
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -263,6 +300,8 @@ export function AdminPhotoUpload({ albums }: AdminPhotoUploadProps) {
     }
 
     setIsUploading(true);
+    setCompletedCount(0);
+    setTotalCount(photoSets.length);
     setStatus(`Uploading 0/${photoSets.length} photos...`);
 
     try {
@@ -271,6 +310,7 @@ export function AdminPhotoUpload({ albums }: AdminPhotoUploadProps) {
         3,
         (photoSet) => uploadPhotoSet(albumId, photoSet),
         (completed) => {
+          setCompletedCount(completed);
           setStatus(`Uploaded ${completed}/${photoSets.length} photos...`);
         },
       );
@@ -283,13 +323,24 @@ export function AdminPhotoUpload({ albums }: AdminPhotoUploadProps) {
   }
 
   return (
-    <form className="upload-form" onSubmit={handleSubmit}>
+    <form
+      className="upload-form"
+      onChange={(event) => updateSelectionSummary(event.currentTarget)}
+      onSubmit={handleSubmit}
+    >
       <label className="field">
         Album
         <select name="album_id" defaultValue={defaultAlbumId} disabled={!hasAlbums}>
           {hasAlbums ? albumOptions : <option value="">Create an album first</option>}
         </select>
       </label>
+      <div className="upload-guidance">
+        <strong>Upload a full album in one run</strong>
+        <span>
+          Choose matching thumbnail, preview, and full-res exports. Matching names are
+          paired automatically.
+        </span>
+      </div>
       <label className="field">
         Thumbnail images
         <input
@@ -324,6 +375,16 @@ export function AdminPhotoUpload({ albums }: AdminPhotoUploadProps) {
         <UploadCloud size={18} />
         {isUploading ? "Uploading" : "Upload album photos"}
       </button>
+      <div className="upload-summary">
+        <span>{selection.thumbnails} thumbnails</span>
+        <span>{selection.previews} previews</span>
+        <span>{selection.fulls} full-res</span>
+        <span>{selection.matched} matched</span>
+        <span>{fileSizeLabel(selection.fullSize)}</span>
+      </div>
+      {isUploading && totalCount ? (
+        <progress className="upload-progress" value={completedCount} max={totalCount} />
+      ) : null}
       {status ? <p className="muted">{status}</p> : null}
     </form>
   );
