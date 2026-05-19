@@ -1,14 +1,14 @@
 export const aboutProfile = {
   name: "Malindu Herath",
-  hero: "A creative eye with a technical backbone.",
+  hero: "Learning to see clearly, then build around it.",
   intro:
-    "Malindu is a Sri Lankan-born creative and technologist based in Melbourne, Australia, working across photography, videography, design, software, automation, and digital systems.",
+    "I am a Sri Lankan-born creative based in Melbourne, Australia, slowly building RXNCOR as a home for photography, video, design, software, automation, and useful little systems.",
   closing:
-    "I am interested in work that feels lived in: images with atmosphere, systems with purpose, and creative work that carries a bit of truth.",
+    "I am interested in work that feels lived in: images with atmosphere, simple systems with purpose, and creative work that carries a bit of truth.",
   metadata: [
     ["Based in", "Melbourne"],
     ["Origin", "Sri Lanka"],
-    ["Focus", "Photography / Design / Technology"],
+    ["Focus", "Photography / Design / Software"],
     ["Brand", "RXNCOR.STUDIO"]
   ]
 };
@@ -17,23 +17,23 @@ export const aboutSections = [
   {
     index: "01",
     label: "About",
-    title: "Observation, construction, and memory.",
+    title: "A quiet mix of looking and making.",
     body:
-      "Malindu is drawn to images that feel alive, imperfect, atmospheric, and honest. His creative work is shaped by photography, videography, design, and the technical mindset of a software engineer. He sees photography as both observation and construction: noticing the moment, then shaping how it is remembered."
+      "I am still figuring out my visual language. I am drawn to images that feel alive, imperfect, atmospheric, and honest. Photography feels like observation first, then a small act of construction: noticing a moment and shaping how it is remembered."
   },
   {
     index: "02",
     label: "Creative practice",
     title: "People, movement, light, and the quiet parts between.",
     body:
-      "His photography leans toward portraits, people, events, street moments, documentary-style frames, and cinematic light. The focus is mood, movement, texture, contrast, and emotion. The work does not try to look overly perfect. It tries to feel present and real."
+      "I like portraits, people, events, street moments, documentary-style frames, and cinematic light. I look for mood, movement, texture, contrast, and emotion. I do not want the work to feel overly perfect. I want it to feel present and real."
   },
   {
     index: "03",
-    label: "Technical practice",
-    title: "The platform matters as much as the picture wall.",
+    label: "Systems practice",
+    title: "Small systems that help the work move.",
     body:
-      "With a software engineering background, Malindu works with automation, data, dashboards, APIs, internal business systems, and digital workflows. That technical layer shapes how he builds rxncor.studio: not only as a place to display work, but as a delivery system for clients, galleries, bookings, and archives."
+      "My software background is part of how I think, but I try not to make it the whole story. I have worked with automation, data, dashboards, APIs, internal business systems, and digital workflows. The useful part is the habit of breaking things down and making the process easier for the person using it."
   }
 ];
 
@@ -43,13 +43,13 @@ export const aboutValues = [
   "Let the image breathe",
   "Keep the human feeling",
   "Make systems feel simple",
-  "Mix art with structure"
+  "Let the work keep changing"
 ];
 
 export const aboutTimeline = [
   {
     place: "Sri Lanka",
-    detail: "Early creative and technical foundation."
+    detail: "Early creative and problem-solving foundation."
   },
   {
     place: "School media / IT / robotics",
@@ -66,7 +66,7 @@ export const aboutTimeline = [
   },
   {
     place: "RXNCOR.STUDIO",
-    detail: "Independent creative portfolio direction across photography, systems, and delivery."
+    detail: "An independent portfolio direction across photography, simple systems, and client delivery."
   }
 ];
 

@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "About Malindu Herath",
   description:
-    "About Malindu Herath, a Melbourne-based Sri Lankan creative and technologist building rxncor.studio."
+    "About Malindu Herath, a Melbourne-based Sri Lankan creative building rxncor.studio around photography, design, and software."
 };
 
 function AboutImage({
@@ -99,17 +99,17 @@ export default async function AboutPage() {
       <section className="section alt">
         <div className="shell about-split">
           <div>
-            <p className="eyebrow">Creative / Technical</p>
-            <h2>Two instincts, one working method.</h2>
+            <p className="eyebrow">Creative / Systems</p>
+            <h2>Two interests that keep teaching each other.</h2>
           </div>
           <div className="about-split-panel">
             <p>
               The camera side is about feeling, light, atmosphere, and timing.
               The software side is about structure, systems, repeatability, and
-              making things easier to use. RXNCOR sits in that overlap: creative
-              direction with technical execution.
+              making things easier to use. For now, RXNCOR is the place where I
+              am learning how those two sides can support each other.
             </p>
-            <div className="about-tag-cloud" aria-label="Technology experience">
+            <div className="about-tag-cloud" aria-label="Software and systems experience">
               {aboutTechStack.map((item) => (
                 <span key={item}>{item}</span>
               ))}
@@ -125,8 +125,9 @@ export default async function AboutPage() {
             <h2>Small rules for making things.</h2>
           </div>
           <p>
-            A simple set of instincts that apply to photographs, interfaces,
-            client galleries, automations, and the quiet details between them.
+            A simple set of reminders I come back to while making photographs,
+            interfaces, client galleries, automations, and the quiet details
+            between them.
           </p>
         </div>
         <div className="about-statement-grid">
@@ -144,7 +145,7 @@ export default async function AboutPage() {
           <div className="section-head numbered" data-index="05">
             <div>
               <p className="eyebrow">Background</p>
-              <h2>A route through media, software, and Melbourne light.</h2>
+              <h2>A work in progress through media, software, and Melbourne light.</h2>
             </div>
           </div>
           <div className="about-timeline">
