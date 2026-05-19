@@ -1,10 +1,10 @@
 export const aboutProfile = {
   name: "Malindu Herath",
-  hero: "Melbourne photography, stories, and client delivery.",
+  hero: "Melbourne photographer. Portraits, events, and honest stories.",
   intro:
-    "I am Malindu, a Sri Lankan-born creative based in Melbourne. RXNCOR is where I am putting together photography, video, design, and the simple systems needed to deliver work properly.",
+    "I am Malindu, Sri Lankan-born and based in Melbourne. RXNCOR is where I am putting together portraits, events, street moments, video, design, and the simple systems needed to deliver work properly.",
   closing:
-    "I am interested in work that feels lived in: images with atmosphere, simple systems with purpose, and creative work that carries a bit of truth.",
+    "I am interested in work that feels lived in: images with atmosphere, simple systems with purpose, and creative work that carries a bit of truth without trying too hard to explain itself.",
   metadata: [
     ["Based in", "Melbourne"],
     ["Origin", "Sri Lanka"],
@@ -18,6 +18,21 @@ export const aboutBrandNote = {
   title: "RXNCOR is a stylised spelling, not a mood to copy.",
   body:
     "Rancor, or rancour in Australian English, can mean a bitter feeling that stays around for too long. RXNCOR replaces the A with X. I do not use the name to glorify resentment. I use it more as a visual mark for tension, memory, emotion, and the process of turning heavy feeling into something made."
+};
+
+export const aboutPerspective = {
+  label: "Perspective",
+  title: "Live and let live, with room for the absurd.",
+  body:
+    "The way I look at life is close to secular Buddhism: Buddhism as a way of life rather than a religion. Pay attention, cause less harm, stay kind where possible, and do not hold everything too tightly. I also like the absurd side of life. Not everything needs a clean explanation. Some things are strange, funny, painful, beautiful, and unfinished at the same time.",
+  points: [
+    "Live and let live",
+    "Secular Buddhism",
+    "Pay attention",
+    "Cause less harm",
+    "Do not force perfection",
+    "Leave room for the absurd"
+  ]
 };
 
 export const aboutSections = [

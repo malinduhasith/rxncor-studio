@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   aboutBrandNote,
+  aboutPerspective,
   aboutProfile,
   aboutSections,
   aboutTechStack,
@@ -100,21 +101,36 @@ export default async function AboutPage() {
       <section className="section alt">
         <div className="shell about-split">
           <div>
-            <p className="eyebrow">Creative / Systems</p>
-            <h2>Two interests that keep teaching each other.</h2>
+            <p className="eyebrow">{aboutPerspective.label}</p>
+            <h2>{aboutPerspective.title}</h2>
           </div>
           <div className="about-split-panel">
-            <p>
-              The camera side is about feeling, light, atmosphere, and timing.
-              The software side is about structure, systems, repeatability, and
-              making things easier to use. For now, RXNCOR is the place where I
-              am learning how those two sides can support each other.
-            </p>
-            <div className="about-tag-cloud" aria-label="Software and systems experience">
-              {aboutTechStack.map((item) => (
+            <p>{aboutPerspective.body}</p>
+            <div className="about-tag-cloud" aria-label="Personal perspective">
+              {aboutPerspective.points.map((item) => (
                 <span key={item}>{item}</span>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="shell section about-split">
+        <div>
+          <p className="eyebrow">Creative / Systems</p>
+          <h2>Two interests that keep teaching each other.</h2>
+        </div>
+        <div className="about-split-panel">
+          <p>
+            The camera side is about feeling, light, atmosphere, and timing.
+            The software side is about structure, systems, repeatability, and
+            making things easier to use. For now, RXNCOR is the place where I
+            am learning how those two sides can support each other.
+          </p>
+          <div className="about-tag-cloud" aria-label="Software and systems experience">
+            {aboutTechStack.map((item) => (
+              <span key={item}>{item}</span>
+            ))}
           </div>
         </div>
       </section>
