@@ -71,3 +71,27 @@ export type ShootRequest = {
   updated_at: string;
   ip_address: string | null;
 };
+
+export type AboutPageSettings = {
+  id: string;
+  hero_label: string;
+  hero_title: string;
+  intro: string;
+  closing: string;
+  meta_items: Array<[string, string]>;
+  updated_at: string;
+};
+
+export type AboutPageBlock = {
+  id: string;
+  section: "intro_cards" | "banners" | "spoken" | "timeline" | "tools";
+  kind: "card" | "banner" | "spoken" | "timeline" | "tool";
+  label: string | null;
+  title: string;
+  body: string | null;
+  reference: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};

@@ -1,15 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  aboutBrandNote,
-  aboutPerspective,
-  aboutProfile,
-  aboutSections,
-  aboutTechStack,
-  aboutTimeline,
-  aboutTools,
-  aboutValues
-} from "@/lib/about-content";
+import { blockReferenceItems, getAboutPageContent } from "@/lib/about-builder";
 import { getPublicPortfolioPhotos } from "@/lib/public-gallery";
 import { siteConfig } from "@/config/site";
 
@@ -53,18 +44,26 @@ function AboutImage({
 }
 
 export default async function AboutPage() {
-  const portfolioPhotos = await getPublicPortfolioPhotos(4);
+  const [portfolioPhotos, aboutContent] = await Promise.all([
+    getPublicPortfolioPhotos(4),
+    getAboutPageContent()
+  ]);
+  const introCards = aboutContent.blocks.filter((block) => block.section === "intro_cards");
+  const bannerBlocks = aboutContent.blocks.filter((block) => block.section === "banners");
+  const spokenBlocks = aboutContent.blocks.filter((block) => block.section === "spoken");
+  const timelineBlocks = aboutContent.blocks.filter((block) => block.section === "timeline");
+  const toolBlocks = aboutContent.blocks.filter((block) => block.section === "tools");
 
   return (
     <main className="about-page">
-      <section className="shell about-hero">
+      <section className="shell about-hero" data-ghost={aboutContent.settings.heroTitle}>
         <div className="about-hero-copy">
-          <p className="eyebrow">About / Malindu Herath</p>
-          <h1>{aboutProfile.hero}</h1>
-          <p className="lede">{aboutProfile.intro}</p>
+          <p className="eyebrow">{aboutContent.settings.heroLabel}</p>
+          <h1>{aboutContent.settings.heroTitle}</h1>
+          <p className="lede">{aboutContent.settings.intro}</p>
         </div>
         <aside className="about-meta-panel" aria-label="Profile metadata">
-          {aboutProfile.metadata.map(([label, value]) => (
+          {aboutContent.settings.metaItems.map(([label, value]) => (
             <div key={label}>
               <span>{label}</span>
               <strong>{value}</strong>
@@ -87,107 +86,113 @@ export default async function AboutPage() {
         ))}
       </section>
 
-      <section className="shell section about-block-grid">
-        {aboutSections.map((section) => (
-          <article className="about-copy-panel" key={section.index}>
-            <span className="about-index">{section.index}</span>
-            <p className="eyebrow">{section.label}</p>
-            <h2>{section.title}</h2>
-            <p>{section.body}</p>
-          </article>
-        ))}
-      </section>
-
-      <section className="section alt">
-        <div className="shell about-split">
-          <div>
-            <p className="eyebrow">{aboutPerspective.label}</p>
-            <h2>{aboutPerspective.title}</h2>
-          </div>
-          <div className="about-split-panel">
-            <p>{aboutPerspective.body}</p>
-            <div className="about-tag-cloud" aria-label="Personal perspective">
-              {aboutPerspective.points.map((item) => (
-                <span key={item}>{item}</span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="shell section about-split">
-        <div>
-          <p className="eyebrow">Creative / Systems</p>
-          <h2>Two interests that keep teaching each other.</h2>
-        </div>
-        <div className="about-split-panel">
-          <p>
-            The camera side is about feeling, light, atmosphere, and timing.
-            The software side is about structure, systems, repeatability, and
-            making things easier to use. For now, RXNCOR is the place where I
-            am learning how those two sides can support each other.
-          </p>
-          <div className="about-tag-cloud" aria-label="Software and systems experience">
-            {aboutTechStack.map((item) => (
-              <span key={item}>{item}</span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="shell section">
-        <div className="section-head numbered" data-index="RXNCOR">
-          <div>
-            <p className="eyebrow">{aboutBrandNote.label}</p>
-            <h2>{aboutBrandNote.title}</h2>
-          </div>
-          <p>{aboutBrandNote.body}</p>
-        </div>
-        <div className="about-statement-grid">
-          {aboutValues.map((value, index) => (
-            <article className="about-statement" key={value.line}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <strong>{value.line}</strong>
-              <small>{value.reference}</small>
+      {introCards.length ? (
+        <section className="shell section about-block-grid">
+          {introCards.map((block, index) => (
+            <article className="about-copy-panel" key={block.id}>
+              <span className="about-index">{String(index + 1).padStart(2, "0")}</span>
+              {block.label ? <p className="eyebrow">{block.label}</p> : null}
+              <h2>{block.title}</h2>
+              {block.body ? <p>{block.body}</p> : null}
             </article>
           ))}
-        </div>
-      </section>
+        </section>
+      ) : null}
 
-      <section className="section alt">
-        <div className="shell about-timeline-section">
-          <div className="section-head numbered" data-index="PATH">
+      {bannerBlocks.map((block, index) => {
+        const tags = blockReferenceItems(block.reference);
+        const bannerContent = (
+          <>
             <div>
-              <p className="eyebrow">Background</p>
-              <h2>A work in progress through media, software, and Melbourne light.</h2>
+              {block.label ? <p className="eyebrow">{block.label}</p> : null}
+              <h2>{block.title}</h2>
             </div>
+            <div className="about-split-panel">
+              {block.body ? <p>{block.body}</p> : null}
+              {tags.length ? (
+                <div className="about-tag-cloud" aria-label={`${block.title} references`}>
+                  {tags.map((item) => (
+                    <span key={item}>{item}</span>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </>
+        );
+
+        return index % 2 === 0 ? (
+          <section className="section alt" key={block.id}>
+            <div className="shell about-split">{bannerContent}</div>
+          </section>
+        ) : (
+          <section className="shell section about-split" key={block.id}>
+            {bannerContent}
+          </section>
+        );
+      })}
+
+      {spokenBlocks.length ? (
+        <section className="shell section">
+          <div className="section-head numbered" data-index="NOTES">
+            <div>
+              <p className="eyebrow">Spoken references</p>
+              <h2>Short notes that can keep changing.</h2>
+            </div>
+            <p>
+              Small lines, references, and working thoughts. This whole section
+              can be edited from the admin builder.
+            </p>
           </div>
-          <div className="about-timeline">
-            {aboutTimeline.map((item, index) => (
-              <article className="about-timeline-item" key={item.place}>
+          <div className="about-statement-grid">
+            {spokenBlocks.map((block, index) => (
+              <article className="about-statement" key={block.id}>
                 <span>{String(index + 1).padStart(2, "0")}</span>
-                <h3>{item.place}</h3>
-                <p>{item.detail}</p>
+                <strong>{block.title}</strong>
+                {block.reference ? <small>{block.reference}</small> : null}
               </article>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
-      <section className="shell section about-tools-section">
-        <div>
-          <p className="eyebrow">Tools</p>
-          <h2>Camera, glass, code, and systems.</h2>
-        </div>
-        <div className="about-tool-grid">
-          {aboutTools.map((tool) => (
-            <span key={tool}>{tool}</span>
-          ))}
-        </div>
-      </section>
+      {timelineBlocks.length ? (
+        <section className="section alt">
+          <div className="shell about-timeline-section">
+            <div className="section-head numbered" data-index="PATH">
+              <div>
+                <p className="eyebrow">Background</p>
+                <h2>A work in progress through media, software, and Melbourne light.</h2>
+              </div>
+            </div>
+            <div className="about-timeline">
+              {timelineBlocks.map((block, index) => (
+                <article className="about-timeline-item" key={block.id}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <h3>{block.title}</h3>
+                  {block.body ? <p>{block.body}</p> : null}
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {toolBlocks.length ? (
+        <section className="shell section about-tools-section">
+          <div>
+            <p className="eyebrow">Tools</p>
+            <h2>Camera, glass, code, and systems.</h2>
+          </div>
+          <div className="about-tool-grid">
+            {toolBlocks.map((block) => (
+              <span key={block.id}>{block.title}</span>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="shell section about-closing">
-        <p>{aboutProfile.closing}</p>
+        <p>{aboutContent.settings.closing}</p>
         <div className="inline-actions">
           <Link className="button" href={siteConfig.routes.portfolio}>
             View portfolio

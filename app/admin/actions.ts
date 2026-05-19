@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { siteConfig } from "@/config/site";
+import {
+  aboutBlockKinds,
+  aboutBlockSections,
+  parseMetaItemsFromLines
+} from "@/lib/about-builder";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { deleteR2Object, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -97,6 +102,33 @@ const shootRequestUpdateSchema = z.object({
 
 const shootRequestIdSchema = z.object({
   shoot_request_id: z.string().uuid()
+});
+
+const aboutSettingsSchema = z.object({
+  hero_label: z.string().trim().min(1).max(120),
+  hero_title: z.string().trim().min(1).max(180),
+  intro: z.string().trim().min(1).max(1000),
+  closing: z.string().trim().min(1).max(1000),
+  meta_items: z.string().trim().max(2000)
+});
+
+const aboutBlockSchema = z.object({
+  section: z.enum(aboutBlockSections),
+  kind: z.enum(aboutBlockKinds),
+  label: z.string().trim().max(100).optional().or(z.literal("")),
+  title: z.string().trim().min(1).max(240),
+  body: z.string().trim().max(4000).optional().or(z.literal("")),
+  reference: z.string().trim().max(2000).optional().or(z.literal("")),
+  sort_order: z.coerce.number().int().min(0).max(9999),
+  is_active: z.boolean()
+});
+
+const aboutBlockUpdateSchema = aboutBlockSchema.extend({
+  block_id: z.string().uuid()
+});
+
+const aboutBlockIdSchema = z.object({
+  block_id: z.string().uuid()
 });
 
 function emptyToNull(value: string | undefined) {
@@ -1055,6 +1087,148 @@ export async function deleteShootRequestAction(formData: FormData) {
 
   revalidatePath("/admin");
   redirect("/admin?notice=shoot-request-deleted#shoot-requests");
+}
+
+export async function updateAboutSettingsAction(formData: FormData) {
+  const supabase = await requireAdmin();
+  const payload = aboutSettingsSchema.safeParse({
+    hero_label: formData.get("hero_label"),
+    hero_title: formData.get("hero_title"),
+    intro: formData.get("intro"),
+    closing: formData.get("closing"),
+    meta_items: formData.get("meta_items")
+  });
+
+  if (!payload.success) {
+    redirect("/admin?view=about&notice=about-error#about-builder");
+  }
+
+  const metaItems = parseMetaItemsFromLines(payload.data.meta_items);
+
+  if (!metaItems.length) {
+    redirect("/admin?view=about&notice=about-meta-error#about-builder");
+  }
+
+  const { error } = await supabase.from("about_page_settings").upsert({
+    id: "main",
+    hero_label: payload.data.hero_label,
+    hero_title: payload.data.hero_title,
+    intro: payload.data.intro,
+    closing: payload.data.closing,
+    meta_items: metaItems,
+    updated_at: new Date().toISOString()
+  });
+
+  if (error) {
+    redirect("/admin?view=about&notice=about-setup-error#about-builder");
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/about");
+  redirect("/admin?view=about&notice=about-updated#about-builder");
+}
+
+export async function createAboutBlockAction(formData: FormData) {
+  const supabase = await requireAdmin();
+  const payload = aboutBlockSchema.safeParse({
+    section: formData.get("section"),
+    kind: formData.get("kind"),
+    label: formData.get("label"),
+    title: formData.get("title"),
+    body: formData.get("body"),
+    reference: formData.get("reference"),
+    sort_order: formData.get("sort_order"),
+    is_active: formData.get("is_active") === "on"
+  });
+
+  if (!payload.success) {
+    redirect("/admin?view=about&notice=about-block-error#about-builder");
+  }
+
+  const { error } = await supabase.from("about_page_blocks").insert({
+    section: payload.data.section,
+    kind: payload.data.kind,
+    label: emptyToNull(payload.data.label),
+    title: payload.data.title,
+    body: emptyToNull(payload.data.body),
+    reference: emptyToNull(payload.data.reference),
+    sort_order: payload.data.sort_order,
+    is_active: payload.data.is_active
+  });
+
+  if (error) {
+    redirect("/admin?view=about&notice=about-setup-error#about-builder");
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/about");
+  redirect("/admin?view=about&notice=about-block-created#about-builder");
+}
+
+export async function updateAboutBlockAction(formData: FormData) {
+  const supabase = await requireAdmin();
+  const payload = aboutBlockUpdateSchema.safeParse({
+    block_id: formData.get("block_id"),
+    section: formData.get("section"),
+    kind: formData.get("kind"),
+    label: formData.get("label"),
+    title: formData.get("title"),
+    body: formData.get("body"),
+    reference: formData.get("reference"),
+    sort_order: formData.get("sort_order"),
+    is_active: formData.get("is_active") === "on"
+  });
+
+  if (!payload.success) {
+    redirect("/admin?view=about&notice=about-block-error#about-builder");
+  }
+
+  const { error } = await supabase
+    .from("about_page_blocks")
+    .update({
+      section: payload.data.section,
+      kind: payload.data.kind,
+      label: emptyToNull(payload.data.label),
+      title: payload.data.title,
+      body: emptyToNull(payload.data.body),
+      reference: emptyToNull(payload.data.reference),
+      sort_order: payload.data.sort_order,
+      is_active: payload.data.is_active,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", payload.data.block_id);
+
+  if (error) {
+    redirect("/admin?view=about&notice=about-block-error#about-builder");
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/about");
+  redirect("/admin?view=about&notice=about-block-updated#about-builder");
+}
+
+export async function deleteAboutBlockAction(formData: FormData) {
+  const supabase = await requireAdmin();
+  const payload = aboutBlockIdSchema.safeParse({
+    block_id: formData.get("block_id")
+  });
+
+  if (!payload.success) {
+    redirect("/admin?view=about&notice=about-block-error#about-builder");
+  }
+
+  const { error } = await supabase
+    .from("about_page_blocks")
+    .delete()
+    .eq("id", payload.data.block_id);
+
+  if (error) {
+    redirect("/admin?view=about&notice=about-block-error#about-builder");
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/about");
+  redirect("/admin?view=about&notice=about-block-deleted#about-builder");
 }
 
 export async function signOutAction() {

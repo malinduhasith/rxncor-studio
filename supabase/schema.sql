@@ -130,6 +130,68 @@ begin
   end if;
 end $$;
 
+create table if not exists public.about_page_settings (
+  id text primary key default 'main',
+  hero_label text not null default 'About / Malindu Herath',
+  hero_title text not null,
+  intro text not null,
+  closing text not null,
+  meta_items jsonb not null default '[]'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.about_page_blocks (
+  id uuid primary key default gen_random_uuid(),
+  section text not null default 'intro_cards'
+    check (section in ('intro_cards', 'banners', 'spoken', 'timeline', 'tools')),
+  kind text not null default 'card'
+    check (kind in ('card', 'banner', 'spoken', 'timeline', 'tool')),
+  label text,
+  title text not null,
+  body text,
+  reference text,
+  sort_order integer not null default 100,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists about_page_blocks_section_sort_idx
+  on public.about_page_blocks(section, sort_order, created_at);
+
+alter table public.about_page_settings enable row level security;
+alter table public.about_page_blocks enable row level security;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'about_page_settings'
+      and policyname = 'Admins can manage about page settings'
+  ) then
+    create policy "Admins can manage about page settings"
+      on public.about_page_settings for all
+      using (auth.role() = 'authenticated')
+      with check (auth.role() = 'authenticated');
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'about_page_blocks'
+      and policyname = 'Admins can manage about page blocks'
+  ) then
+    create policy "Admins can manage about page blocks"
+      on public.about_page_blocks for all
+      using (auth.role() = 'authenticated')
+      with check (auth.role() = 'authenticated');
+  end if;
+end $$;
+
 do $$
 begin
   if not exists (

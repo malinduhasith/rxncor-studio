@@ -269,7 +269,7 @@ h3 {
 }
 
 .about-hero::before {
-  content: "look first\Ahold lightly\Abuild clean\Aleave room";
+  content: attr(data-ghost);
   position: absolute;
   right: -6%;
   top: 42px;
@@ -279,7 +279,6 @@ h3 {
   font-size: 6.2rem;
   font-weight: 900;
   line-height: 0.82;
-  white-space: pre-line;
   pointer-events: none;
 }
 
@@ -1357,6 +1356,82 @@ h3 {
   box-shadow: 5px 5px 0 rgba(17, 16, 14, 0.1);
 }
 
+.about-builder-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.about-settings-form,
+.about-create-form,
+.about-block-edit-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 12px;
+  align-items: end;
+}
+
+.about-settings-form .panel-title-row,
+.about-create-form .panel-title-row,
+.about-block-edit-form .block-form-head,
+.about-settings-form .textarea-field,
+.about-create-form .textarea-field,
+.about-block-edit-form .textarea-field,
+.about-settings-form .wide-field,
+.about-create-form .wide-field,
+.about-block-edit-form .wide-field,
+.about-settings-form button,
+.about-create-form button,
+.about-block-edit-form button {
+  grid-column: 1 / -1;
+}
+
+.textarea-field textarea {
+  min-height: 116px;
+  resize: vertical;
+}
+
+.about-builder-sections {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.about-builder-section,
+.about-builder-block {
+  padding: 16px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 5px 5px 0 rgba(17, 16, 14, 0.08);
+}
+
+.about-block-list {
+  display: grid;
+  gap: 12px;
+}
+
+.about-builder-block {
+  background: var(--paper);
+}
+
+.block-form-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--soft-line);
+  margin-bottom: 12px;
+}
+
+.block-form-head strong {
+  display: block;
+  font-size: 1.15rem;
+  line-height: 1.1;
+}
+
 .file-panel {
   margin-top: 16px;
 }
@@ -2004,6 +2079,7 @@ h3 {
   .about-hero,
   .admin-layout,
   .manager-grid,
+  .about-builder-grid,
   .contact-grid,
   .about-split,
   .about-tools-section,
@@ -2110,7 +2186,10 @@ h3 {
 
   .filter-bar,
   .client-edit-row,
-  .request-edit-form {
+  .request-edit-form,
+  .about-settings-form,
+  .about-create-form,
+  .about-block-edit-form {
     grid-template-columns: 1fr;
   }
 
@@ -2187,7 +2266,8 @@ h3 {
 
   .footer-inner,
   .footer-links,
-  .copy-detail-row {
+  .copy-detail-row,
+  .block-form-head {
     align-items: flex-start;
     flex-direction: column;
   }
