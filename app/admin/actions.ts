@@ -79,6 +79,26 @@ const inquiryStatusSchema = z.object({
   status: z.enum(["new", "replied", "archived"])
 });
 
+const shootRequestUpdateSchema = z.object({
+  shoot_request_id: z.string().uuid(),
+  name: z.string().trim().min(1).max(120),
+  email: z.string().trim().email().max(180),
+  phone: z.string().trim().max(60).optional().or(z.literal("")),
+  shoot_type: z.string().trim().min(1).max(80),
+  location: z.string().trim().max(180).optional().or(z.literal("")),
+  preferred_start_at: z.string().trim().min(1),
+  preferred_end_at: z.string().trim().min(1),
+  status: z.enum(["new", "reviewing", "accepted", "declined", "archived"]),
+  message: z.string().trim().max(2000).optional().or(z.literal("")),
+  admin_notes: z.string().trim().max(2000).optional().or(z.literal("")),
+  create_client: z.boolean(),
+  create_album: z.boolean()
+});
+
+const shootRequestIdSchema = z.object({
+  shoot_request_id: z.string().uuid()
+});
+
 function emptyToNull(value: string | undefined) {
   return value ? value : null;
 }
@@ -104,8 +124,151 @@ function formUuidList(formData: FormData, name: string) {
   ];
 }
 
+function validDateRange(start: string, end: string) {
+  const startTime = Date.parse(start);
+  const endTime = Date.parse(end);
+
+  return Number.isFinite(startTime) && Number.isFinite(endTime) && endTime > startTime;
+}
+
+function slugify(value: string) {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 64) || `shoot-${Date.now()}`
+  );
+}
+
 async function deleteR2Objects(keys: string[]) {
   await Promise.allSettled(keys.map((key) => deleteR2Object(key)));
+}
+
+async function acceptedShootOverlap(
+  supabase: AdminSupabaseClient,
+  start: string,
+  end: string,
+  exceptShootRequestId?: string
+) {
+  let query = supabase
+    .from("shoot_requests")
+    .select("id")
+    .eq("status", "accepted")
+    .lt("preferred_start_at", end)
+    .gt("preferred_end_at", start)
+    .limit(1);
+
+  if (exceptShootRequestId) {
+    query = query.neq("id", exceptShootRequestId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    return { error };
+  }
+
+  return { hasOverlap: Boolean(data?.length) };
+}
+
+async function findOrCreateClientFromShoot(
+  supabase: AdminSupabaseClient,
+  shoot: {
+    name: string;
+    email: string;
+    phone?: string;
+  }
+) {
+  const email = shoot.email.toLowerCase();
+  const { data: existingClients, error: existingError } = await supabase
+    .from("clients")
+    .select("id")
+    .ilike("email", email)
+    .limit(2);
+
+  if (existingError) {
+    return { error: existingError };
+  }
+
+  if (existingClients?.length) {
+    return { clientId: existingClients[0].id as string };
+  }
+
+  const { data: client, error } = await supabase
+    .from("clients")
+    .insert({
+      name: shoot.name,
+      email,
+      phone: emptyToNull(shoot.phone)
+    })
+    .select("id")
+    .single();
+
+  if (error || !client) {
+    return { error };
+  }
+
+  return { clientId: client.id as string };
+}
+
+async function uniqueAlbumSlug(supabase: AdminSupabaseClient, baseSlug: string) {
+  for (let index = 0; index < 20; index += 1) {
+    const slug = index ? `${baseSlug}-${index + 1}` : baseSlug;
+    const { data } = await supabase.from("albums").select("id").eq("slug", slug).maybeSingle();
+
+    if (!data) {
+      return slug;
+    }
+  }
+
+  return `${baseSlug}-${Date.now()}`;
+}
+
+async function createDraftAlbumFromShoot(
+  supabase: AdminSupabaseClient,
+  shoot: {
+    clientId: string;
+    name: string;
+    shootType: string;
+    start: string;
+  }
+) {
+  const eventDate = shoot.start.slice(0, 10);
+  const title = `${shoot.name} - ${shoot.shootType}`;
+  const slug = await uniqueAlbumSlug(
+    supabase,
+    slugify(`${shoot.name}-${shoot.shootType}-${eventDate}`)
+  );
+  const { data: album, error } = await supabase
+    .from("albums")
+    .insert({
+      client_id: shoot.clientId,
+      title,
+      slug,
+      event_date: eventDate,
+      is_public: false,
+      is_password_protected: false,
+      password_hash: null,
+      requires_email: false,
+      allow_client_password_access: true
+    })
+    .select("id")
+    .single();
+
+  if (error || !album) {
+    return { error };
+  }
+
+  const assignmentError = await syncAlbumClients(supabase, album.id as string, [
+    shoot.clientId
+  ]);
+
+  if (assignmentError) {
+    return { error: assignmentError };
+  }
+
+  return { albumId: album.id as string };
 }
 
 async function updateAlbumAccessFlags(
@@ -754,6 +917,144 @@ export async function updateInquiryStatusAction(formData: FormData) {
 
   revalidatePath("/admin");
   redirect("/admin?notice=inquiry-updated#inquiries");
+}
+
+export async function updateShootRequestAction(formData: FormData) {
+  const supabase = await requireAdmin();
+  const payload = shootRequestUpdateSchema.safeParse({
+    shoot_request_id: formData.get("shoot_request_id"),
+    name: formData.get("name"),
+    email: formData.get("email"),
+    phone: formData.get("phone"),
+    shoot_type: formData.get("shoot_type"),
+    location: formData.get("location"),
+    preferred_start_at: formData.get("preferred_start_at"),
+    preferred_end_at: formData.get("preferred_end_at"),
+    status: formData.get("status"),
+    message: formData.get("message"),
+    admin_notes: formData.get("admin_notes"),
+    create_client: formData.get("create_client") === "on",
+    create_album: formData.get("create_album") === "on"
+  });
+
+  if (
+    !payload.success ||
+    !validDateRange(payload.data.preferred_start_at, payload.data.preferred_end_at)
+  ) {
+    redirect("/admin?notice=shoot-request-error#shoot-requests");
+  }
+
+  if (payload.data.status === "accepted") {
+    const overlap = await acceptedShootOverlap(
+      supabase,
+      payload.data.preferred_start_at,
+      payload.data.preferred_end_at,
+      payload.data.shoot_request_id
+    );
+
+    if (overlap.error) {
+      redirect("/admin?notice=shoot-request-error#shoot-requests");
+    }
+
+    if (overlap.hasOverlap) {
+      redirect("/admin?notice=shoot-request-conflict#shoot-requests");
+    }
+  }
+
+  const { data: existingShoot } = await supabase
+    .from("shoot_requests")
+    .select("client_id, album_id")
+    .eq("id", payload.data.shoot_request_id)
+    .maybeSingle();
+
+  if (!existingShoot) {
+    redirect("/admin?notice=shoot-request-error#shoot-requests");
+  }
+
+  let clientId = (existingShoot.client_id as string | null) ?? null;
+  let albumId = (existingShoot.album_id as string | null) ?? null;
+
+  if ((payload.data.create_client || payload.data.create_album) && !clientId) {
+    const clientResult = await findOrCreateClientFromShoot(supabase, {
+      name: payload.data.name,
+      email: payload.data.email,
+      phone: payload.data.phone
+    });
+
+    if (clientResult.error || !clientResult.clientId) {
+      redirect("/admin?notice=shoot-request-error#shoot-requests");
+    }
+
+    clientId = clientResult.clientId;
+  }
+
+  if (payload.data.create_album && clientId && !albumId) {
+    const albumResult = await createDraftAlbumFromShoot(supabase, {
+      clientId,
+      name: payload.data.name,
+      shootType: payload.data.shoot_type,
+      start: payload.data.preferred_start_at
+    });
+
+    if (albumResult.error || !albumResult.albumId) {
+      redirect("/admin?notice=shoot-request-error#shoot-requests");
+    }
+
+    albumId = albumResult.albumId;
+  }
+
+  const { error } = await supabase
+    .from("shoot_requests")
+    .update({
+      client_id: clientId,
+      album_id: albumId,
+      name: payload.data.name,
+      email: payload.data.email.toLowerCase(),
+      phone: emptyToNull(payload.data.phone),
+      shoot_type: payload.data.shoot_type,
+      location: emptyToNull(payload.data.location),
+      preferred_start_at: payload.data.preferred_start_at,
+      preferred_end_at: payload.data.preferred_end_at,
+      status: payload.data.status,
+      message: emptyToNull(payload.data.message),
+      admin_notes: emptyToNull(payload.data.admin_notes),
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", payload.data.shoot_request_id);
+
+  if (error) {
+    redirect(
+      error.message.toLowerCase().includes("overlap")
+        ? "/admin?notice=shoot-request-conflict#shoot-requests"
+        : "/admin?notice=shoot-request-error#shoot-requests"
+    );
+  }
+
+  revalidatePath("/admin");
+  redirect("/admin?notice=shoot-request-updated#shoot-requests");
+}
+
+export async function deleteShootRequestAction(formData: FormData) {
+  const supabase = await requireAdmin();
+  const payload = shootRequestIdSchema.safeParse({
+    shoot_request_id: formData.get("shoot_request_id")
+  });
+
+  if (!payload.success) {
+    redirect("/admin?notice=shoot-request-error#shoot-requests");
+  }
+
+  const { error } = await supabase
+    .from("shoot_requests")
+    .delete()
+    .eq("id", payload.data.shoot_request_id);
+
+  if (error) {
+    redirect("/admin?notice=shoot-request-error#shoot-requests");
+  }
+
+  revalidatePath("/admin");
+  redirect("/admin?notice=shoot-request-deleted#shoot-requests");
 }
 
 export async function signOutAction() {

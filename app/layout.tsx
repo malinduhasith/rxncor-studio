@@ -57,6 +57,7 @@ export default function RootLayout({
             <div className="nav-links">
               <Link href={siteConfig.routes.portfolio}>Portfolio</Link>
               <Link href={siteConfig.routes.albums}>Albums</Link>
+              <Link href="/#book">Book</Link>
               <Link className="button secondary" href={siteConfig.routes.login}>
                 Login
               </Link>

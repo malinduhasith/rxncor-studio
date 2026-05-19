@@ -22,6 +22,7 @@ import {
   deleteClientAction,
   deleteAlbumAction,
   deletePhotoAction,
+  deleteShootRequestAction,
   removeClientPasswordAction,
   removeZipAction,
   resetClientPasswordAction,
@@ -30,7 +31,8 @@ import {
   togglePhotoSelectedAction,
   updateAlbumAction,
   updateClientAction,
-  updateInquiryStatusAction
+  updateInquiryStatusAction,
+  updateShootRequestAction
 } from "./actions";
 import { AdminPhotoUpload } from "@/components/admin/AdminPhotoUpload";
 import { AdminZipUpload } from "@/components/admin/AdminZipUpload";
@@ -78,7 +80,12 @@ const notices: Record<string, string> = {
   "zip-removed": "Album ZIP removed.",
   "zip-error": "ZIP action could not be completed.",
   "inquiry-updated": "Inquiry status updated.",
-  "inquiry-error": "Inquiry could not be updated."
+  "inquiry-error": "Inquiry could not be updated.",
+  "shoot-request-updated": "Shoot request updated.",
+  "shoot-request-deleted": "Shoot request deleted.",
+  "shoot-request-error": "Shoot request could not be updated.",
+  "shoot-request-conflict":
+    "That accepted shoot overlaps another accepted booking. Adjust the time or decline/archive one first."
 };
 
 type ClientOption = {
@@ -151,6 +158,25 @@ type ContactInquiry = {
   ip_address: string | null;
 };
 
+type ShootRequest = {
+  id: string;
+  client_id: string | null;
+  album_id: string | null;
+  name: string;
+  email: string;
+  phone: string | null;
+  shoot_type: string;
+  location: string | null;
+  message: string | null;
+  preferred_start_at: string;
+  preferred_end_at: string;
+  status: "new" | "reviewing" | "accepted" | "declined" | "archived";
+  admin_notes: string | null;
+  created_at: string;
+  updated_at: string;
+  ip_address: string | null;
+};
+
 type AdminPageProps = {
   searchParams: Promise<{
     notice?: string;
@@ -162,6 +188,10 @@ type AdminPageProps = {
 
 function dateInputValue(value: string | null) {
   return value ? value.slice(0, 10) : "";
+}
+
+function dateTimeInputValue(value: string | null) {
+  return value ? value.slice(0, 16) : "";
 }
 
 function formatDateTime(value: string | null) {
@@ -411,7 +441,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     downloadCountResult,
     downloadLogsResult,
     albumClientsResult,
-    inquiriesResult
+    inquiriesResult,
+    shootRequestsResult
   ] = await Promise.all([
     supabase
       .from("clients")
@@ -438,12 +469,20 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       .from("contact_inquiries")
       .select("id, name, email, phone, message, status, created_at, ip_address")
       .order("created_at", { ascending: false })
+      .limit(20),
+    supabase
+      .from("shoot_requests")
+      .select(
+        "id, client_id, album_id, name, email, phone, shoot_type, location, message, preferred_start_at, preferred_end_at, status, admin_notes, created_at, updated_at, ip_address"
+      )
+      .order("created_at", { ascending: false })
       .limit(20)
   ]);
 
   const clients = (clientsResult.data ?? []) as ClientOption[];
   const albums = (albumsResult.data ?? []) as AdminAlbum[];
   const albumClients = (albumClientsResult.data ?? []) as AdminAlbumClient[];
+  const shootRequests = (shootRequestsResult.data ?? []) as ShootRequest[];
   const selectedAlbum =
     albums.find((album) => album.id === selectedAlbumId) ?? albums[0] ?? null;
   const albumCount = albumCountResult.count ?? 0;
@@ -562,6 +601,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     )
   );
   const logAlbumTitles = new Map(albums.map((album) => [album.id, album.title]));
+  const clientById = new Map(clients.map((client) => [client.id, client]));
+  const albumById = new Map(albums.map((album) => [album.id, album]));
   const logPhotoIds = [
     ...new Set(
       [...downloadLogs, ...selectedAlbumLogs]
@@ -580,6 +621,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   );
   const noticeMessage = notice ? notices[notice] : undefined;
   const inquiriesUnavailable = Boolean(inquiriesResult.error);
+  const shootRequestsUnavailable = Boolean(shootRequestsResult.error);
 
   return (
     <main className="shell section">
@@ -592,6 +634,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <a href="#uploads">Uploads</a>
           <a href="#delivery">Delivery</a>
           <a href="#logs">Download logs</a>
+          <a href="#shoot-requests">Shoot requests</a>
           <a href="#inquiries">Inquiries</a>
           <a href="#backups">Backups</a>
         </aside>
@@ -1420,6 +1463,161 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   ) : null}
                 </tbody>
               </table>
+            </div>
+          </section>
+
+          <section id="shoot-requests" className="admin-section">
+            <div className="panel-title-row">
+              <div>
+                <h2 style={{ fontSize: "2rem" }}>Shoot requests</h2>
+                <p className="muted">
+                  Review client shoot requests, adjust timing, accept work, and create
+                  client/gallery records when needed.
+                </p>
+              </div>
+              <span className="pill">{shootRequests.length} recent</span>
+            </div>
+            {shootRequestsUnavailable ? (
+              <p className="alert">
+                Shoot requests are not available yet. Run
+                supabase/migrations/20260519_shoot_requests.sql in Supabase SQL
+                Editor, then refresh this page.
+              </p>
+            ) : null}
+            <div className="shoot-request-list">
+              {shootRequests.map((request) => {
+                const linkedClient = request.client_id
+                  ? clientById.get(request.client_id)
+                  : null;
+                const linkedAlbum = request.album_id ? albumById.get(request.album_id) : null;
+
+                return (
+                  <article className="request-card" key={request.id}>
+                    <div className="panel-title-row">
+                      <div>
+                        <p className="eyebrow">{request.status}</p>
+                        <h3>{request.name}</h3>
+                        <p className="muted">
+                          {request.shoot_type}
+                          {request.location ? ` · ${request.location}` : ""}
+                        </p>
+                      </div>
+                      <div className="request-meta">
+                        <span>
+                          {formatDateTime(request.preferred_start_at)} to{" "}
+                          {formatDateTime(request.preferred_end_at)}
+                        </span>
+                        <span>{request.email}</span>
+                        {request.phone ? <span>{request.phone}</span> : null}
+                        {linkedClient ? <span>Client: {linkedClient.name}</span> : null}
+                        {linkedAlbum ? <span>Album: {linkedAlbum.title}</span> : null}
+                      </div>
+                    </div>
+                    {request.message ? (
+                      <p className="table-message">{request.message}</p>
+                    ) : null}
+                    <form action={updateShootRequestAction} className="request-edit-form">
+                      <input name="shoot_request_id" type="hidden" value={request.id} />
+                      <label className="field">
+                        Name
+                        <input name="name" defaultValue={request.name} required />
+                      </label>
+                      <label className="field">
+                        Email
+                        <input
+                          name="email"
+                          type="email"
+                          defaultValue={request.email}
+                          required
+                        />
+                      </label>
+                      <label className="field">
+                        Phone
+                        <input name="phone" defaultValue={request.phone ?? ""} />
+                      </label>
+                      <label className="field">
+                        Shoot type
+                        <input name="shoot_type" defaultValue={request.shoot_type} required />
+                      </label>
+                      <label className="field">
+                        Location
+                        <input name="location" defaultValue={request.location ?? ""} />
+                      </label>
+                      <label className="field">
+                        Status
+                        <select name="status" defaultValue={request.status}>
+                          <option value="new">New</option>
+                          <option value="reviewing">Reviewing</option>
+                          <option value="accepted">Accepted</option>
+                          <option value="declined">Declined</option>
+                          <option value="archived">Archived</option>
+                        </select>
+                      </label>
+                      <label className="field">
+                        Start
+                        <input
+                          name="preferred_start_at"
+                          type="datetime-local"
+                          defaultValue={dateTimeInputValue(request.preferred_start_at)}
+                          required
+                        />
+                      </label>
+                      <label className="field">
+                        Finish
+                        <input
+                          name="preferred_end_at"
+                          type="datetime-local"
+                          defaultValue={dateTimeInputValue(request.preferred_end_at)}
+                          required
+                        />
+                      </label>
+                      <label className="field wide-field">
+                        Request details
+                        <textarea name="message" defaultValue={request.message ?? ""} />
+                      </label>
+                      <label className="field wide-field">
+                        Admin notes
+                        <textarea
+                          name="admin_notes"
+                          defaultValue={request.admin_notes ?? ""}
+                          placeholder="Pricing, package notes, follow-up, deposit status."
+                        />
+                      </label>
+                      <label className="checkbox-field">
+                        <input
+                          name="create_client"
+                          type="checkbox"
+                          defaultChecked={Boolean(request.client_id)}
+                        />
+                        Create or link client from this request
+                      </label>
+                      <label className="checkbox-field">
+                        <input name="create_album" type="checkbox" />
+                        Create draft private album for accepted work
+                      </label>
+                      <div className="inline-actions">
+                        <button className="button" type="submit">
+                          <Save size={18} />
+                          Save request
+                        </button>
+                      </div>
+                    </form>
+                    <form action={deleteShootRequestAction} className="danger-zone">
+                      <input name="shoot_request_id" type="hidden" value={request.id} />
+                      <ConfirmSubmitButton
+                        className="button danger small"
+                        confirmMessage={`Delete the shoot request from ${request.name}?`}
+                      >
+                        <Trash2 size={16} />
+                        Delete request
+                      </ConfirmSubmitButton>
+                    </form>
+                  </article>
+                );
+              })}
+              {!shootRequests.length ? (
+                <p className="muted">No shoot requests yet.</p>
+              ) : null}
             </div>
           </section>
 

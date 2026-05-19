@@ -859,6 +859,39 @@ h3 {
   color: var(--muted);
 }
 
+.shoot-request-list {
+  display: grid;
+  gap: 14px;
+}
+
+.request-card {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.request-meta {
+  display: grid;
+  gap: 4px;
+  min-width: min(320px, 100%);
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+.request-edit-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 12px;
+  align-items: end;
+  margin-top: 14px;
+}
+
+.wide-field {
+  grid-column: 1 / -1;
+}
+
 .client-list {
   display: grid;
   gap: 12px;
@@ -1040,13 +1073,23 @@ h3 {
 
 .contact-grid {
   display: grid;
-  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(300px, 1fr) minmax(0, 1fr);
   gap: 18px;
   align-items: start;
 }
 
 .contact-form {
   max-width: none;
+}
+
+.contact-side,
+.form-two-col {
+  display: grid;
+  gap: 14px;
+}
+
+.form-two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .contact-details,
@@ -1085,7 +1128,8 @@ h3 {
   .hero,
   .admin-layout,
   .manager-grid,
-  .contact-grid {
+  .contact-grid,
+  .form-two-col {
     grid-template-columns: 1fr;
   }
 
@@ -1107,8 +1151,13 @@ h3 {
   }
 
   .filter-bar,
-  .client-edit-row {
+  .client-edit-row,
+  .request-edit-form {
     grid-template-columns: 1fr;
+  }
+
+  .request-meta {
+    text-align: left;
   }
 
   .sidebar {

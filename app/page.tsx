@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { submitContactAction } from "./actions";
+import { submitContactAction, submitShootRequestAction } from "./actions";
 import { AlbumCard } from "@/components/AlbumCard";
 import { PhotoTile } from "@/components/PhotoTile";
 import { siteConfig } from "@/config/site";
@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 type HomePageProps = {
   searchParams: Promise<{
     contact?: string;
+    shoot?: string;
   }>;
 };
 
@@ -19,7 +20,7 @@ function formatDate(date: string | null) {
 }
 
 export default async function Home({ searchParams }: HomePageProps) {
-  const { contact } = await searchParams;
+  const { contact, shoot } = await searchParams;
   const [realPortfolioPhotos, realAlbums] = await Promise.all([
     getPublicPortfolioPhotos(3),
     getPublicAlbumCards(3)
@@ -71,6 +72,9 @@ export default async function Home({ searchParams }: HomePageProps) {
             </Link>
             <Link className="button secondary" href={siteConfig.routes.albums}>
               Featured Albums
+            </Link>
+            <Link className="button secondary" href="#book">
+              Request Shoot
             </Link>
           </div>
         </div>
@@ -124,20 +128,88 @@ export default async function Home({ searchParams }: HomePageProps) {
         </div>
       </section>
 
-      <section className="shell section" id="contact">
+      <section className="shell section" id="book">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Contact</p>
-            <h2>Bookings and gallery support</h2>
+            <p className="eyebrow">Book</p>
+            <h2>Request a shoot</h2>
           </div>
           <p>
-            For bookings, album delivery help, or gallery access support, use the
-            email or Instagram below.
+            Send the date, time, location, and type of shoot you need. Accepted
+            bookings are checked against existing confirmed work before they can
+            be locked in.
           </p>
         </div>
         <div className="contact-grid">
+          <form action={submitShootRequestAction} className="form-panel contact-form">
+            <h3>Shoot request</h3>
+            {shoot === "sent" ? (
+              <p className="alert success">Request sent. I will confirm availability soon.</p>
+            ) : null}
+            {shoot === "conflict" ? (
+              <p className="alert">
+                That time is already booked. Choose another time or send a flexible window.
+              </p>
+            ) : null}
+            {shoot === "setup-error" ? (
+              <p className="alert">
+                Shoot requests need the latest Supabase migration before this form can save.
+              </p>
+            ) : null}
+            {shoot === "error" ? (
+              <p className="alert">Could not send that request. Check the fields and try again.</p>
+            ) : null}
+            <label className="field">
+              Name
+              <input name="name" autoComplete="name" required />
+            </label>
+            <label className="field">
+              Email
+              <input name="email" type="email" autoComplete="email" required />
+            </label>
+            <label className="field">
+              Phone
+              <input name="phone" autoComplete="tel" placeholder="+61" />
+            </label>
+            <label className="field">
+              Shoot type
+              <select name="shoot_type" defaultValue="Portrait session" required>
+                <option>Portrait session</option>
+                <option>Family session</option>
+                <option>Birthday or celebration</option>
+                <option>Event coverage</option>
+                <option>Brand or product</option>
+                <option>Other</option>
+              </select>
+            </label>
+            <label className="field">
+              Location
+              <input name="location" placeholder="Suburb, venue, or online planning note" />
+            </label>
+            <div className="form-two-col">
+              <label className="field">
+                Start
+                <input name="preferred_start_at" type="datetime-local" required />
+              </label>
+              <label className="field">
+                Finish
+                <input name="preferred_end_at" type="datetime-local" required />
+              </label>
+            </div>
+            <label className="field">
+              Details
+              <textarea
+                name="message"
+                placeholder="Tell me what this is for, rough guest count, style, and anything time-sensitive."
+              />
+            </label>
+            <button className="button" type="submit">
+              Request shoot
+            </button>
+          </form>
+          <div className="contact-side">
           <form action={submitContactAction} className="form-panel contact-form">
-            <h3>Send an enquiry</h3>
+            <h3>Gallery support</h3>
             {contact === "sent" ? (
               <p className="alert success">Message sent. I will reply as soon as I can.</p>
             ) : null}
@@ -160,12 +232,12 @@ export default async function Home({ searchParams }: HomePageProps) {
               Message
               <textarea
                 name="message"
-                placeholder="Tell me the date, location, and what you need photographed."
+                placeholder="Album link, client name, or gallery access issue."
                 required
               />
             </label>
             <button className="button" type="submit">
-              Send enquiry
+              Send support message
             </button>
           </form>
           <div className="feature-list contact-details">
@@ -189,6 +261,7 @@ export default async function Home({ searchParams }: HomePageProps) {
               <h3>Storage</h3>
               <p>Photos live in Cloudflare R2, not inside the website project.</p>
             </div>
+          </div>
           </div>
         </div>
       </section>

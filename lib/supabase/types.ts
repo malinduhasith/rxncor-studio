@@ -52,3 +52,22 @@ export type ContactInquiry = {
   created_at: string;
   ip_address: string | null;
 };
+
+export type ShootRequest = {
+  id: string;
+  client_id: string | null;
+  album_id: string | null;
+  name: string;
+  email: string;
+  phone: string | null;
+  shoot_type: string;
+  location: string | null;
+  message: string | null;
+  preferred_start_at: string;
+  preferred_end_at: string;
+  status: "new" | "reviewing" | "accepted" | "declined" | "archived";
+  admin_notes: string | null;
+  created_at: string;
+  updated_at: string;
+  ip_address: string | null;
+};
