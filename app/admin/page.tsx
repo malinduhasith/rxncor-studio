@@ -1713,7 +1713,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </div>
               <div className="feature">
                 <h3>After sending</h3>
-                <p>Check per-album download history and update inquiry/client notes outside this MVP.</p>
+                <p>Check per-album download history and keep shoot request notes current.</p>
               </div>
             </div>
           </section>

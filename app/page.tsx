@@ -90,12 +90,12 @@ export default async function Home({ searchParams }: HomePageProps) {
         <div className="shell section-head">
           <div>
             <p className="eyebrow">About</p>
-            <h2>Made for polished galleries without heavy client accounts.</h2>
+            <h2>Made for polished galleries, bookings, and clean client access.</h2>
           </div>
           <p>
-            Start with simple public pages, an admin upload flow, private links,
-            album passwords, expiry dates, and direct downloads. Payments, comments,
-            proofing, and client portals can arrive later.
+            Public pages, shoot requests, admin upload tools, private links,
+            client passwords, expiry dates, and direct downloads are wired together
+            so booking and delivery can stay in one place.
           </p>
         </div>
       </section>

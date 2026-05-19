@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getVerifiedAdminApiClient } from "@/lib/api-auth";
 import { hashPassword } from "@/lib/password";
@@ -53,6 +54,22 @@ export async function POST(request: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  if (payload.client_id) {
+    const { error: assignmentError } = await supabase.from("album_clients").insert({
+      album_id: data.id,
+      client_id: payload.client_id
+    });
+
+    if (assignmentError) {
+      await supabase.from("albums").delete().eq("id", data.id);
+
+      return NextResponse.json({ error: assignmentError.message }, { status: 400 });
+    }
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/albums");
 
   return NextResponse.json({ album: data });
 }
