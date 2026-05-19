@@ -1,3 +1,5 @@
+create extension if not exists pgcrypto;
+
 create table if not exists public.contact_inquiries (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -18,7 +20,18 @@ create index if not exists contact_inquiries_status_idx
 
 alter table public.contact_inquiries enable row level security;
 
-create policy "Admins can manage contact inquiries"
-  on public.contact_inquiries for all
-  using (auth.role() = 'authenticated')
-  with check (auth.role() = 'authenticated');
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'contact_inquiries'
+      and policyname = 'Admins can manage contact inquiries'
+  ) then
+    create policy "Admins can manage contact inquiries"
+      on public.contact_inquiries for all
+      using (auth.role() = 'authenticated')
+      with check (auth.role() = 'authenticated');
+  end if;
+end $$;

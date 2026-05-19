@@ -1436,8 +1436,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </div>
             {inquiriesUnavailable ? (
               <p className="alert">
-                Booking inquiries are not available yet. Run the contact inquiries
-                Supabase migration, then redeploy or refresh this page.
+                Booking inquiries are not available yet. Run
+                supabase/migrations/20260519_contact_inquiries.sql in Supabase SQL
+                Editor, then refresh this page.
               </p>
             ) : null}
             <div className="table-wrap">
