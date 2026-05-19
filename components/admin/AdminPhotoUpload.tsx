@@ -17,6 +17,7 @@ type SignedUpload = {
 
 type AdminPhotoUploadProps = {
   albums: UploadAlbum[];
+  defaultAlbumId?: string;
 };
 
 type PhotoSet = {
@@ -223,7 +224,10 @@ async function uploadWithLimit(
   );
 }
 
-export function AdminPhotoUpload({ albums }: AdminPhotoUploadProps) {
+export function AdminPhotoUpload({
+  albums,
+  defaultAlbumId: preferredAlbumId
+}: AdminPhotoUploadProps) {
   const [status, setStatus] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
@@ -235,7 +239,8 @@ export function AdminPhotoUpload({ albums }: AdminPhotoUploadProps) {
     matched: 0,
     fullSize: 0
   });
-  const defaultAlbumId = albums[0]?.id ?? "";
+  const defaultAlbumId =
+    albums.find((album) => album.id === preferredAlbumId)?.id ?? albums[0]?.id ?? "";
   const hasAlbums = albums.length > 0;
 
   const albumOptions = useMemo(
@@ -315,7 +320,7 @@ export function AdminPhotoUpload({ albums }: AdminPhotoUploadProps) {
         },
       );
 
-      window.location.assign("/admin?notice=photos-uploaded#uploads");
+      window.location.assign("/admin?view=uploads&notice=photos-uploaded#uploads");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Upload failed.");
       setIsUploading(false);

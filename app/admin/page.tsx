@@ -183,11 +183,142 @@ type AdminPageProps = {
     album?: string;
     q?: string;
     status?: string;
+    view?: string;
   }>;
+};
+
+const adminViews = [
+  "overview",
+  "albums",
+  "clients",
+  "new-album",
+  "uploads",
+  "delivery",
+  "downloads",
+  "requests",
+  "inquiries",
+  "backups"
+] as const;
+
+type AdminView = (typeof adminViews)[number];
+
+const adminViewCopy: Record<AdminView, { label: string; title: string; detail: string }> = {
+  overview: {
+    label: "Overview",
+    title: "Today in the studio",
+    detail: "A quick read on delivery health, recent activity, and what needs attention."
+  },
+  albums: {
+    label: "Albums",
+    title: "Albums and files",
+    detail: "Select an album, edit gallery details, manage files, set covers, and copy client links."
+  },
+  clients: {
+    label: "Clients",
+    title: "Client records",
+    detail: "Create clients, reset client passwords, and keep contact details tidy."
+  },
+  "new-album": {
+    label: "New Album",
+    title: "Create album",
+    detail: "Start a public or private gallery, assign clients, and set delivery rules."
+  },
+  uploads: {
+    label: "Uploads",
+    title: "Upload workflow",
+    detail: "Upload matched thumbnails, previews, full-res files, and the final delivery ZIP."
+  },
+  delivery: {
+    label: "Delivery",
+    title: "Delivery overview",
+    detail: "Scan every gallery status before sending client links."
+  },
+  downloads: {
+    label: "Downloads",
+    title: "Download logs",
+    detail: "Review recent client downloads and support access questions."
+  },
+  requests: {
+    label: "Requests",
+    title: "Shoot requests",
+    detail: "Review booking requests, protect accepted slots from overlaps, and create client records."
+  },
+  inquiries: {
+    label: "Inquiries",
+    title: "Booking inquiries",
+    detail: "Track general messages from the contact form and mark replies."
+  },
+  backups: {
+    label: "Backups",
+    title: "Backup checklist",
+    detail: "Keep a small operational checklist for Supabase exports and R2 delivery files."
+  }
 };
 
 function dateInputValue(value: string | null) {
   return value ? value.slice(0, 10) : "";
+}
+
+function isAdminView(value: string | undefined): value is AdminView {
+  return adminViews.includes(value as AdminView);
+}
+
+function viewFromNotice(
+  notice: string | undefined,
+  selectedAlbumId?: string
+): AdminView {
+  if (!notice) {
+    return selectedAlbumId ? "albums" : "overview";
+  }
+
+  if (notice.startsWith("client")) {
+    return "clients";
+  }
+
+  if (notice.startsWith("album-created") || notice.startsWith("album-error")) {
+    return "new-album";
+  }
+
+  if (
+    notice.startsWith("album") ||
+    notice.startsWith("cover") ||
+    notice.startsWith("photo")
+  ) {
+    return "albums";
+  }
+
+  if (notice === "zip-removed") {
+    return selectedAlbumId ? "albums" : "uploads";
+  }
+
+  if (notice.startsWith("zip")) {
+    return "uploads";
+  }
+
+  if (notice.startsWith("shoot-request")) {
+    return "requests";
+  }
+
+  if (notice.startsWith("inquiry")) {
+    return "inquiries";
+  }
+
+  return "overview";
+}
+
+function adminHref(
+  view: AdminView,
+  params: Record<string, string | null | undefined> = {}
+) {
+  const search = new URLSearchParams({ view });
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value) {
+      search.set(key, value);
+    }
+  }
+
+  return `/admin?${search.toString()}`;
 }
 
 function dateTimeInputValue(value: string | null) {
@@ -422,8 +553,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     notice,
     album: selectedAlbumId,
     q: albumQuery = "",
-    status: albumStatusFilter = "all"
+    status: albumStatusFilter = "all",
+    view
   } = await searchParams;
+  const activeView = isAdminView(view)
+    ? view
+    : viewFromNotice(notice, selectedAlbumId);
+  const activeViewCopy = adminViewCopy[activeView];
   const {
     data: { user }
   } = await supabase.auth.getUser();
@@ -628,21 +764,25 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       <div className="admin-layout">
         <aside className="sidebar">
           <strong>Admin</strong>
-          <a href="#manager">Album manager</a>
-          <a href="#clients">Clients</a>
-          <a href="#albums">Create album</a>
-          <a href="#uploads">Uploads</a>
-          <a href="#delivery">Delivery</a>
-          <a href="#logs">Download logs</a>
-          <a href="#shoot-requests">Shoot requests</a>
-          <a href="#inquiries">Inquiries</a>
-          <a href="#backups">Backups</a>
+          {adminViews.map((viewName) => (
+            <a
+              className={activeView === viewName ? "active" : undefined}
+              href={adminHref(viewName, {
+                album: selectedAlbum?.id,
+                q: viewName === "albums" ? albumQuery : undefined,
+                status: viewName === "albums" ? albumStatusFilter : undefined
+              })}
+              key={viewName}
+            >
+              {adminViewCopy[viewName].label}
+            </a>
+          ))}
         </aside>
 
         <section className="dashboard-panel">
           <div className="admin-topbar">
             <div>
-              <p className="eyebrow">Dashboard</p>
+              <p className="eyebrow">Admin / {activeViewCopy.label}</p>
               <p className="muted">Signed in as {user.email}</p>
             </div>
             <form action={signOutAction}>
@@ -652,73 +792,124 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </form>
           </div>
           <h1 className="admin-title">Gallery control</h1>
-          {noticeMessage ? <p className="alert success">{noticeMessage}</p> : null}
-
-          <div className="stat-grid">
-            <div className="stat">
-              <CalendarDays size={20} />
-              <strong>{albumCount}</strong>
-              <span>Albums</span>
+          <div className="admin-page-header">
+            <div>
+              <span className="label">Current page</span>
+              <h2>{activeViewCopy.title}</h2>
+              <p>{activeViewCopy.detail}</p>
             </div>
-            <div className="stat">
-              <ImageUp size={20} />
-              <strong>{photoCount}</strong>
-              <span>Photos</span>
-            </div>
-            <div className="stat">
-              <LockKeyhole size={20} />
-              <strong>{protectedAlbumCount}</strong>
-              <span>Protected</span>
-            </div>
-            <div className="stat">
-              <LinkIcon size={20} />
-              <strong>{downloadCount}</strong>
-              <span>Downloads</span>
+            <div className="inline-actions">
+              <a className="button secondary small" href={adminHref("new-album")}>
+                New album
+              </a>
+              <a className="button secondary small" href={adminHref("uploads", { album: selectedAlbum?.id })}>
+                Upload
+              </a>
+              {selectedAlbum ? (
+                <a className="button small" href={`/client/${selectedAlbum.slug}`}>
+                  <ExternalLink size={16} />
+                  View gallery
+                </a>
+              ) : null}
             </div>
           </div>
+          {noticeMessage ? <p className="alert success">{noticeMessage}</p> : null}
 
-          {selectedAlbum ? (
-            <section className="workflow-panel" aria-label="Selected album readiness">
-              <div className="panel-title-row">
-                <div>
-                  <p className="eyebrow">Selected Album</p>
-                  <h2>{selectedAlbum.title}</h2>
-                  <p className="muted">
-                    {selectedReadinessComplete}/{selectedReadinessItems.length} delivery checks
-                    ready for {selectedAlbum.is_public ? "public viewing" : "client delivery"}.
-                  </p>
+          {activeView === "overview" ? (
+            <>
+              <div className="stat-grid">
+                <div className="stat">
+                  <CalendarDays size={20} />
+                  <strong>{albumCount}</strong>
+                  <span>Albums</span>
                 </div>
-                <div className="inline-actions">
-                  <a className="button secondary small" href="#manager">
-                    Edit album
-                  </a>
-                  <a className="button secondary small" href="#uploads">
-                    Upload files
-                  </a>
-                  <a className="button small" href={`/client/${selectedAlbum.slug}`}>
-                    <ExternalLink size={16} />
-                    View gallery
-                  </a>
+                <div className="stat">
+                  <ImageUp size={20} />
+                  <strong>{photoCount}</strong>
+                  <span>Photos</span>
+                </div>
+                <div className="stat">
+                  <LockKeyhole size={20} />
+                  <strong>{protectedAlbumCount}</strong>
+                  <span>Protected</span>
+                </div>
+                <div className="stat">
+                  <LinkIcon size={20} />
+                  <strong>{downloadCount}</strong>
+                  <span>Downloads</span>
                 </div>
               </div>
-              <div className="readiness-grid">
-                {selectedReadinessItems.map((item) => (
-                  <div
-                    className={`readiness-item ${item.complete ? "complete" : "attention"}`}
-                    key={item.label}
-                  >
-                    {item.complete ? <CircleCheck size={18} /> : <CircleAlert size={18} />}
-                    <span>
-                      <strong>{item.label}</strong>
-                      <small>{item.detail}</small>
-                    </span>
+
+              {selectedAlbum ? (
+                <section className="workflow-panel" aria-label="Selected album readiness">
+                  <div className="panel-title-row">
+                    <div>
+                      <p className="eyebrow">Selected Album</p>
+                      <h2>{selectedAlbum.title}</h2>
+                      <p className="muted">
+                        {selectedReadinessComplete}/{selectedReadinessItems.length} delivery checks
+                        ready for {selectedAlbum.is_public ? "public viewing" : "client delivery"}.
+                      </p>
+                    </div>
+                    <div className="inline-actions">
+                      <a
+                        className="button secondary small"
+                        href={adminHref("albums", { album: selectedAlbum.id })}
+                      >
+                        Edit album
+                      </a>
+                      <a
+                        className="button secondary small"
+                        href={adminHref("uploads", { album: selectedAlbum.id })}
+                      >
+                        Upload files
+                      </a>
+                      <a className="button small" href={`/client/${selectedAlbum.slug}`}>
+                        <ExternalLink size={16} />
+                        View gallery
+                      </a>
+                    </div>
                   </div>
-                ))}
+                  <div className="readiness-grid">
+                    {selectedReadinessItems.map((item) => (
+                      <div
+                        className={`readiness-item ${item.complete ? "complete" : "attention"}`}
+                        key={item.label}
+                      >
+                        {item.complete ? <CircleCheck size={18} /> : <CircleAlert size={18} />}
+                        <span>
+                          <strong>{item.label}</strong>
+                          <small>{item.detail}</small>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              <div className="admin-quick-grid">
+                <a className="admin-quick-card" href={adminHref("albums", { album: selectedAlbum?.id })}>
+                  <strong>Manage albums</strong>
+                  <span>Edit gallery settings, covers, files, and share messages.</span>
+                </a>
+                <a className="admin-quick-card" href={adminHref("clients")}>
+                  <strong>Clients</strong>
+                  <span>Create clients and reset portal passwords.</span>
+                </a>
+                <a className="admin-quick-card" href={adminHref("requests")}>
+                  <strong>Shoot requests</strong>
+                  <span>Review booking requests and accepted shoot times.</span>
+                </a>
+                <a className="admin-quick-card" href={adminHref("delivery")}>
+                  <strong>Delivery scan</strong>
+                  <span>Check which albums are ready, public, protected, or missing ZIPs.</span>
+                </a>
               </div>
-            </section>
+            </>
           ) : null}
 
-          <section id="manager" className="admin-section">
+          {activeView === "albums" ? (
+          <section id="manager" className="admin-section active-admin-page">
             <div className="section-head compact">
               <div>
                 <p className="eyebrow">Album manager</p>
@@ -739,6 +930,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   </span>
                 </div>
                 <form className="filter-bar" action="/admin" method="get">
+                  <input name="view" type="hidden" value="albums" />
                   <input name="album" type="hidden" value={selectedAlbum?.id ?? ""} />
                   <label className="field">
                     Search
@@ -772,7 +964,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       className={`album-list-row ${
                         selectedAlbum?.id === album.id ? "active" : ""
                       }`}
-                      href={`/admin?album=${album.id}#manager`}
+                      href={adminHref("albums", {
+                        album: album.id,
+                        q: albumQuery,
+                        status: albumStatusFilter
+                      })}
                       key={album.id}
                     >
                       <span>
@@ -1052,7 +1248,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       cover status, and actions.
                     </p>
                   </div>
-                  <a className="button secondary small" href="#uploads">
+                  <a
+                    className="button secondary small"
+                    href={adminHref("uploads", { album: selectedAlbum.id })}
+                  >
                     <ImageUp size={16} />
                     Upload more
                   </a>
@@ -1208,7 +1407,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </div>
             ) : null}
           </section>
+          ) : null}
 
+          {activeView === "clients" ? (
           <section id="clients" className="admin-section">
             <h2 className="section-title">Create client</h2>
             <form action={createClientAction}>
@@ -1291,7 +1492,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               {!clients.length ? <p className="muted">No clients yet.</p> : null}
             </div>
           </section>
+          ) : null}
 
+          {activeView === "new-album" ? (
           <section id="albums" className="admin-section">
             <h2 className="section-title">Create album</h2>
             <form action={createAlbumAction}>
@@ -1367,15 +1570,19 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </button>
             </form>
           </section>
+          ) : null}
 
+          {activeView === "uploads" ? (
           <section id="uploads" className="admin-section">
             <h2 className="section-title">Upload workflow</h2>
             <h3>Photos</h3>
-            <AdminPhotoUpload albums={albums} />
+            <AdminPhotoUpload albums={albums} defaultAlbumId={selectedAlbum?.id} />
             <h3 className="subsection-title">Full album ZIP</h3>
-            <AdminZipUpload albums={albums} />
+            <AdminZipUpload albums={albums} defaultAlbumId={selectedAlbum?.id} />
           </section>
+          ) : null}
 
+          {activeView === "delivery" ? (
           <section id="delivery" className="admin-section">
             <h2 className="section-title">Delivery overview</h2>
             <div className="table-wrap">
@@ -1419,7 +1626,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </table>
             </div>
           </section>
+          ) : null}
 
+          {activeView === "downloads" ? (
           <section id="logs" className="admin-section">
             <div className="panel-title-row">
               <div>
@@ -1465,7 +1674,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </table>
             </div>
           </section>
+          ) : null}
 
+          {activeView === "requests" ? (
           <section id="shoot-requests" className="admin-section">
             <div className="panel-title-row">
               <div>
@@ -1620,7 +1831,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               ) : null}
             </div>
           </section>
+          ) : null}
 
+          {activeView === "inquiries" ? (
           <section id="inquiries" className="admin-section">
             <div className="panel-title-row">
               <div>
@@ -1686,7 +1899,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </table>
             </div>
           </section>
+          ) : null}
 
+          {activeView === "backups" ? (
           <section id="backups" className="admin-section">
             <div className="panel-title-row">
               <div>
@@ -1717,6 +1932,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </div>
             </div>
           </section>
+          ) : null}
         </section>
       </div>
     </main>

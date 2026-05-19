@@ -874,6 +874,80 @@ h3 {
   background: var(--paper);
 }
 
+.sidebar a.active {
+  border-left-color: var(--accent);
+  background: var(--gold);
+  color: var(--ink);
+}
+
+.admin-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 18px 0;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  background: var(--surface-strong);
+}
+
+.admin-page-header h2 {
+  margin-bottom: 8px;
+  font-size: 2.6rem;
+}
+
+.admin-page-header p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.admin-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.admin-quick-card {
+  min-height: 130px;
+  display: grid;
+  align-content: space-between;
+  gap: 16px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--surface);
+  box-shadow: 5px 5px 0 rgba(17, 16, 14, 0.1);
+  transition:
+    background 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.admin-quick-card:hover {
+  background: var(--gold);
+  box-shadow: 2px 2px 0 rgba(17, 16, 14, 0.16);
+  transform: translate(3px, 3px);
+}
+
+.admin-quick-card strong,
+.admin-quick-card span {
+  display: block;
+}
+
+.admin-quick-card span {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.active-admin-page {
+  border-top: 0;
+  padding-top: 18px;
+}
+
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1612,6 +1686,7 @@ h3 {
   .nav,
   .section-head,
   .admin-topbar,
+  .admin-page-header,
   .gallery-bar {
     align-items: flex-start;
     flex-direction: column;
@@ -1668,7 +1743,8 @@ h3 {
   .stat-grid,
   .detail-grid,
   .readiness-grid,
-  .lightbox-grid {
+  .lightbox-grid,
+  .admin-quick-grid {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -1688,6 +1764,11 @@ h3 {
 
   .sidebar {
     position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sidebar strong {
+    grid-column: 1 / -1;
   }
 }
 
@@ -1743,7 +1824,8 @@ h3 {
   .access-options,
   .lightbox-grid,
   .contact-details,
-  .backup-list {
+  .backup-list,
+  .admin-quick-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1792,6 +1874,18 @@ h3 {
 
   .section-title {
     font-size: 2rem;
+  }
+
+  .admin-page-header {
+    padding: 14px;
+  }
+
+  .admin-page-header h2 {
+    font-size: 2.05rem;
+  }
+
+  .admin-quick-card {
+    min-height: 110px;
   }
 
   .eyebrow {

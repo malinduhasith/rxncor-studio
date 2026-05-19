@@ -17,6 +17,7 @@ type SignedUpload = {
 
 type AdminZipUploadProps = {
   albums: UploadAlbum[];
+  defaultAlbumId?: string;
 };
 
 function fileSizeLabel(bytes: number) {
@@ -58,12 +59,16 @@ async function cleanupUploadedKeys(keys: string[]) {
   }).catch(() => null);
 }
 
-export function AdminZipUpload({ albums }: AdminZipUploadProps) {
+export function AdminZipUpload({
+  albums,
+  defaultAlbumId: preferredAlbumId
+}: AdminZipUploadProps) {
   const [status, setStatus] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [zipSummary, setZipSummary] = useState("");
   const hasAlbums = albums.length > 0;
-  const defaultAlbumId = albums[0]?.id ?? "";
+  const defaultAlbumId =
+    albums.find((album) => album.id === preferredAlbumId)?.id ?? albums[0]?.id ?? "";
   const albumOptions = useMemo(
     () =>
       albums.map((album) => (
@@ -131,7 +136,7 @@ export function AdminZipUpload({ albums }: AdminZipUploadProps) {
         throw error;
       }
 
-      window.location.assign("/admin?notice=zip-uploaded#uploads");
+      window.location.assign("/admin?view=uploads&notice=zip-uploaded#uploads");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "ZIP upload failed.");
       setIsUploading(false);
