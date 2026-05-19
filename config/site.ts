@@ -21,6 +21,7 @@ export const siteConfig = {
   r2BucketName: "rxncor-studio-photos",
   routes: {
     home: "/",
+    about: "/about",
     portfolio: "/portfolio",
     albums: "/albums",
     admin: "/admin",

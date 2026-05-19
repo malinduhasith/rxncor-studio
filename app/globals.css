@@ -253,6 +253,302 @@ h3 {
   padding-left: 16px;
 }
 
+.about-page {
+  overflow: hidden;
+}
+
+.about-hero {
+  min-height: calc(100svh - 86px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: 28px;
+  align-items: end;
+  padding: 72px 0 46px;
+  border-bottom: 2px solid var(--line);
+  position: relative;
+}
+
+.about-hero::before {
+  content: "RXNCOR / PERSON / SYSTEM / IMAGE";
+  position: absolute;
+  right: -6%;
+  top: 42px;
+  width: min(760px, 100%);
+  color: rgba(17, 16, 14, 0.06);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 6.2rem;
+  font-weight: 900;
+  line-height: 0.82;
+  pointer-events: none;
+}
+
+.about-hero-copy {
+  position: relative;
+  z-index: 1;
+}
+
+.about-hero h1 {
+  max-width: 920px;
+  font-size: 7rem;
+}
+
+.about-meta-panel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.about-meta-panel div {
+  display: grid;
+  gap: 8px;
+  border-bottom: 2px solid var(--line);
+  padding: 18px;
+}
+
+.about-meta-panel div:last-child {
+  border-bottom: 0;
+}
+
+.about-meta-panel span,
+.about-image-frame figcaption,
+.about-index {
+  color: var(--accent-strong);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.about-meta-panel strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.5rem;
+  line-height: 0.95;
+}
+
+.about-visual-strip {
+  display: grid;
+  grid-template-columns: 1.1fr 0.72fr 0.9fr;
+  gap: 14px;
+  align-items: end;
+  padding: 34px 0 0;
+}
+
+.about-image-frame {
+  min-height: 340px;
+  margin: 0;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  position: relative;
+}
+
+.about-image-frame:nth-child(2) {
+  min-height: 430px;
+  transform: translateY(-28px);
+}
+
+.about-image-frame img,
+.about-image-placeholder > div {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  display: block;
+  object-fit: cover;
+}
+
+.about-image-placeholder > div {
+  background:
+    linear-gradient(135deg, rgba(195, 66, 36, 0.84), rgba(202, 148, 44, 0.74)),
+    repeating-linear-gradient(90deg, rgba(17, 16, 14, 0.16) 0 1px, transparent 1px 14px);
+}
+
+.about-image-frame figcaption {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  background: rgba(255, 250, 240, 0.9);
+}
+
+.about-block-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.about-copy-panel {
+  min-height: 420px;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.about-copy-panel:nth-child(2) {
+  margin-top: 52px;
+  background: var(--gold);
+}
+
+.about-copy-panel:nth-child(3) {
+  margin-top: 104px;
+}
+
+.about-copy-panel h2,
+.about-split h2,
+.about-tools-section h2 {
+  font-size: 3rem;
+}
+
+.about-copy-panel p:not(.eyebrow),
+.about-split-panel p,
+.about-timeline-item p {
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.about-split {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.about-split-panel {
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.about-tag-cloud,
+.about-tool-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.about-tag-cloud {
+  margin-top: 18px;
+}
+
+.about-tag-cloud span,
+.about-tool-grid span {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.about-statement-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  border: 2px solid var(--line);
+  background: var(--line);
+  gap: 2px;
+}
+
+.about-statement {
+  min-height: 190px;
+  display: grid;
+  align-content: space-between;
+  padding: 14px;
+  background: var(--surface);
+}
+
+.about-statement:nth-child(2n) {
+  background: var(--surface-strong);
+}
+
+.about-statement span {
+  color: var(--accent-strong);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.about-statement strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.about-timeline-section .section-head {
+  margin-bottom: 34px;
+}
+
+.about-timeline {
+  display: grid;
+  gap: 10px;
+}
+
+.about-timeline-item {
+  display: grid;
+  grid-template-columns: 76px minmax(180px, 0.45fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  border-top: 2px solid var(--line);
+  padding: 18px 0;
+}
+
+.about-timeline-item span {
+  color: var(--accent-strong);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.about-timeline-item h3 {
+  font-size: 1.15rem;
+}
+
+.about-tools-section {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.2fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.about-tool-grid span {
+  background: var(--gold);
+}
+
+.about-closing {
+  border-top: 2px solid var(--line);
+}
+
+.about-closing p {
+  max-width: 920px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 3.5rem;
+  line-height: 0.98;
+}
+
 .hero::before {
   content: "RXNCOR / CLIENT DELIVERY / MELBOURNE";
   position: absolute;
@@ -1693,9 +1989,12 @@ h3 {
   }
 
   .hero,
+  .about-hero,
   .admin-layout,
   .manager-grid,
   .contact-grid,
+  .about-split,
+  .about-tools-section,
   .album-hero-collage,
   .form-two-col {
     grid-template-columns: 1fr;
@@ -1736,6 +2035,51 @@ h3 {
   .collage-stack {
     min-height: 360px;
     grid-template-rows: repeat(8, 46px);
+  }
+
+  .about-hero {
+    min-height: auto;
+    padding: 56px 0 34px;
+  }
+
+  .about-hero::before {
+    top: 90px;
+    font-size: 4rem;
+  }
+
+  .about-hero h1 {
+    font-size: 5.2rem;
+  }
+
+  .about-visual-strip,
+  .about-block-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .about-image-frame,
+  .about-image-frame:nth-child(2) {
+    min-height: 300px;
+    transform: none;
+  }
+
+  .about-block-grid .about-copy-panel:nth-child(n) {
+    margin-top: 0;
+  }
+
+  .about-copy-panel:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .about-statement-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .about-timeline-item {
+    grid-template-columns: 58px minmax(0, 1fr);
+  }
+
+  .about-timeline-item p {
+    grid-column: 2;
   }
 
   .grid,
@@ -1795,7 +2139,7 @@ h3 {
   .nav-links {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
     font-size: 0.66rem;
     letter-spacing: 0.08em;
@@ -1862,6 +2206,7 @@ h3 {
   }
 
   .hero::before,
+  .about-hero::before,
   .gallery-page::before {
     display: none;
   }
@@ -1941,6 +2286,71 @@ h3 {
 
   .section-head p {
     font-size: 0.98rem;
+  }
+
+  .about-hero {
+    gap: 18px;
+    padding: 34px 0 26px;
+  }
+
+  .about-hero h1 {
+    font-size: 3rem;
+    line-height: 0.92;
+  }
+
+  .about-meta-panel div {
+    padding: 14px;
+  }
+
+  .about-meta-panel strong {
+    font-size: 1.25rem;
+  }
+
+  .about-visual-strip,
+  .about-block-grid,
+  .about-statement-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .about-visual-strip {
+    padding-top: 20px;
+  }
+
+  .about-image-frame,
+  .about-image-frame:nth-child(2) {
+    min-height: 240px;
+  }
+
+  .about-copy-panel {
+    min-height: auto;
+  }
+
+  .about-copy-panel h2,
+  .about-split h2,
+  .about-tools-section h2 {
+    font-size: 2.1rem;
+  }
+
+  .about-statement {
+    min-height: 118px;
+  }
+
+  .about-timeline-item {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .about-timeline-item p {
+    grid-column: auto;
+  }
+
+  .about-closing p {
+    font-size: 2.2rem;
+  }
+
+  .about-closing .inline-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .portfolio-gallery-grid .photo-tile:nth-child(n),

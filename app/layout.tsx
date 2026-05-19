@@ -57,6 +57,7 @@ export default function RootLayout({
               <span className="sr-only">{siteConfig.name}</span>
             </Link>
             <div className="nav-links">
+              <Link href={siteConfig.routes.about}>About</Link>
               <Link href={siteConfig.routes.portfolio}>Portfolio</Link>
               <Link href={siteConfig.routes.albums}>Albums</Link>
               <Link href="/#book">Book</Link>
@@ -73,6 +74,7 @@ export default function RootLayout({
               {siteConfig.name} · Portfolio, private galleries, and client delivery.
             </p>
             <div className="footer-links">
+              <Link href={siteConfig.routes.about}>About</Link>
               <Link href="/privacy">Privacy</Link>
               <Link href="/terms">Terms</Link>
             </div>
