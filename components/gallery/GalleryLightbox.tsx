@@ -123,7 +123,8 @@ export function GalleryLightbox({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className="photo-img" src={photo.thumbnailDisplayUrl} alt={photo.filename} />
-            <span className="watermark">rxncor.studio</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="watermark watermark-logo" src="/sig.png" alt="" aria-hidden="true" />
             <div className="tile-caption">
               <strong>{photo.filename}</strong>
               <span>Open</span>
@@ -160,7 +161,13 @@ export function GalleryLightbox({
             src={selectedPhoto.previewDisplayUrl}
             alt={selectedPhoto.filename}
           />
-          <span className="lightbox-watermark">rxncor.studio</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="lightbox-watermark watermark-logo"
+            src="/sig.png"
+            alt=""
+            aria-hidden="true"
+          />
         </div>
       ) : null}
     </>

@@ -50,7 +50,9 @@ export default function RootLayout({
         <header className="site-header">
           <nav className="shell nav" aria-label="Main navigation">
             <Link className="brand" href="/">
-              {siteConfig.name}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="brand-logo" src="/sig.png" alt="" aria-hidden="true" />
+              <span className="sr-only">{siteConfig.name}</span>
             </Link>
             <div className="nav-links">
               <Link href={siteConfig.routes.portfolio}>Portfolio</Link>

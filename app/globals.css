@@ -60,8 +60,28 @@ textarea {
 }
 
 .brand {
+  min-width: 120px;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
   font-weight: 800;
   letter-spacing: 0;
+}
+
+.brand-logo {
+  width: 128px;
+  height: auto;
+  display: block;
+  filter: brightness(0);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 
 .nav-links {
@@ -863,26 +883,30 @@ h3 {
 .lightbox-watermark {
   position: absolute;
   z-index: 1;
-  color: rgba(255, 255, 255, 0.58);
-  font-weight: 800;
-  letter-spacing: 0.12em;
   pointer-events: none;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.38);
-  text-transform: uppercase;
+  user-select: none;
 }
 
 .watermark {
   left: 50%;
   top: 50%;
-  font-size: clamp(0.86rem, 1.2vw, 1.2rem);
+  width: min(42%, 190px);
+  height: auto;
+  opacity: 0.1;
   transform: translate(-50%, -50%) rotate(-18deg);
 }
 
 .lightbox-watermark {
   left: 50%;
   top: 54%;
-  font-size: clamp(1rem, 4vw, 3rem);
+  width: min(42vw, 520px);
+  height: auto;
+  opacity: 0.075;
   transform: translate(-50%, -50%) rotate(-18deg);
+}
+
+.watermark-logo {
+  filter: drop-shadow(0 2px 14px rgba(0, 0, 0, 0.18));
 }
 
 .contact-grid {
