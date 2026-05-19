@@ -1693,20 +1693,46 @@ h3 {
 
 @media (max-width: 560px) {
   .shell {
-    width: min(100% - 24px, 1160px);
+    width: min(100% - 28px, 1160px);
   }
 
   .nav {
     min-height: 0;
-    padding: 18px 0;
+    display: grid;
+    gap: 14px;
+    padding: 14px 0 16px;
+  }
+
+  .brand {
+    min-height: 32px;
   }
 
   .brand-logo {
-    width: 132px;
+    width: 112px;
   }
 
   .nav-links {
-    flex-wrap: wrap;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    font-size: 0.66rem;
+    letter-spacing: 0.08em;
+  }
+
+  .nav-links a:not(.button),
+  .nav-links .button {
+    min-height: 36px;
+    width: 100%;
+    padding: 0 6px;
+    font-size: inherit;
+    text-align: center;
+  }
+
+  .button {
+    min-height: 44px;
+    padding: 0 14px;
+    font-size: 0.98rem;
   }
 
   .grid,
@@ -1729,13 +1755,15 @@ h3 {
   }
 
   h1 {
-    font-size: 3.45rem;
-    line-height: 0.86;
+    font-size: 2.85rem;
+    line-height: 0.9;
+    overflow-wrap: normal;
+    word-break: normal;
   }
 
   h2,
   .prose h1 {
-    font-size: 2.55rem;
+    font-size: 2.28rem;
     line-height: 0.94;
   }
 
@@ -1746,7 +1774,9 @@ h3 {
   }
 
   .hero {
-    padding-top: 38px;
+    min-height: auto;
+    gap: 24px;
+    padding: 28px 0 34px;
   }
 
   .hero::before,
@@ -1757,11 +1787,66 @@ h3 {
   .page-title,
   .admin-title,
   .panel-title {
-    font-size: 3rem;
+    font-size: 2.85rem;
   }
 
   .section-title {
     font-size: 2rem;
+  }
+
+  .eyebrow {
+    max-width: 100%;
+    margin-bottom: 16px;
+    padding: 5px 0;
+    font-size: 0.62rem;
+    letter-spacing: 0.11em;
+    line-height: 1.5;
+  }
+
+  .lede {
+    font-size: 0.98rem;
+    line-height: 1.55;
+    border-left-width: 4px;
+    padding-left: 12px;
+  }
+
+  .hero-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  .hero-actions .button {
+    justify-content: flex-start;
+  }
+
+  .hero-media {
+    min-height: 280px;
+    border-radius: 6px;
+  }
+
+  .hero-stamp {
+    right: 12px;
+    bottom: 12px;
+    min-width: 104px;
+    padding: 9px;
+  }
+
+  .hero-stamp span:first-child {
+    font-size: 2rem;
+  }
+
+  .section {
+    padding: 52px 0;
+  }
+
+  .section-head.numbered {
+    padding-top: 36px;
+  }
+
+  .section-head p {
+    font-size: 0.98rem;
   }
 
   .portfolio-gallery-grid .photo-tile:nth-child(n),
@@ -1792,5 +1877,32 @@ h3 {
   .dashboard-panel,
   .gallery-gate {
     padding: 18px;
+  }
+}
+
+@media (max-width: 380px) {
+  .shell {
+    width: min(100% - 22px, 1160px);
+  }
+
+  .nav-links {
+    font-size: 0.58rem;
+    gap: 4px;
+  }
+
+  h1,
+  .page-title,
+  .admin-title,
+  .panel-title {
+    font-size: 2.52rem;
+  }
+
+  h2,
+  .prose h1 {
+    font-size: 2.05rem;
+  }
+
+  .button {
+    font-size: 0.92rem;
   }
 }
