@@ -87,49 +87,139 @@ alter table public.photos enable row level security;
 alter table public.download_logs enable row level security;
 alter table public.contact_inquiries enable row level security;
 
-create policy "Public albums are readable"
-  on public.albums for select
-  using (is_public = true);
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'albums'
+      and policyname = 'Public albums are readable'
+  ) then
+    create policy "Public albums are readable"
+      on public.albums for select
+      using (is_public = true);
+  end if;
+end $$;
 
-create policy "Public photos are readable through public albums"
-  on public.photos for select
-  using (
-    exists (
-      select 1 from public.albums
-      where albums.id = photos.album_id
-      and albums.is_public = true
-    )
-  );
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'photos'
+      and policyname = 'Public photos are readable through public albums'
+  ) then
+    create policy "Public photos are readable through public albums"
+      on public.photos for select
+      using (
+        exists (
+          select 1 from public.albums
+          where albums.id = photos.album_id
+          and albums.is_public = true
+        )
+      );
+  end if;
+end $$;
 
-create policy "Admins can manage clients"
-  on public.clients for all
-  using (auth.role() = 'authenticated')
-  with check (auth.role() = 'authenticated');
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'clients'
+      and policyname = 'Admins can manage clients'
+  ) then
+    create policy "Admins can manage clients"
+      on public.clients for all
+      using (auth.role() = 'authenticated')
+      with check (auth.role() = 'authenticated');
+  end if;
+end $$;
 
-create policy "Admins can manage albums"
-  on public.albums for all
-  using (auth.role() = 'authenticated')
-  with check (auth.role() = 'authenticated');
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'albums'
+      and policyname = 'Admins can manage albums'
+  ) then
+    create policy "Admins can manage albums"
+      on public.albums for all
+      using (auth.role() = 'authenticated')
+      with check (auth.role() = 'authenticated');
+  end if;
+end $$;
 
-create policy "Admins can manage album clients"
-  on public.album_clients for all
-  using (auth.role() = 'authenticated')
-  with check (auth.role() = 'authenticated');
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'album_clients'
+      and policyname = 'Admins can manage album clients'
+  ) then
+    create policy "Admins can manage album clients"
+      on public.album_clients for all
+      using (auth.role() = 'authenticated')
+      with check (auth.role() = 'authenticated');
+  end if;
+end $$;
 
-create policy "Admins can manage photos"
-  on public.photos for all
-  using (auth.role() = 'authenticated')
-  with check (auth.role() = 'authenticated');
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'photos'
+      and policyname = 'Admins can manage photos'
+  ) then
+    create policy "Admins can manage photos"
+      on public.photos for all
+      using (auth.role() = 'authenticated')
+      with check (auth.role() = 'authenticated');
+  end if;
+end $$;
 
-create policy "Admins can read download logs"
-  on public.download_logs for select
-  using (auth.role() = 'authenticated');
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'download_logs'
+      and policyname = 'Admins can read download logs'
+  ) then
+    create policy "Admins can read download logs"
+      on public.download_logs for select
+      using (auth.role() = 'authenticated');
+  end if;
+end $$;
 
-create policy "Downloads can be logged by app"
-  on public.download_logs for insert
-  with check (true);
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'download_logs'
+      and policyname = 'Downloads can be logged by app'
+  ) then
+    create policy "Downloads can be logged by app"
+      on public.download_logs for insert
+      with check (true);
+  end if;
+end $$;
 
-create policy "Admins can manage contact inquiries"
-  on public.contact_inquiries for all
-  using (auth.role() = 'authenticated')
-  with check (auth.role() = 'authenticated');
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'contact_inquiries'
+      and policyname = 'Admins can manage contact inquiries'
+  ) then
+    create policy "Admins can manage contact inquiries"
+      on public.contact_inquiries for all
+      using (auth.role() = 'authenticated')
+      with check (auth.role() = 'authenticated');
+  end if;
+end $$;
