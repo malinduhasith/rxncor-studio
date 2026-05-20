@@ -116,41 +116,47 @@ export function GalleryLightbox({
 
   return (
     <>
-      <div className="gallery-actions">
-        <button className="button" disabled={!zipObjectKey} onClick={downloadZip} type="button">
-          <Download size={18} />
-          Download ZIP
-        </button>
-      </div>
-      {status ? <p className="muted">{status}</p> : null}
-      <div className="lightbox-grid">
-        {photos.map((photo, index) => (
-          <button
-            className="photo-tile photo-button"
-            key={photo.id}
-            onClick={() => setSelectedIndex(index)}
-            type="button"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              className="photo-img"
-              src={photo.thumbnailDisplayUrl}
-              alt={photo.filename}
-              loading="lazy"
-              decoding="async"
-            />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="watermark watermark-logo" src="/sig.png" alt="" aria-hidden="true" />
-            <div className="tile-caption">
-              <span>
-                <small>Delivered image</small>
-                <strong>{photo.filename}</strong>
-              </span>
-              <span>Open</span>
-            </div>
+      <section className="gallery-delivery" aria-label="Delivered album images">
+        <div className="gallery-actions">
+          <div>
+            <span className="label">Delivered set</span>
+            <p className="muted">Open previews or download the final delivery files.</p>
+          </div>
+          <button className="button" disabled={!zipObjectKey} onClick={downloadZip} type="button">
+            <Download size={18} />
+            Download ZIP
           </button>
-        ))}
-      </div>
+        </div>
+        {status ? <p className="muted">{status}</p> : null}
+        <div className="lightbox-grid">
+          {photos.map((photo, index) => (
+            <button
+              className="photo-tile photo-button"
+              key={photo.id}
+              onClick={() => setSelectedIndex(index)}
+              type="button"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="photo-img"
+                src={photo.thumbnailDisplayUrl}
+                alt={photo.filename}
+                loading="lazy"
+                decoding="async"
+              />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="watermark watermark-logo" src="/sig.png" alt="" aria-hidden="true" />
+              <div className="tile-caption">
+                <span>
+                  <small>Delivered image</small>
+                  <strong>{photo.filename}</strong>
+                </span>
+                <span>Open</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
       {selectedPhoto ? (
         <div className="lightbox-modal" role="dialog" aria-modal="true">
           <div className="lightbox-toolbar">

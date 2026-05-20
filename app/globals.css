@@ -1046,9 +1046,13 @@ h3 {
 .gallery-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 12px;
   margin-bottom: 18px;
+}
+
+.gallery-actions p {
+  margin: 4px 0 0;
 }
 
 .access-options {
@@ -1848,19 +1852,29 @@ h3 {
 }
 
 .album-hero-collage {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.28fr);
   gap: 22px;
   align-items: stretch;
-  margin: 30px 0 40px;
+  margin: 30px 0 34px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  background: rgba(255, 250, 240, 0.72);
+  box-shadow: var(--shadow);
 }
 
 .collage-copy {
+  position: relative;
+  z-index: 2;
   align-self: end;
   border: 1px solid var(--line);
   padding: 18px;
   background: var(--gold);
-  box-shadow: 6px 6px 0 rgba(17, 16, 14, 0.14);
 }
 
 .collage-copy p {
@@ -1871,12 +1885,17 @@ h3 {
 }
 
 .collage-stack {
-  min-height: 420px;
+  height: clamp(330px, 42vw, 500px);
+  min-height: 0;
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  grid-template-rows: repeat(8, 58px);
+  grid-template-rows: repeat(8, minmax(0, 1fr));
   gap: 10px;
   position: relative;
+  overflow: hidden;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
 }
 
 .collage-stack img {
@@ -1886,41 +1905,50 @@ h3 {
   border: 1px solid var(--line);
   background: var(--surface);
   object-fit: cover;
-  box-shadow: 7px 7px 0 rgba(17, 16, 14, 0.15);
+  box-shadow: none;
   transition:
     box-shadow 180ms ease,
     transform 180ms ease;
 }
 
 .collage-stack img:hover {
-  box-shadow: 12px 12px 0 rgba(195, 66, 36, 0.24);
+  box-shadow: 0 0 0 3px rgba(195, 66, 36, 0.32);
   transform: translate(-4px, -4px) rotate(0.8deg);
 }
 
 .collage-stack img:nth-child(1) {
   grid-column: 1 / 7;
-  grid-row: 1 / 7;
+  grid-row: 1 / 6;
 }
 
 .collage-stack img:nth-child(2) {
   grid-column: 7 / 13;
-  grid-row: 2 / 6;
+  grid-row: 1 / 5;
 }
 
 .collage-stack img:nth-child(3) {
   grid-column: 4 / 9;
-  grid-row: 6 / 9;
+  grid-row: 5 / 9;
   z-index: 2;
 }
 
 .collage-stack img:nth-child(4) {
   grid-column: 9 / 13;
-  grid-row: 6 / 9;
+  grid-row: 5 / 9;
 }
 
 .collage-stack img:nth-child(5) {
   grid-column: 1 / 4;
-  grid-row: 7 / 9;
+  grid-row: 6 / 9;
+}
+
+.gallery-delivery {
+  position: relative;
+  z-index: 2;
+  clear: both;
+  margin-top: 26px;
+  border-top: 2px solid var(--line);
+  padding-top: 24px;
 }
 
 .gallery-gate {
@@ -1932,6 +1960,8 @@ h3 {
 }
 
 .lightbox-grid {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
@@ -2171,8 +2201,9 @@ h3 {
   }
 
   .collage-stack {
-    min-height: 360px;
-    grid-template-rows: repeat(8, 46px);
+    height: 360px;
+    min-height: 0;
+    grid-template-rows: repeat(8, minmax(0, 1fr));
   }
 
   .about-hero {
@@ -2495,6 +2526,16 @@ h3 {
     flex-direction: column;
   }
 
+  .gallery-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .gallery-actions .button {
+    justify-content: center;
+    width: 100%;
+  }
+
   .portfolio-gallery-grid .photo-tile:nth-child(n),
   .album-gallery-grid .album-card:nth-child(n),
   .lightbox-grid .photo-tile:nth-child(n) {
@@ -2507,10 +2548,12 @@ h3 {
   }
 
   .collage-stack {
+    height: auto;
     min-height: auto;
     display: grid;
     grid-template-columns: 1fr;
     grid-template-rows: none;
+    overflow: visible;
   }
 
   .collage-stack img:nth-child(n) {
