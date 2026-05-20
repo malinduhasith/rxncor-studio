@@ -50,14 +50,21 @@ const clientIdSchema = z.object({
   client_id: z.string().uuid()
 });
 
+const requiredAlbumSlugSchema = z
+  .string()
+  .trim()
+  .min(3)
+  .regex(/^[a-z0-9-]+$/);
+
+const optionalAlbumSlugSchema = z.string().trim().refine(
+  (value) => value.length === 0 || (value.length >= 3 && /^[a-z0-9-]+$/.test(value)),
+  "Use lowercase letters, numbers, and hyphens only."
+);
+
 const albumSchema = z.object({
   client_id: z.string().uuid().optional().or(z.literal("")),
   title: z.string().trim().min(1),
-  slug: z
-    .string()
-    .trim()
-    .min(3)
-    .regex(/^[a-z0-9-]+$/),
+  slug: optionalAlbumSlugSchema,
   event_date: z.string().optional().or(z.literal("")),
   is_public: z.boolean(),
   requires_email: z.boolean(),
@@ -68,6 +75,7 @@ const albumSchema = z.object({
 
 const albumUpdateSchema = albumSchema.extend({
   album_id: z.string().uuid(),
+  slug: requiredAlbumSlugSchema,
   remove_password: z.boolean()
 });
 
@@ -567,13 +575,20 @@ export async function createAlbumAction(formData: FormData) {
     redirect("/admin?notice=album-error#albums");
   }
 
+  const generatedSlug = await uniqueAlbumSlug(
+    supabase,
+    slugify(
+      payload.data.slug ||
+        [payload.data.title, payload.data.event_date].filter(Boolean).join(" ")
+    )
+  );
   const passwordHash = rawPassword ? hashPassword(rawPassword) : null;
   const { data: album, error } = await supabase
     .from("albums")
     .insert({
       client_id: emptyToNull(payload.data.client_id),
       title: payload.data.title,
-      slug: payload.data.slug,
+      slug: generatedSlug,
       event_date: emptyToNull(payload.data.event_date),
       is_public: payload.data.is_public,
       is_password_protected: Boolean(passwordHash),

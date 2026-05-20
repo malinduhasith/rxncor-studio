@@ -40,6 +40,7 @@ import {
 } from "./actions";
 import { AdminPhotoUpload } from "@/components/admin/AdminPhotoUpload";
 import { AdminZipUpload } from "@/components/admin/AdminZipUpload";
+import { AlbumSlugFields } from "@/components/admin/AlbumSlugFields";
 import { ClientPasswordResetForm } from "@/components/admin/ClientPasswordResetForm";
 import { ConfirmSubmitButton } from "@/components/admin/ConfirmSubmitButton";
 import { CopyLinkButton } from "@/components/admin/CopyLinkButton";
@@ -77,7 +78,7 @@ const notices: Record<string, string> = {
   "client-duplicate-email": "Another client already uses that email address.",
   "client-password-error": "Client password could not be saved. Set it again and try login.",
   "album-created": "Album created.",
-  "album-error": "Album could not be created. Check the slug is unique and valid.",
+  "album-error": "Album could not be created. Check the album details and try again.",
   "album-updated": "Album updated.",
   "album-update-error": "Album could not be updated. Check the fields and try again.",
   "album-deleted": "Album deleted.",
@@ -1812,19 +1813,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   ))}
                 </select>
               </label>
-              <label className="field">
-                Album title
-                <input name="title" placeholder="Chaya Birthday 2026" required />
-              </label>
-              <label className="field">
-                Slug
-                <input
-                  name="slug"
-                  pattern="[a-z0-9-]+"
-                  placeholder="chaya-birthday-2026 or a8f3k2x9"
-                  required
-                />
-              </label>
+              <AlbumSlugFields />
               <label className="field">
                 Event date
                 <input name="event_date" type="date" />
