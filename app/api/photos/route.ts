@@ -48,9 +48,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Photo files do not match album" }, { status: 400 });
   }
 
-  const { data: photo, error } = await supabase
+  const { data: existingPhoto, error: existingPhotoError } = await supabase
     .from("photos")
-    .insert(payload)
+    .select("id")
+    .eq("album_id", payload.album_id)
+    .eq("filename", payload.filename)
+    .maybeSingle();
+
+  if (existingPhotoError) {
+    return NextResponse.json({ error: existingPhotoError.message }, { status: 400 });
+  }
+
+  const photoPayload = {
+    ...payload,
+    uploaded_at: new Date().toISOString()
+  };
+
+  const writeQuery = existingPhoto
+    ? supabase.from("photos").update(photoPayload).eq("id", existingPhoto.id)
+    : supabase.from("photos").insert(payload);
+
+  const { data: photo, error } = await writeQuery
     .select()
     .single();
 

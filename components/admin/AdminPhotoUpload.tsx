@@ -35,6 +35,27 @@ type SelectionSummary = {
   fullSize: number;
 };
 
+type UploadFailure = {
+  index: number;
+  filename: string;
+  message: string;
+};
+
+async function responseMessage(response: Response, fallback: string) {
+  const text = await response.text().catch(() => "");
+
+  if (!text) {
+    return fallback;
+  }
+
+  try {
+    const payload = JSON.parse(text) as { error?: string };
+    return payload.error || fallback;
+  } catch {
+    return text.slice(0, 240);
+  }
+}
+
 async function signUpload(albumId: string, kind: string, file: File) {
   const response = await fetch("/api/uploads/sign", {
     method: "POST",
@@ -50,7 +71,7 @@ async function signUpload(albumId: string, kind: string, file: File) {
   });
 
   if (!response.ok) {
-    throw new Error("Could not create upload URL.");
+    throw new Error(await responseMessage(response, "Could not create upload URL."));
   }
 
   return (await response.json()) as SignedUpload;
@@ -66,7 +87,7 @@ async function uploadToR2(signedUpload: SignedUpload, file: File) {
   });
 
   if (!response.ok) {
-    throw new Error("R2 upload failed.");
+    throw new Error(await responseMessage(response, `R2 upload failed with ${response.status}.`));
   }
 }
 
@@ -112,6 +133,10 @@ function sortByName(files: File[]) {
 
 function fileSizeLabel(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function sleep(milliseconds: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
 
 function buildPhotoSets(thumbnails: File[], previews: File[], fulls: File[]) {
@@ -193,7 +218,9 @@ async function uploadPhotoSet(albumId: string, photoSet: PhotoSet) {
 
     if (!photoResponse.ok) {
       await cleanupUploadedKeys(uploadedKeys);
-      throw new Error(`Could not save ${photoSet.full.name}. R2 files were cleaned up.`);
+      throw new Error(
+        await responseMessage(photoResponse, `Could not save ${photoSet.full.name}.`)
+      );
     }
   } catch (error) {
     await cleanupUploadedKeys(uploadedKeys);
@@ -201,15 +228,41 @@ async function uploadPhotoSet(albumId: string, photoSet: PhotoSet) {
   }
 }
 
+async function uploadPhotoSetWithRetry(albumId: string, photoSet: PhotoSet, attempts = 3) {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await uploadPhotoSet(albumId, photoSet);
+      return;
+    } catch (error) {
+      lastError = error;
+
+      if (attempt < attempts) {
+        await sleep(700 * attempt);
+      }
+    }
+  }
+
+  const message = lastError instanceof Error ? lastError.message : "Upload failed.";
+  throw new Error(`Failed after ${attempts} attempts. ${message}`);
+}
+
 async function uploadWithLimit(
   photoSets: PhotoSet[],
   limit: number,
   upload: (photoSet: PhotoSet) => Promise<void>,
   onStart: (index: number, photoSet: PhotoSet) => void,
-  onProgress: (completed: number) => void
+  onProgress: (state: {
+    processed: number;
+    successful: number;
+    failures: UploadFailure[];
+  }) => void
 ) {
   let nextIndex = 0;
-  let completed = 0;
+  let processed = 0;
+  let successful = 0;
+  const failures: UploadFailure[] = [];
   const workerCount = Math.min(limit, photoSets.length);
 
   await Promise.all(
@@ -222,17 +275,31 @@ async function uploadWithLimit(
 
         try {
           await upload(photoSet);
+          successful += 1;
         } catch (error) {
           const message = error instanceof Error ? error.message : "Upload failed.";
 
-          throw new Error(`${photoSet.full.name}: ${message}`);
+          failures.push({
+            index: currentIndex + 1,
+            filename: photoSet.full.name,
+            message
+          });
         }
 
-        completed += 1;
-        onProgress(completed);
+        processed += 1;
+        onProgress({
+          processed,
+          successful,
+          failures: [...failures]
+        });
       }
     })
   );
+
+  return {
+    successful,
+    failures
+  };
 }
 
 export function AdminPhotoUpload({
@@ -243,8 +310,10 @@ export function AdminPhotoUpload({
   const [statusKind, setStatusKind] = useState<"info" | "error">("info");
   const [isUploading, setIsUploading] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
+  const [processedCount, setProcessedCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [activePhoto, setActivePhoto] = useState("");
+  const [failedUploads, setFailedUploads] = useState<UploadFailure[]>([]);
   const [selection, setSelection] = useState<SelectionSummary>({
     thumbnails: 0,
     previews: 0,
@@ -322,24 +391,41 @@ export function AdminPhotoUpload({
 
     setIsUploading(true);
     setCompletedCount(0);
+    setProcessedCount(0);
     setTotalCount(photoSets.length);
     setActivePhoto("");
+    setFailedUploads([]);
     setStatusKind("info");
     setStatus(`Preparing ${photoSets.length} photo sets for upload...`);
 
     try {
-      await uploadWithLimit(
+      const result = await uploadWithLimit(
         photoSets,
         2,
-        (photoSet) => uploadPhotoSet(albumId, photoSet),
+        (photoSet) => uploadPhotoSetWithRetry(albumId, photoSet),
         (index, photoSet) => {
           setActivePhoto(`Working on ${index}/${photoSets.length}: ${photoSet.full.name}`);
         },
-        (completed) => {
-          setCompletedCount(completed);
-          setStatus(`Uploaded ${completed}/${photoSets.length} photo sets...`);
+        ({ processed, successful, failures }) => {
+          setProcessedCount(processed);
+          setCompletedCount(successful);
+          setFailedUploads(failures);
+          setStatus(
+            failures.length
+              ? `Processed ${processed}/${photoSets.length}. Uploaded ${successful}, failed ${failures.length}.`
+              : `Uploaded ${successful}/${photoSets.length} photo sets...`
+          );
         },
       );
+
+      if (result.failures.length) {
+        setStatusKind("error");
+        setStatus(
+          `Uploaded ${result.successful}/${photoSets.length} photo sets. ${result.failures.length} failed. You can retry after checking the failed files below.`
+        );
+        setIsUploading(false);
+        return;
+      }
 
       window.location.assign("/admin?view=uploads&notice=photos-uploaded#uploads");
     } catch (error) {
@@ -413,17 +499,32 @@ export function AdminPhotoUpload({
         <div className="upload-status-panel">
           <div>
             <strong>
-              {completedCount}/{totalCount} photo sets uploaded
+              {processedCount}/{totalCount} processed · {completedCount} uploaded
             </strong>
             <small>
               One set means thumbnail, preview, full-res file, and Supabase record.
             </small>
           </div>
           {activePhoto ? <span>{activePhoto}</span> : null}
-          <progress className="upload-progress" value={completedCount} max={totalCount} />
+          <progress className="upload-progress" value={processedCount} max={totalCount} />
         </div>
       ) : null}
       {status ? <p className={`upload-message ${statusKind}`}>{status}</p> : null}
+      {failedUploads.length ? (
+        <div className="upload-failure-list">
+          <strong>Failed files</strong>
+          <ul>
+            {failedUploads.map((failure) => (
+              <li key={`${failure.index}-${failure.filename}`}>
+                <span>
+                  #{failure.index} {failure.filename}
+                </span>
+                <small>{failure.message}</small>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </form>
   );
 }
