@@ -1038,6 +1038,45 @@ h3 {
   accent-color: var(--accent);
 }
 
+.upload-status-panel {
+  display: grid;
+  gap: 8px;
+  border: 2px solid var(--line);
+  border-radius: 4px;
+  padding: 12px;
+  background: var(--surface);
+}
+
+.upload-status-panel strong,
+.upload-status-panel small,
+.upload-status-panel span {
+  display: block;
+}
+
+.upload-status-panel small,
+.upload-status-panel span {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.upload-status-panel span {
+  word-break: break-word;
+}
+
+.upload-message {
+  margin: 4px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.upload-message.error {
+  border: 2px solid #d4674f;
+  border-radius: 4px;
+  padding: 12px;
+  background: #fff0ea;
+  color: var(--accent-strong);
+}
+
 .button:disabled {
   cursor: not-allowed;
   opacity: 0.52;

@@ -205,6 +205,7 @@ async function uploadWithLimit(
   photoSets: PhotoSet[],
   limit: number,
   upload: (photoSet: PhotoSet) => Promise<void>,
+  onStart: (index: number, photoSet: PhotoSet) => void,
   onProgress: (completed: number) => void
 ) {
   let nextIndex = 0;
@@ -216,7 +217,17 @@ async function uploadWithLimit(
       while (nextIndex < photoSets.length) {
         const currentIndex = nextIndex;
         nextIndex += 1;
-        await upload(photoSets[currentIndex]);
+        const photoSet = photoSets[currentIndex];
+        onStart(currentIndex + 1, photoSet);
+
+        try {
+          await upload(photoSet);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Upload failed.";
+
+          throw new Error(`${photoSet.full.name}: ${message}`);
+        }
+
         completed += 1;
         onProgress(completed);
       }
@@ -229,9 +240,11 @@ export function AdminPhotoUpload({
   defaultAlbumId: preferredAlbumId
 }: AdminPhotoUploadProps) {
   const [status, setStatus] = useState("");
+  const [statusKind, setStatusKind] = useState<"info" | "error">("info");
   const [isUploading, setIsUploading] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [activePhoto, setActivePhoto] = useState("");
   const [selection, setSelection] = useState<SelectionSummary>({
     thumbnails: 0,
     previews: 0,
@@ -284,6 +297,7 @@ export function AdminPhotoUpload({
     const fulls = fileList(formData, "fulls");
 
     if (!albumId || !thumbnails.length || !previews.length || !fulls.length) {
+      setStatusKind("error");
       setStatus("Choose an album and all three export groups.");
       return;
     }
@@ -291,6 +305,7 @@ export function AdminPhotoUpload({
     const photoSets = buildPhotoSets(thumbnails, previews, fulls);
 
     if (!photoSets.length) {
+      setStatusKind("error");
       setStatus(
         "No matching files found. Use matching names like img_001_thumb.jpg, img_001_preview.jpg, and img_001.jpg."
       );
@@ -298,6 +313,7 @@ export function AdminPhotoUpload({
     }
 
     if (photoSets.length !== fulls.length) {
+      setStatusKind("error");
       setStatus(
         `Matched ${photoSets.length}/${fulls.length} full-res files. Check thumbnail and preview filenames before uploading.`
       );
@@ -307,21 +323,27 @@ export function AdminPhotoUpload({
     setIsUploading(true);
     setCompletedCount(0);
     setTotalCount(photoSets.length);
-    setStatus(`Uploading 0/${photoSets.length} photos...`);
+    setActivePhoto("");
+    setStatusKind("info");
+    setStatus(`Preparing ${photoSets.length} photo sets for upload...`);
 
     try {
       await uploadWithLimit(
         photoSets,
-        3,
+        2,
         (photoSet) => uploadPhotoSet(albumId, photoSet),
+        (index, photoSet) => {
+          setActivePhoto(`Working on ${index}/${photoSets.length}: ${photoSet.full.name}`);
+        },
         (completed) => {
           setCompletedCount(completed);
-          setStatus(`Uploaded ${completed}/${photoSets.length} photos...`);
+          setStatus(`Uploaded ${completed}/${photoSets.length} photo sets...`);
         },
       );
 
       window.location.assign("/admin?view=uploads&notice=photos-uploaded#uploads");
     } catch (error) {
+      setStatusKind("error");
       setStatus(error instanceof Error ? error.message : "Upload failed.");
       setIsUploading(false);
     }
@@ -388,9 +410,20 @@ export function AdminPhotoUpload({
         <span>{fileSizeLabel(selection.fullSize)}</span>
       </div>
       {isUploading && totalCount ? (
-        <progress className="upload-progress" value={completedCount} max={totalCount} />
+        <div className="upload-status-panel">
+          <div>
+            <strong>
+              {completedCount}/{totalCount} photo sets uploaded
+            </strong>
+            <small>
+              One set means thumbnail, preview, full-res file, and Supabase record.
+            </small>
+          </div>
+          {activePhoto ? <span>{activePhoto}</span> : null}
+          <progress className="upload-progress" value={completedCount} max={totalCount} />
+        </div>
       ) : null}
-      {status ? <p className="muted">{status}</p> : null}
+      {status ? <p className={`upload-message ${statusKind}`}>{status}</p> : null}
     </form>
   );
 }
