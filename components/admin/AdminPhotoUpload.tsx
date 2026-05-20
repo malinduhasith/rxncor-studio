@@ -77,17 +77,32 @@ async function signUpload(albumId: string, kind: string, file: File) {
   return (await response.json()) as SignedUpload;
 }
 
-async function uploadToR2(signedUpload: SignedUpload, file: File) {
-  const response = await fetch(signedUpload.uploadUrl, {
-    method: "PUT",
-    headers: {
-      "Content-Type": file.type || "application/octet-stream"
-    },
-    body: file
-  });
+async function uploadToR2(signedUpload: SignedUpload, file: File, label: string) {
+  let response: Response;
+
+  try {
+    response = await fetch(signedUpload.uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": file.type || "application/octet-stream"
+      },
+      body: file
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Network request failed.";
+
+    throw new Error(
+      `${label} R2 PUT failed before R2 returned a response: ${message}. Check R2 CORS, network, and the selected file.`
+    );
+  }
 
   if (!response.ok) {
-    throw new Error(await responseMessage(response, `R2 upload failed with ${response.status}.`));
+    throw new Error(
+      `${label} R2 PUT returned ${response.status}: ${await responseMessage(
+        response,
+        "R2 upload failed."
+      )}`
+    );
   }
 }
 
@@ -191,14 +206,19 @@ async function uploadPhotoSet(albumId: string, photoSet: PhotoSet) {
 
   try {
     const uploadResults = await Promise.allSettled([
-      uploadToR2(thumbnailUpload, photoSet.thumbnail),
-      uploadToR2(previewUpload, photoSet.preview),
-      uploadToR2(fullUpload, photoSet.full)
+      uploadToR2(thumbnailUpload, photoSet.thumbnail, "Thumbnail"),
+      uploadToR2(previewUpload, photoSet.preview, "Preview"),
+      uploadToR2(fullUpload, photoSet.full, "Full-res")
     ]);
+    const uploadErrors = uploadResults
+      .filter((result): result is PromiseRejectedResult => result.status === "rejected")
+      .map((result) =>
+        result.reason instanceof Error ? result.reason.message : "Unknown R2 upload error."
+      );
 
-    if (uploadResults.some((result) => result.status === "rejected")) {
+    if (uploadErrors.length) {
       await cleanupUploadedKeys(uploadedKeys);
-      throw new Error(`Could not upload all files for ${photoSet.full.name}.`);
+      throw new Error(uploadErrors.join(" | "));
     }
 
     const photoResponse = await fetch("/api/photos", {
@@ -262,12 +282,13 @@ async function uploadWithLimit(
   let nextIndex = 0;
   let processed = 0;
   let successful = 0;
+  let stoppedEarly = false;
   const failures: UploadFailure[] = [];
   const workerCount = Math.min(limit, photoSets.length);
 
   await Promise.all(
     Array.from({ length: workerCount }, async () => {
-      while (nextIndex < photoSets.length) {
+      while (nextIndex < photoSets.length && !stoppedEarly) {
         const currentIndex = nextIndex;
         nextIndex += 1;
         const photoSet = photoSets[currentIndex];
@@ -284,6 +305,10 @@ async function uploadWithLimit(
             filename: photoSet.full.name,
             message
           });
+
+          if (successful === 0 && failures.length >= 10) {
+            stoppedEarly = true;
+          }
         }
 
         processed += 1;
@@ -298,7 +323,8 @@ async function uploadWithLimit(
 
   return {
     successful,
-    failures
+    failures,
+    stoppedEarly
   };
 }
 
@@ -421,7 +447,9 @@ export function AdminPhotoUpload({
       if (result.failures.length) {
         setStatusKind("error");
         setStatus(
-          `Uploaded ${result.successful}/${photoSets.length} photo sets. ${result.failures.length} failed. You can retry after checking the failed files below.`
+          result.stoppedEarly
+            ? `Stopped early because the first ${result.failures.length} uploads failed. This usually points to an R2/CORS/config issue, not bad filenames.`
+            : `Uploaded ${result.successful}/${photoSets.length} photo sets. ${result.failures.length} failed. You can retry after checking the failed files below.`
         );
         setIsUploading(false);
         return;
