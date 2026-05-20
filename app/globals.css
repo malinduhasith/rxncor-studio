@@ -32,6 +32,7 @@ body {
     var(--paper);
   background-size: 42px 42px, 42px 42px, auto;
   font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
 }
 
 a {
@@ -224,8 +225,8 @@ h3 {
 }
 
 .admin-title {
-  max-width: 920px;
-  font-size: 5.4rem;
+  max-width: 100%;
+  font-size: 4.7rem;
 }
 
 .panel-title {
@@ -928,6 +929,8 @@ h3 {
 
 .dashboard-panel {
   max-width: none;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .field {
@@ -1140,8 +1143,8 @@ h3 {
 
 .admin-layout {
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
-  gap: 24px;
+  grid-template-columns: minmax(190px, 230px) minmax(0, 1fr);
+  gap: 18px;
   align-items: start;
 }
 
@@ -1157,6 +1160,7 @@ h3 {
 .sidebar {
   position: sticky;
   top: 96px;
+  min-width: 0;
   display: grid;
   gap: 8px;
   padding: 14px;
@@ -1189,7 +1193,7 @@ h3 {
 
 .admin-page-header {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 18px;
   margin: 18px 0;
@@ -1201,7 +1205,7 @@ h3 {
 
 .admin-page-header h2 {
   margin-bottom: 8px;
-  font-size: 2.6rem;
+  font-size: 2.35rem;
 }
 
 .admin-page-header p {
@@ -1343,7 +1347,7 @@ h3 {
 
 .manager-grid {
   display: grid;
-  grid-template-columns: minmax(240px, 0.75fr) minmax(0, 1.25fr);
+  grid-template-columns: minmax(250px, 0.7fr) minmax(0, 1.3fr);
   gap: 16px;
   align-items: start;
 }
@@ -1469,10 +1473,18 @@ h3 {
 
 .filter-bar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(130px, 0.7fr) auto;
+  grid-template-columns: 1fr;
   gap: 10px;
   align-items: end;
   margin-bottom: 14px;
+}
+
+.filter-bar .field {
+  margin-bottom: 0;
+}
+
+.filter-bar .button {
+  width: 100%;
 }
 
 .album-list {
@@ -2062,6 +2074,44 @@ h3 {
   .album-card:hover .photo-img {
     filter: none;
     transform: none;
+  }
+}
+
+@media (max-width: 1180px) {
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .sidebar strong {
+    grid-column: 1 / -1;
+  }
+
+  .sidebar a {
+    min-height: 42px;
+    border: 2px solid var(--line);
+    border-left-width: 2px;
+    border-radius: 4px;
+    justify-content: center;
+    padding: 0 8px;
+    text-align: center;
+  }
+
+  .sidebar a.active {
+    border-color: var(--line);
+    border-left-width: 2px;
+  }
+
+  .admin-title {
+    font-size: 4rem;
+  }
+
+  .manager-grid {
+    grid-template-columns: 1fr;
   }
 }
 
