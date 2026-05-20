@@ -120,6 +120,16 @@ async function cleanupUploadedKeys(keys: string[]) {
   }).catch(() => null);
 }
 
+async function runServerR2Diagnostic() {
+  const response = await fetch("/api/uploads/diagnostic", {
+    method: "POST"
+  });
+
+  if (!response.ok) {
+    throw new Error(await responseMessage(response, "Server R2 diagnostic failed."));
+  }
+}
+
 function fileList(formData: FormData, name: string) {
   return formData
     .getAll(name)
@@ -340,6 +350,9 @@ export function AdminPhotoUpload({
   const [totalCount, setTotalCount] = useState(0);
   const [activePhoto, setActivePhoto] = useState("");
   const [failedUploads, setFailedUploads] = useState<UploadFailure[]>([]);
+  const [isTestingR2, setIsTestingR2] = useState(false);
+  const [diagnosticStatus, setDiagnosticStatus] = useState("");
+  const [diagnosticKind, setDiagnosticKind] = useState<"info" | "error">("info");
   const [selection, setSelection] = useState<SelectionSummary>({
     thumbnails: 0,
     previews: 0,
@@ -463,6 +476,52 @@ export function AdminPhotoUpload({
     }
   }
 
+  async function handleR2Diagnostic(event: React.MouseEvent<HTMLButtonElement>) {
+    const form = event.currentTarget.form;
+
+    if (!form || isTestingR2) {
+      return;
+    }
+
+    const formData = new FormData(form);
+    const albumId = String(formData.get("album_id") ?? "");
+
+    if (!albumId) {
+      setDiagnosticKind("error");
+      setDiagnosticStatus("Choose an album before running the R2 upload test.");
+      return;
+    }
+
+    setIsTestingR2(true);
+    setDiagnosticKind("info");
+    setDiagnosticStatus("Testing server R2 access...");
+
+    try {
+      await runServerR2Diagnostic();
+      setDiagnosticStatus("Server R2 access passed. Testing browser signed upload...");
+
+      const testFile = new File(
+        [`rxncor.studio browser R2 diagnostic ${new Date().toISOString()}`],
+        `_r2-browser-test-${Date.now()}.png`,
+        { type: "image/png" }
+      );
+      const signedUpload = await signUpload(albumId, "thumbnails", testFile);
+
+      await uploadToR2(signedUpload, testFile, "Browser diagnostic");
+      await cleanupUploadedKeys([signedUpload.key]);
+
+      setDiagnosticKind("info");
+      setDiagnosticStatus(
+        "R2 diagnostics passed. Server credentials and browser signed upload both work."
+      );
+    } catch (error) {
+      setDiagnosticKind("error");
+      setDiagnosticStatus(error instanceof Error ? error.message : "R2 diagnostic failed.");
+    } finally {
+      setIsTestingR2(false);
+    }
+  }
+
   return (
     <form
       className="upload-form"
@@ -481,6 +540,19 @@ export function AdminPhotoUpload({
           Choose matching thumbnail, preview, and full-res exports. Matching names are
           paired automatically.
         </span>
+      </div>
+      <div className="upload-diagnostic">
+        <button
+          className="button secondary"
+          type="button"
+          disabled={!hasAlbums || isUploading || isTestingR2}
+          onClick={handleR2Diagnostic}
+        >
+          {isTestingR2 ? "Testing R2" : "Test R2 upload"}
+        </button>
+        {diagnosticStatus ? (
+          <p className={`upload-message ${diagnosticKind}`}>{diagnosticStatus}</p>
+        ) : null}
       </div>
       <label className="field">
         Thumbnail images

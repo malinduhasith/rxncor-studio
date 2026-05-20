@@ -1020,6 +1020,15 @@ h3 {
   color: var(--ink);
 }
 
+.upload-diagnostic {
+  display: grid;
+  gap: 8px;
+}
+
+.upload-diagnostic .button {
+  justify-self: start;
+}
+
 .upload-summary span {
   display: inline-flex;
   min-height: 28px;
