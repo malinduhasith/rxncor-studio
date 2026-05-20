@@ -77,33 +77,45 @@ async function signUpload(albumId: string, kind: string, file: File) {
   return (await response.json()) as SignedUpload;
 }
 
-async function uploadToR2(signedUpload: SignedUpload, file: File, label: string) {
-  let response: Response;
+function uploadToR2(signedUpload: SignedUpload, file: File, label: string) {
+  return new Promise<void>((resolve, reject) => {
+    const request = new XMLHttpRequest();
 
-  try {
-    response = await fetch(signedUpload.uploadUrl, {
-      method: "PUT",
-      headers: {
-        "Content-Type": file.type || "application/octet-stream"
-      },
-      body: file
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Network request failed.";
+    request.open("PUT", signedUpload.uploadUrl);
+    request.setRequestHeader("Content-Type", file.type || "application/octet-stream");
 
-    throw new Error(
-      `${label} R2 PUT failed before R2 returned a response: ${message}. Check R2 CORS, network, and the selected file.`
-    );
-  }
+    request.onload = () => {
+      if (request.status >= 200 && request.status < 300) {
+        resolve();
+        return;
+      }
 
-  if (!response.ok) {
-    throw new Error(
-      `${label} R2 PUT returned ${response.status}: ${await responseMessage(
-        response,
-        "R2 upload failed."
-      )}`
-    );
-  }
+      reject(
+        new Error(
+          `${label} R2 PUT returned ${request.status}: ${
+            request.responseText || request.statusText || "R2 upload failed."
+          }`
+        )
+      );
+    };
+
+    request.onerror = () => {
+      reject(
+        new Error(
+          `${label} R2 PUT failed before R2 returned a response. Browser status 0 usually means CORS, local-file access, an extension, or network blocking. File type: ${
+            file.type || "unknown"
+          }, size: ${fileSizeLabel(file.size)}.`
+        )
+      );
+    };
+
+    request.ontimeout = () => {
+      reject(new Error(`${label} R2 PUT timed out for ${file.name}.`));
+    };
+
+    request.timeout = 10 * 60 * 1000;
+    request.send(file);
+  });
 }
 
 async function cleanupUploadedKeys(keys: string[]) {
