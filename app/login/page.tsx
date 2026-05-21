@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { LogIn } from "lucide-react";
 import { clientLoginAction } from "./actions";
+import { Notice } from "@/components/Notice";
+import { clientLoginNotices } from "@/lib/notices";
 
 export const metadata: Metadata = {
   title: "Client Login",
@@ -13,22 +15,9 @@ type LoginPageProps = {
   }>;
 };
 
-const errorMessages: Record<string, string> = {
-  "duplicate-client":
-    "More than one client uses this email. Open the admin panel and remove or edit the duplicate client.",
-  invalid: "The email or password did not match a client profile.",
-  lookup: "Client login could not be checked right now. Try again in a moment.",
-  missing: "Enter both email and password.",
-  "no-client": "No client profile was found for that email address.",
-  "no-password": "This client does not have a client login password set yet.",
-  "rate-limited": "Too many attempts. Wait a few minutes, then try again.",
-  "wrong-password": "That password does not match this client profile.",
-  session: "Sign in again to view your albums."
-};
-
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const { error } = await searchParams;
-  const errorMessage = error ? errorMessages[error] : undefined;
+  const notice = error ? clientLoginNotices[error] : undefined;
 
   return (
     <main className="shell section">
@@ -38,7 +27,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <p className="form-note">
           Sign in with the client email and password provided by rxncor.studio.
         </p>
-        {errorMessage ? <p className="alert">{errorMessage}</p> : null}
+        <Notice notice={notice} />
         <form action={clientLoginAction}>
           <label className="field">
             Email

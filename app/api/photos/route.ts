@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getVerifiedAdminApiClient } from "@/lib/api-auth";
+import { noStoreJson } from "@/lib/http";
 import { objectKeyFromPublicUrl } from "@/lib/r2";
 
 const photoSchema = z.object({
@@ -16,14 +16,14 @@ export async function POST(request: Request) {
   const parsed = photoSchema.safeParse(await request.json().catch(() => null));
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid photo request" }, { status: 400 });
+    return noStoreJson({ error: "Invalid photo request." }, { status: 400 });
   }
 
   const payload = parsed.data;
   const supabase = await getVerifiedAdminApiClient();
 
   if (!supabase) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return noStoreJson({ error: "Unauthorized." }, { status: 401 });
   }
 
   const { data: album } = await supabase
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (!album) {
-    return NextResponse.json({ error: "Album not found" }, { status: 404 });
+    return noStoreJson({ error: "Album not found." }, { status: 404 });
   }
 
   const albumPrefix = `albums/${album.slug}/`;
@@ -45,7 +45,10 @@ export async function POST(request: Request) {
   ];
 
   if (!uploadKeys.every((key) => key.startsWith(albumPrefix))) {
-    return NextResponse.json({ error: "Photo files do not match album" }, { status: 400 });
+    return noStoreJson(
+      { error: "Photo files do not match this album." },
+      { status: 400 }
+    );
   }
 
   const { data: existingPhoto, error: existingPhotoError } = await supabase
@@ -56,7 +59,10 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (existingPhotoError) {
-    return NextResponse.json({ error: existingPhotoError.message }, { status: 400 });
+    return noStoreJson(
+      { error: "Photo filename could not be checked." },
+      { status: 400 }
+    );
   }
 
   const photoPayload = {
@@ -73,7 +79,7 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return noStoreJson({ error: "Photo record could not be saved." }, { status: 400 });
   }
 
   if (!album.cover_photo_url) {
@@ -83,5 +89,5 @@ export async function POST(request: Request) {
       .eq("id", payload.album_id);
   }
 
-  return NextResponse.json({ photo });
+  return noStoreJson({ photo });
 }

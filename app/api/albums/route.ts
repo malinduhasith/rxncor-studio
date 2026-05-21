@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getVerifiedAdminApiClient } from "@/lib/api-auth";
+import { noStoreJson } from "@/lib/http";
 import { hashPassword } from "@/lib/password";
 
 const albumSchema = z.object({
@@ -21,14 +21,14 @@ export async function POST(request: Request) {
   const parsed = albumSchema.safeParse(await request.json().catch(() => null));
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid album request" }, { status: 400 });
+    return noStoreJson({ error: "Invalid album request." }, { status: 400 });
   }
 
   const payload = parsed.data;
   const supabase = await getVerifiedAdminApiClient();
 
   if (!supabase) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return noStoreJson({ error: "Unauthorized." }, { status: 401 });
   }
 
   const rawPassword = String(payload.password ?? "").trim();
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return noStoreJson({ error: "Album could not be saved." }, { status: 400 });
   }
 
   if (payload.client_id) {
@@ -64,12 +64,15 @@ export async function POST(request: Request) {
     if (assignmentError) {
       await supabase.from("albums").delete().eq("id", data.id);
 
-      return NextResponse.json({ error: assignmentError.message }, { status: 400 });
+      return noStoreJson(
+        { error: "Client assignment could not be saved, so the album was not kept." },
+        { status: 400 }
+      );
     }
   }
 
   revalidatePath("/admin");
   revalidatePath("/albums");
 
-  return NextResponse.json({ album: data });
+  return noStoreJson({ album: data });
 }

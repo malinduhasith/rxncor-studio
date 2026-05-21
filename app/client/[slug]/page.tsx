@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { unlockGalleryAction } from "./actions";
+import { Notice } from "@/components/Notice";
 import { siteConfig } from "@/config/site";
 import { featuredAlbums } from "@/lib/sample-data";
 import { GalleryLightbox, type GalleryDisplayPhoto } from "@/components/gallery/GalleryLightbox";
@@ -11,6 +12,7 @@ import {
   albumRequiresUnlock,
   getGalleryAccessForCookies
 } from "@/lib/gallery-security";
+import { galleryNotices } from "@/lib/notices";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -153,6 +155,7 @@ export default async function ClientGalleryPage({
     thumbnailDisplayUrl: photo.thumbnailDisplayUrl,
     r2ObjectKey: photo.r2_object_key
   }));
+  const galleryNotice = notice ? galleryNotices[notice] : undefined;
 
   return (
     <main className="shell section gallery-page">
@@ -229,30 +232,7 @@ export default async function ClientGalleryPage({
               </div>
             ) : null}
           </div>
-          {notice === "wrong-password" ? (
-            <p className="alert">That password did not match. Try again.</p>
-          ) : null}
-          {notice === "client-not-found" ? (
-            <p className="alert">No client profile was found for that email address.</p>
-          ) : null}
-          {notice === "client-no-password" ? (
-            <p className="alert">This client does not have a client login password set yet.</p>
-          ) : null}
-          {notice === "client-not-assigned" ? (
-            <p className="alert">That client login is not assigned to this gallery.</p>
-          ) : null}
-          {notice === "duplicate-client" ? (
-            <p className="alert">
-              More than one client uses that email. Update the duplicate client records
-              in admin.
-            </p>
-          ) : null}
-          {notice === "email-required" ? (
-            <p className="alert">Enter your email before opening this gallery.</p>
-          ) : null}
-          {notice === "rate-limited" ? (
-            <p className="alert">Too many attempts. Wait a few minutes, then try again.</p>
-          ) : null}
+          <Notice notice={galleryNotice} />
           <form action={unlockGalleryAction}>
             <input name="album_id" type="hidden" value={album.id} />
             <input name="slug" type="hidden" value={album.slug} />

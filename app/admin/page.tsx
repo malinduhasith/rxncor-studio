@@ -45,6 +45,7 @@ import { ClientPasswordResetForm } from "@/components/admin/ClientPasswordResetF
 import { ConfirmSubmitButton } from "@/components/admin/ConfirmSubmitButton";
 import { CopyLinkButton } from "@/components/admin/CopyLinkButton";
 import { CopyTextButton } from "@/components/admin/CopyTextButton";
+import { Notice, NoticeStack } from "@/components/Notice";
 import { siteConfig } from "@/config/site";
 import {
   aboutBlockKindCopy,
@@ -54,6 +55,7 @@ import {
   getAboutPageContent,
   metaItemsToLines
 } from "@/lib/about-builder";
+import { adminNotices, type NoticeContent } from "@/lib/notices";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -65,49 +67,6 @@ export const metadata: Metadata = {
     index: false,
     follow: false
   }
-};
-
-const notices: Record<string, string> = {
-  "client-created": "Client created. Use that exact email and client password on /login.",
-  "client-updated":
-    "Client updated. If you reset the password, use the new client password on /login.",
-  "client-password-reset": "Client password updated. Share the new password with the client.",
-  "client-password-removed": "Client password removed.",
-  "client-deleted": "Client deleted.",
-  "client-error": "Client could not be created. Check the fields and try again.",
-  "client-duplicate-email": "Another client already uses that email address.",
-  "client-password-error": "Client password could not be saved. Set it again and try login.",
-  "album-created": "Album created.",
-  "album-error": "Album could not be created. Check the album details and try again.",
-  "album-updated": "Album updated.",
-  "album-update-error": "Album could not be updated. Check the fields and try again.",
-  "album-deleted": "Album deleted.",
-  "album-delete-error": "Album could not be deleted.",
-  "cover-updated": "Cover photo updated.",
-  "photo-uploaded": "Photo uploaded.",
-  "photos-uploaded": "Photos uploaded.",
-  "photo-updated": "Photo updated.",
-  "photo-deleted": "Photo deleted.",
-  "photo-error": "Photo action could not be completed.",
-  "zip-uploaded": "Album ZIP uploaded.",
-  "zip-removed": "Album ZIP removed.",
-  "zip-error": "ZIP action could not be completed.",
-  "inquiry-updated": "Inquiry status updated.",
-  "inquiry-error": "Inquiry could not be updated.",
-  "shoot-request-updated": "Shoot request updated.",
-  "shoot-request-deleted": "Shoot request deleted.",
-  "shoot-request-error": "Shoot request could not be updated.",
-  "shoot-request-conflict":
-    "That accepted shoot overlaps another accepted booking. Adjust the time or decline/archive one first.",
-  "about-updated": "About page settings updated.",
-  "about-block-created": "About page block added.",
-  "about-block-updated": "About page block updated.",
-  "about-block-deleted": "About page block deleted.",
-  "about-error": "About page settings could not be saved.",
-  "about-meta-error": "About metadata needs at least one valid line like Based in: Melbourne.",
-  "about-block-error": "About page block could not be saved.",
-  "about-setup-error":
-    "About builder tables are not available yet. Run the Supabase about builder migration."
 };
 
 type ClientOption = {
@@ -657,15 +616,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const downloadCount = downloadCountResult.count ?? 0;
   const downloadLogs = (downloadLogsResult.data ?? []) as DownloadLog[];
   const inquiries = (inquiriesResult.data ?? []) as ContactInquiry[];
-  const { data: albumPhotoRows } = albums.length
+  const albumPhotoResult = albums.length
     ? await supabase.from("photos").select("album_id").in(
         "album_id",
         albums.map((album) => album.id)
       )
-    : { data: [] };
+    : { data: [], error: null };
   const albumPhotoCounts = new Map<string, number>();
 
-  for (const row of (albumPhotoRows ?? []) as { album_id: string }[]) {
+  for (const row of (albumPhotoResult.data ?? []) as { album_id: string }[]) {
     albumPhotoCounts.set(row.album_id, (albumPhotoCounts.get(row.album_id) ?? 0) + 1);
   }
   const clientAlbumCounts = new Map<string, number>();
@@ -695,7 +654,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     }
   }
 
-  const { data: selectedPhotoRows } = selectedAlbum
+  const selectedPhotoResult = selectedAlbum
     ? await supabase
         .from("photos")
         .select(
@@ -703,17 +662,17 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         )
         .eq("album_id", selectedAlbum.id)
         .order("uploaded_at", { ascending: true })
-    : { data: [] };
-  const selectedPhotos = (selectedPhotoRows ?? []) as AdminPhoto[];
-  const { data: selectedAlbumLogRows } = selectedAlbum
+    : { data: [], error: null };
+  const selectedPhotos = (selectedPhotoResult.data ?? []) as AdminPhoto[];
+  const selectedAlbumLogResult = selectedAlbum
     ? await supabase
         .from("download_logs")
         .select("id, album_id, photo_id, client_email, downloaded_at, ip_address")
         .eq("album_id", selectedAlbum.id)
         .order("downloaded_at", { ascending: false })
         .limit(50)
-    : { data: [] };
-  const selectedAlbumLogs = (selectedAlbumLogRows ?? []) as DownloadLog[];
+    : { data: [], error: null };
+  const selectedAlbumLogs = (selectedAlbumLogResult.data ?? []) as DownloadLog[];
   const displayPhotos: DisplayPhoto[] = await Promise.all(
     selectedPhotos.map(async (photo) => ({
       ...photo,
@@ -774,19 +733,112 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         .filter((photoId): photoId is string => Boolean(photoId))
     )
   ];
-  const { data: logPhotoRows } = logPhotoIds.length
+  const logPhotoResult = logPhotoIds.length
     ? await supabase.from("photos").select("id, filename").in("id", logPhotoIds)
-    : { data: [] };
+    : { data: [], error: null };
   const logPhotoNames = new Map(
     [
       ...selectedPhotos.map((photo) => ({ id: photo.id, filename: photo.filename })),
-      ...((logPhotoRows ?? []) as { id: string; filename: string }[])
+      ...((logPhotoResult.data ?? []) as { id: string; filename: string }[])
     ].map((photo) => [photo.id, photo.filename])
   );
-  const noticeMessage = notice ? notices[notice] : undefined;
+  const noticeContent = notice ? adminNotices[notice] : undefined;
   const inquiriesUnavailable = Boolean(inquiriesResult.error);
   const shootRequestsUnavailable = Boolean(shootRequestsResult.error);
   const aboutContent = await getAboutPageContent({ includeInactive: true });
+  const dataLoadNotices: NoticeContent[] = [
+    clientsResult.error
+      ? {
+          tone: "error",
+          title: "Clients could not load",
+          message:
+            "Client records are unavailable. Check the clients table and Supabase policies before editing client access."
+        }
+      : null,
+    albumsResult.error
+      ? {
+          tone: "error",
+          title: "Albums could not load",
+          message:
+            "Album records are unavailable. Public galleries and admin album tools may show incomplete data."
+        }
+      : null,
+    albumClientsResult.error
+      ? {
+          tone: "warning",
+          title: "Client assignments unavailable",
+          message:
+            "Album-to-client links could not be loaded. Client portal access may look empty until this is fixed."
+        }
+      : null,
+    downloadLogsResult.error
+      ? {
+          tone: "warning",
+          title: "Download logs unavailable",
+          message:
+            "Download history could not be loaded. New downloads can still work, but audit stats may be incomplete."
+        }
+      : null,
+    albumCountResult.error ||
+    photoCountResult.error ||
+    protectedAlbumCountResult.error ||
+    downloadCountResult.error
+      ? {
+          tone: "warning",
+          title: "Dashboard counts are incomplete",
+          message:
+            "One or more summary counts could not be loaded. The lists may still work, but headline numbers may be lower than expected."
+        }
+      : null,
+    albumPhotoResult.error
+      ? {
+          tone: "warning",
+          title: "Album photo counts unavailable",
+          message:
+            "Per-album photo counts could not be loaded. Album readiness and filters may be incomplete."
+        }
+      : null,
+    selectedPhotoResult.error
+      ? {
+          tone: "warning",
+          title: "Selected album files unavailable",
+          message:
+            "The selected album's file list could not be loaded. Try refreshing or opening another album."
+        }
+      : null,
+    selectedAlbumLogResult.error || logPhotoResult.error
+      ? {
+          tone: "warning",
+          title: "Selected album download details unavailable",
+          message:
+            "Some selected album download details could not be loaded. Audit rows may show partial information."
+        }
+      : null,
+    inquiriesUnavailable
+      ? {
+          tone: "warning",
+          title: "Booking inquiries need setup",
+          message:
+            "Run the contact inquiries Supabase migration, then refresh this page."
+        }
+      : null,
+    shootRequestsUnavailable
+      ? {
+          tone: "warning",
+          title: "Shoot requests need setup",
+          message:
+            "Run the shoot requests Supabase migration before accepting bookings from the homepage."
+        }
+      : null,
+    aboutContent.setupMissing
+      ? {
+          tone: "warning",
+          title: "About builder is in fallback mode",
+          message:
+            "Run the About Builder Supabase migration before saving custom About page blocks."
+        }
+      : null
+  ].filter((item): item is NoticeContent => Boolean(item));
   const aboutBlocksBySection = new Map(
     aboutBlockSections.map((section) => [
       section,
@@ -804,6 +856,52 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const draftAlbumCount = albums.filter(
     (album) => albumStatus(album, albumPhotoCounts.get(album.id) ?? 0) === "Draft"
   ).length;
+  const clientsWithoutPasswordCount = clients.filter(
+    (client) => !client.password_hash
+  ).length;
+  const albumsMissingCoverCount = albums.filter(
+    (album) => (albumPhotoCounts.get(album.id) ?? 0) > 0 && !album.cover_photo_url
+  ).length;
+  const privateUnassignedCount = albums.filter(
+    (album) => !album.is_public && !(albumAssignedClientIds.get(album.id)?.size)
+  ).length;
+  const recentDownloadCount = downloadLogs.length;
+  const newInquiryCount = inquiries.filter((inquiry) => inquiry.status === "new").length;
+  const newShootRequestCount = shootRequests.filter(
+    (request) => request.status === "new"
+  ).length;
+  const operationalItems = [
+    {
+      label: "New shoot requests",
+      detail: `${newShootRequestCount} waiting for review`,
+      attention: newShootRequestCount > 0
+    },
+    {
+      label: "New inquiries",
+      detail: `${newInquiryCount} waiting for reply`,
+      attention: newInquiryCount > 0
+    },
+    {
+      label: "Client passwords",
+      detail: `${clientsWithoutPasswordCount} clients without a portal password`,
+      attention: clientsWithoutPasswordCount > 0
+    },
+    {
+      label: "Private access",
+      detail: `${privateUnassignedCount} private albums without assigned clients`,
+      attention: privateUnassignedCount > 0
+    },
+    {
+      label: "Album covers",
+      detail: `${albumsMissingCoverCount} uploaded albums without a cover`,
+      attention: albumsMissingCoverCount > 0
+    },
+    {
+      label: "Recent downloads",
+      detail: `${recentDownloadCount} latest log entries loaded`,
+      attention: false
+    }
+  ];
 
   return (
     <main className="shell section">
@@ -868,7 +966,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               )}
             </div>
           </div>
-          {noticeMessage ? <p className="alert success">{noticeMessage}</p> : null}
+          <NoticeStack notices={[noticeContent, ...dataLoadNotices]} />
 
           {activeView === "overview" ? (
             <>
@@ -943,6 +1041,39 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <small>Archive or reopen from the album manager.</small>
                     </span>
                   </div>
+                </div>
+              </section>
+
+              <section className="workflow-panel" aria-label="Action center">
+                <div className="panel-title-row">
+                  <div>
+                    <p className="eyebrow">Action center</p>
+                    <h2>What needs attention</h2>
+                    <p className="muted">
+                      These counts catch the small operational things that can
+                      confuse clients: missing passwords, missing covers, unassigned
+                      private albums, and unanswered booking work.
+                    </p>
+                  </div>
+                  <CircleAlert size={26} />
+                </div>
+                <div className="readiness-grid">
+                  {operationalItems.map((item) => (
+                    <div
+                      className={`readiness-item ${item.attention ? "attention" : "complete"}`}
+                      key={item.label}
+                    >
+                      {item.attention ? (
+                        <CircleAlert size={18} />
+                      ) : (
+                        <CircleCheck size={18} />
+                      )}
+                      <span>
+                        <strong>{item.label}</strong>
+                        <small>{item.detail}</small>
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </section>
 
@@ -1033,11 +1164,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </div>
 
             {aboutContent.setupMissing ? (
-              <p className="alert">
-                About builder is running from fallback content. Run{" "}
-                <code>supabase/migrations/20260519_about_builder.sql</code> in
-                Supabase SQL Editor, then refresh this page to save edits.
-              </p>
+              <Notice
+                notice={{
+                  tone: "warning",
+                  title: "About Builder is in fallback mode",
+                  message:
+                    "Run supabase/migrations/20260519_about_builder.sql in Supabase SQL Editor, then refresh this page to save edits."
+                }}
+              />
             ) : null}
 
             <div className="about-builder-grid">
@@ -2026,11 +2160,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <span className="pill">{shootRequests.length} recent</span>
             </div>
             {shootRequestsUnavailable ? (
-              <p className="alert">
-                Shoot requests are not available yet. Run
-                supabase/migrations/20260519_shoot_requests.sql in Supabase SQL
-                Editor, then refresh this page.
-              </p>
+              <Notice
+                notice={{
+                  tone: "warning",
+                  title: "Shoot requests are not available yet",
+                  message:
+                    "Run supabase/migrations/20260519_shoot_requests.sql in Supabase SQL Editor, then refresh this page."
+                }}
+              />
             ) : null}
             <div className="shoot-request-list">
               {shootRequests.map((request) => {
@@ -2183,11 +2320,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <span className="pill">{inquiries.length} recent</span>
             </div>
             {inquiriesUnavailable ? (
-              <p className="alert">
-                Booking inquiries are not available yet. Run
-                supabase/migrations/20260519_contact_inquiries.sql in Supabase SQL
-                Editor, then refresh this page.
-              </p>
+              <Notice
+                notice={{
+                  tone: "warning",
+                  title: "Booking inquiries are not available yet",
+                  message:
+                    "Run supabase/migrations/20260519_contact_inquiries.sql in Supabase SQL Editor, then refresh this page."
+                }}
+              />
             ) : null}
             <div className="table-wrap">
               <table className="table">

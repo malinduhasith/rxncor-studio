@@ -1124,7 +1124,16 @@ h3 {
   box-shadow: var(--shadow);
 }
 
+.notice-stack {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 18px;
+}
+
 .alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   padding: 12px 14px;
   border: 2px solid #c87a62;
   border-radius: 4px;
@@ -1133,10 +1142,44 @@ h3 {
   line-height: 1.45;
 }
 
+.alert svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.alert strong,
+.alert span span {
+  display: block;
+}
+
+.alert strong {
+  margin-bottom: 2px;
+  color: inherit;
+  font-weight: 900;
+}
+
 .alert.success {
   border-color: #80965f;
   background: #f1f7eb;
   color: #3f552f;
+}
+
+.alert.warning {
+  border-color: #d5a02a;
+  background: #fff6da;
+  color: #6a4a08;
+}
+
+.alert.info {
+  border-color: #658aa3;
+  background: #eef6f8;
+  color: #244b63;
+}
+
+.alert.error {
+  border-color: #c87a62;
+  background: #fff3ee;
+  color: #7f2f20;
 }
 
 .admin-topbar {
@@ -1151,6 +1194,10 @@ h3 {
   max-width: none;
   min-width: 0;
   overflow: hidden;
+}
+
+.error-panel {
+  width: min(680px, 100%);
 }
 
 .field {

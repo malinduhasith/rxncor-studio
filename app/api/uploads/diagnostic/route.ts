@@ -1,7 +1,7 @@
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
-import { NextResponse } from "next/server";
 import { getR2Env } from "@/config/server-env";
 import { getVerifiedAdminApiClient } from "@/lib/api-auth";
+import { noStoreJson } from "@/lib/http";
 import { createR2Client } from "@/lib/r2";
 
 function diagnosticError(error: unknown) {
@@ -18,7 +18,7 @@ function diagnosticError(error: unknown) {
 
 export async function POST() {
   if (!(await getVerifiedAdminApiClient())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return noStoreJson({ error: "Unauthorized." }, { status: 401 });
   }
 
   const client = createR2Client();
@@ -41,8 +41,8 @@ export async function POST() {
       })
     );
 
-    return NextResponse.json({ ok: true, key });
+    return noStoreJson({ ok: true, key });
   } catch (error) {
-    return NextResponse.json({ error: diagnosticError(error) }, { status: 500 });
+    return noStoreJson({ error: diagnosticError(error) }, { status: 500 });
   }
 }

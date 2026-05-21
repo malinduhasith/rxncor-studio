@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getVerifiedAdminApiClient } from "@/lib/api-auth";
+import { noStoreJson } from "@/lib/http";
 import { objectKeyFromPublicUrl } from "@/lib/r2";
 
 const zipSchema = z.object({
@@ -12,14 +12,14 @@ export async function POST(request: Request) {
   const parsed = zipSchema.safeParse(await request.json().catch(() => null));
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid ZIP request" }, { status: 400 });
+    return noStoreJson({ error: "Invalid ZIP request." }, { status: 400 });
   }
 
   const payload = parsed.data;
   const supabase = await getVerifiedAdminApiClient();
 
   if (!supabase) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return noStoreJson({ error: "Unauthorized." }, { status: 401 });
   }
 
   const { data: currentAlbum } = await supabase
@@ -29,13 +29,16 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (!currentAlbum) {
-    return NextResponse.json({ error: "Album not found" }, { status: 404 });
+    return noStoreJson({ error: "Album not found." }, { status: 404 });
   }
 
   const zipObjectKey = objectKeyFromPublicUrl(payload.download_zip_url);
 
   if (!zipObjectKey.startsWith(`albums/${currentAlbum.slug}/zip/`)) {
-    return NextResponse.json({ error: "ZIP file does not match album" }, { status: 400 });
+    return noStoreJson(
+      { error: "ZIP file does not match this album." },
+      { status: 400 }
+    );
   }
 
   const { data: album, error } = await supabase
@@ -46,8 +49,8 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return noStoreJson({ error: "ZIP link could not be saved." }, { status: 400 });
   }
 
-  return NextResponse.json({ album });
+  return noStoreJson({ album });
 }

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { LogIn } from "lucide-react";
 import { signInAction } from "./actions";
+import { Notice } from "@/components/Notice";
+import { adminLoginNotices } from "@/lib/notices";
 
 export const metadata: Metadata = {
   title: "Private Admin Login",
@@ -16,15 +18,9 @@ type AdminLoginPageProps = {
   }>;
 };
 
-const errorMessages: Record<string, string> = {
-  invalid: "The email or password did not match a Supabase admin user.",
-  missing: "Enter both email and password.",
-  "rate-limited": "Too many attempts. Wait a few minutes, then try again."
-};
-
 export default async function AdminLoginPage({ searchParams }: AdminLoginPageProps) {
   const { error } = await searchParams;
-  const errorMessage = error ? errorMessages[error] : undefined;
+  const notice = error ? adminLoginNotices[error] : undefined;
 
   return (
     <main className="shell section">
@@ -34,7 +30,7 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
         <p className="form-note">
           This private page is for the rxncor.studio admin dashboard.
         </p>
-        {errorMessage ? <p className="alert">{errorMessage}</p> : null}
+        <Notice notice={notice} />
         <form action={signInAction}>
           <label className="field">
             Email

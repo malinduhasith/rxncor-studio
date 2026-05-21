@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, X } from "lucide-react";
+import { Notice } from "@/components/Notice";
+import type { NoticeTone } from "@/lib/notices";
 
 export type GalleryDisplayPhoto = {
   id: string;
@@ -75,6 +77,7 @@ export function GalleryLightbox({
 }: GalleryLightboxProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [status, setStatus] = useState("");
+  const [statusTone, setStatusTone] = useState<NoticeTone>("info");
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
   const [visibleCount, setVisibleCount] = useState(() =>
     Math.min(INITIAL_VISIBLE_PHOTOS, photos.length)
@@ -147,6 +150,7 @@ export function GalleryLightbox({
         return;
       }
 
+      setStatusTone("info");
       setStatus("Loading preview...");
 
       try {
@@ -161,6 +165,7 @@ export function GalleryLightbox({
         }
       } catch (error) {
         if (!cancelled) {
+          setStatusTone("error");
           setStatus(error instanceof Error ? error.message : "Preview failed.");
         }
       }
@@ -174,10 +179,12 @@ export function GalleryLightbox({
   }, [albumId, previewUrls, selectedPhoto]);
 
   async function downloadPhoto(photo: GalleryDisplayPhoto) {
+    setStatusTone("info");
     setStatus("Preparing download...");
     try {
       await requestDownload(albumId, photo.r2ObjectKey, photo.id, clientEmail);
     } catch (error) {
+      setStatusTone("error");
       setStatus(error instanceof Error ? error.message : "Download failed.");
     }
   }
@@ -187,10 +194,12 @@ export function GalleryLightbox({
       return;
     }
 
+    setStatusTone("info");
     setStatus("Preparing album ZIP...");
     try {
       await requestDownload(albumId, zipObjectKey, undefined, clientEmail);
     } catch (error) {
+      setStatusTone("error");
       setStatus(error instanceof Error ? error.message : "ZIP download failed.");
     }
   }
@@ -218,7 +227,17 @@ export function GalleryLightbox({
             Download ZIP
           </button>
         </div>
-        {status ? <p className="muted">{status}</p> : null}
+        <Notice
+          notice={
+            status
+              ? {
+                  tone: statusTone,
+                  title: statusTone === "error" ? "Gallery action failed" : "Gallery status",
+                  message: status
+                }
+              : undefined
+          }
+        />
         <div className="lightbox-grid">
           {visiblePhotos.map((photo, index) => (
             <button

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { submitContactAction, submitShootRequestAction } from "./actions";
 import { AlbumCard } from "@/components/AlbumCard";
+import { Notice } from "@/components/Notice";
 import { PhotoTile } from "@/components/PhotoTile";
 import { siteConfig } from "@/config/site";
+import { contactNotices, shootRequestNotices } from "@/lib/notices";
 import { getPublicAlbumCards, getPublicPortfolioPhotos } from "@/lib/public-gallery";
 import { featuredAlbums, portfolioItems } from "@/lib/sample-data";
 
@@ -21,6 +23,8 @@ function formatDate(date: string | null) {
 
 export default async function Home({ searchParams }: HomePageProps) {
   const { contact, shoot } = await searchParams;
+  const contactNotice = contact ? contactNotices[contact] : undefined;
+  const shootNotice = shoot ? shootRequestNotices[shoot] : undefined;
   const [realPortfolioPhotos, realAlbums] = await Promise.all([
     getPublicPortfolioPhotos(3),
     getPublicAlbumCards(3)
@@ -153,22 +157,7 @@ export default async function Home({ searchParams }: HomePageProps) {
         <div className="contact-grid">
           <form action={submitShootRequestAction} className="form-panel contact-form">
             <h3>Shoot request</h3>
-            {shoot === "sent" ? (
-              <p className="alert success">Request sent. I will confirm availability soon.</p>
-            ) : null}
-            {shoot === "conflict" ? (
-              <p className="alert">
-                That time is already booked. Choose another time or send a flexible window.
-              </p>
-            ) : null}
-            {shoot === "setup-error" ? (
-              <p className="alert">
-                Shoot requests need the latest Supabase migration before this form can save.
-              </p>
-            ) : null}
-            {shoot === "error" ? (
-              <p className="alert">Could not send that request. Check the fields and try again.</p>
-            ) : null}
+            <Notice notice={shootNotice} />
             <label className="field">
               Name
               <input name="name" autoComplete="name" required />
@@ -217,15 +206,10 @@ export default async function Home({ searchParams }: HomePageProps) {
               Request shoot
             </button>
           </form>
-          <div className="contact-side">
+          <div className="contact-side" id="contact">
           <form action={submitContactAction} className="form-panel contact-form">
             <h3>Gallery support</h3>
-            {contact === "sent" ? (
-              <p className="alert success">Message sent. I will reply as soon as I can.</p>
-            ) : null}
-            {contact === "error" ? (
-              <p className="alert">Could not send that message. Check the fields and try again.</p>
-            ) : null}
+            <Notice notice={contactNotice} />
             <label className="field">
               Name
               <input name="name" autoComplete="name" required />

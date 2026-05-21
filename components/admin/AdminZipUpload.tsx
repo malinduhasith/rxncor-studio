@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { FileArchive } from "lucide-react";
+import { Notice } from "@/components/Notice";
+import type { NoticeTone } from "@/lib/notices";
 
 type UploadAlbum = {
   id: string;
@@ -64,6 +66,7 @@ export function AdminZipUpload({
   defaultAlbumId: preferredAlbumId
 }: AdminZipUploadProps) {
   const [status, setStatus] = useState("");
+  const [statusTone, setStatusTone] = useState<NoticeTone>("info");
   const [isUploading, setIsUploading] = useState(false);
   const [zipSummary, setZipSummary] = useState("");
   const hasAlbums = albums.length > 0;
@@ -91,11 +94,13 @@ export function AdminZipUpload({
     const zipFile = formData.get("zip") as File | null;
 
     if (!albumId || !zipFile?.size) {
+      setStatusTone("warning");
       setStatus("Choose an album and a ZIP file.");
       return;
     }
 
     setIsUploading(true);
+    setStatusTone("info");
     setStatus("Creating ZIP upload link...");
 
     try {
@@ -138,6 +143,7 @@ export function AdminZipUpload({
 
       window.location.assign("/admin?view=uploads&notice=zip-uploaded#uploads");
     } catch (error) {
+      setStatusTone("error");
       setStatus(error instanceof Error ? error.message : "ZIP upload failed.");
       setIsUploading(false);
     }
@@ -174,7 +180,17 @@ export function AdminZipUpload({
       </button>
       {zipSummary ? <p className="muted">{zipSummary}</p> : null}
       {isUploading ? <progress className="upload-progress" /> : null}
-      {status ? <p className="muted">{status}</p> : null}
+      <Notice
+        notice={
+          status
+            ? {
+                tone: statusTone,
+                title: statusTone === "error" ? "ZIP upload issue" : "ZIP upload status",
+                message: status
+              }
+            : undefined
+        }
+      />
     </form>
   );
 }
