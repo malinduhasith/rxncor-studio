@@ -53,7 +53,9 @@ import {
   aboutBlockSectionCopy,
   aboutBlockSections,
   getAboutPageContent,
-  metaItemsToLines
+  metaItemsToLines,
+  type AboutBlockKind,
+  type AboutBlockSection
 } from "@/lib/about-builder";
 import { adminNotices, type NoticeContent } from "@/lib/notices";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
@@ -237,6 +239,123 @@ const adminViewCopy: Record<AdminView, { label: string; title: string; detail: s
     label: "Backups",
     title: "Backup checklist",
     detail: "Keep a small operational checklist for Supabase exports and R2 delivery files."
+  }
+};
+
+type AboutTemplate = {
+  title: string;
+  description: string;
+  section: AboutBlockSection;
+  kind: AboutBlockKind;
+  label: string;
+  blockTitle: string;
+  body: string;
+  reference: string;
+};
+
+const aboutQuickTemplates: AboutTemplate[] = [
+  {
+    title: "Intro card",
+    description: "A short idea near the top of the page.",
+    section: "intro_cards",
+    kind: "card",
+    label: "Practice",
+    blockTitle: "A grounded line about the work.",
+    body: "Write one honest paragraph about how you see, shoot, and edit.",
+    reference: ""
+  },
+  {
+    title: "Wide banner",
+    description: "A bigger thought, belief, or brand note.",
+    section: "banners",
+    kind: "banner",
+    label: "Perspective",
+    blockTitle: "A bigger thought for the page.",
+    body: "Use this for a longer idea, belief, or meaning behind the work.",
+    reference: "Optional note\nOptional tag"
+  },
+  {
+    title: "Spoken line",
+    description: "A simple quote-like thought with a reference.",
+    section: "spoken",
+    kind: "spoken",
+    label: "",
+    blockTitle: "A short line that sounds like you.",
+    body: "",
+    reference: "Reference, influence, or note"
+  },
+  {
+    title: "Timeline item",
+    description: "One step in your background or current direction.",
+    section: "timeline",
+    kind: "timeline",
+    label: "",
+    blockTitle: "Melbourne",
+    body: "Add one stage of your creative or technical path.",
+    reference: ""
+  },
+  {
+    title: "Tool",
+    description: "Gear, software, or a working system.",
+    section: "tools",
+    kind: "tool",
+    label: "",
+    blockTitle: "Sony A7 IV",
+    body: "",
+    reference: ""
+  }
+];
+
+const aboutSectionDefaults: Record<
+  AboutBlockSection,
+  {
+    kind: AboutBlockKind;
+    label: string;
+    titlePlaceholder: string;
+    bodyPlaceholder: string;
+    referencePlaceholder: string;
+    submitLabel: string;
+  }
+> = {
+  intro_cards: {
+    kind: "card",
+    label: "Practice",
+    titlePlaceholder: "Card title",
+    bodyPlaceholder: "Short paragraph for this idea",
+    referencePlaceholder: "",
+    submitLabel: "Add intro card"
+  },
+  banners: {
+    kind: "banner",
+    label: "Perspective",
+    titlePlaceholder: "Banner title",
+    bodyPlaceholder: "Longer page section copy",
+    referencePlaceholder: "Optional tags or notes, one per line",
+    submitLabel: "Add banner"
+  },
+  spoken: {
+    kind: "spoken",
+    label: "",
+    titlePlaceholder: "Short spoken line",
+    bodyPlaceholder: "",
+    referencePlaceholder: "Reference or note",
+    submitLabel: "Add spoken line"
+  },
+  timeline: {
+    kind: "timeline",
+    label: "",
+    titlePlaceholder: "Place, period, or chapter",
+    bodyPlaceholder: "What happened in this stage",
+    referencePlaceholder: "",
+    submitLabel: "Add timeline item"
+  },
+  tools: {
+    kind: "tool",
+    label: "",
+    titlePlaceholder: "Tool name",
+    bodyPlaceholder: "",
+    referencePlaceholder: "",
+    submitLabel: "Add tool"
   }
 };
 
@@ -847,6 +966,48 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   );
   const nextAboutSortOrder =
     Math.max(0, ...aboutContent.blocks.map((block) => block.sortOrder)) + 10;
+  const activeAboutBlockCount = aboutContent.blocks.filter((block) => block.isActive).length;
+  const hiddenAboutBlockCount = aboutContent.blocks.length - activeAboutBlockCount;
+  const aboutEditorStats = [
+    {
+      label: "Main facts",
+      detail: `${aboutContent.settings.metaItems.length} lines`
+    },
+    {
+      label: "Live blocks",
+      detail: `${activeAboutBlockCount} published`
+    },
+    {
+      label: "Hidden blocks",
+      detail: `${hiddenAboutBlockCount} drafts`
+    },
+    {
+      label: "Content source",
+      detail: aboutContent.source === "database" ? "Supabase" : "Fallback"
+    }
+  ];
+  const aboutEditingSteps = [
+    {
+      number: "01",
+      title: "Write the main story",
+      detail: "Start with the hero, intro, closing line, and small profile facts."
+    },
+    {
+      number: "02",
+      title: "Add page pieces",
+      detail: "Use quick templates when you need a card, banner, spoken line, timeline item, or tool."
+    },
+    {
+      number: "03",
+      title: "Tune one section",
+      detail: "Open a section, adjust only the blocks you need, then save that block."
+    },
+    {
+      number: "04",
+      title: "Preview",
+      detail: "Check the public About page after edits and hide anything that feels too heavy."
+    }
+  ];
   const albumsNeedingZipCount = albums.filter(
     (album) => (albumPhotoCounts.get(album.id) ?? 0) > 0 && !album.download_zip_url
   ).length;
@@ -1150,255 +1311,380 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           ) : null}
 
           {activeView === "about" ? (
-          <section id="about-builder" className="admin-section active-admin-page">
-            <div className="section-head compact">
-              <div>
-                <p className="eyebrow">About Builder</p>
-                <h2>Edit the About page</h2>
+            <section id="about-builder" className="admin-section active-admin-page">
+              <div className="section-head compact">
+                <div>
+                  <p className="eyebrow">About Builder</p>
+                  <h2>Edit the About page</h2>
+                </div>
+                <p>
+                  Work from top to bottom: main story first, quick add when you
+                  need a new piece, then open one section at a time to refine it.
+                </p>
               </div>
-              <p>
-                This is the build area for About page copy. Change the hero,
-                add banners, reorder cards, hide weak lines, and publish without
-                editing code.
-              </p>
-            </div>
 
-            {aboutContent.setupMissing ? (
-              <Notice
-                notice={{
-                  tone: "warning",
-                  title: "About Builder is in fallback mode",
-                  message:
-                    "Run supabase/migrations/20260519_about_builder.sql in Supabase SQL Editor, then refresh this page to save edits."
-                }}
-              />
-            ) : null}
+              {aboutContent.setupMissing ? (
+                <Notice
+                  notice={{
+                    tone: "warning",
+                    title: "About Builder is in fallback mode",
+                    message:
+                      "Run supabase/migrations/20260519_about_builder.sql in Supabase SQL Editor, then refresh this page to save edits."
+                  }}
+                />
+              ) : null}
 
-            <div className="about-builder-grid">
-              <form action={updateAboutSettingsAction} className="manager-panel about-settings-form">
-                <div className="panel-title-row">
-                  <div>
-                    <h3>Page settings</h3>
-                    <p className="muted">
-                      The main hero, intro, metadata panel, and closing line.
-                    </p>
-                  </div>
-                  <a className="button secondary small" href="/about">
-                    <ExternalLink size={16} />
-                    Preview
-                  </a>
+              <section className="about-editor-overview" aria-label="About editing guide">
+                <div className="about-editor-overview-copy">
+                  <p className="eyebrow">Editing path</p>
+                  <h3>Small changes, clear sections.</h3>
+                  <p>
+                    This builder now treats the About page like a page layout,
+                    not a database table. Keep the main story short, add blocks
+                    with templates, and hide anything that is not ready yet.
+                  </p>
                 </div>
-                <label className="field">
-                  Hero label
-                  <input
-                    name="hero_label"
-                    defaultValue={aboutContent.settings.heroLabel}
-                    required
-                  />
-                </label>
-                <label className="field">
-                  Hero title
-                  <input
-                    name="hero_title"
-                    defaultValue={aboutContent.settings.heroTitle}
-                    required
-                  />
-                </label>
-                <label className="field textarea-field">
-                  Intro
-                  <textarea name="intro" defaultValue={aboutContent.settings.intro} />
-                </label>
-                <label className="field textarea-field">
-                  Closing line
-                  <textarea name="closing" defaultValue={aboutContent.settings.closing} />
-                </label>
-                <label className="field textarea-field">
-                  Metadata
-                  <textarea
-                    name="meta_items"
-                    defaultValue={metaItemsToLines(aboutContent.settings.metaItems)}
-                  />
-                  <small>One item per line, like Based in: Melbourne.</small>
-                </label>
-                <button className="button" type="submit">
-                  <Save size={18} />
-                  Save page settings
-                </button>
-              </form>
-
-              <form action={createAboutBlockAction} className="manager-panel about-create-form">
-                <div className="panel-title-row">
-                  <div>
-                    <h3>Add a new block</h3>
-                    <p className="muted">
-                      Add a card, wide banner, spoken snippet, timeline item, or tool.
-                    </p>
-                  </div>
+                <div className="about-editor-stats">
+                  {aboutEditorStats.map((stat) => (
+                    <span className="pill" key={stat.label}>
+                      {stat.label}: {stat.detail}
+                    </span>
+                  ))}
                 </div>
-                <label className="field">
-                  Section
-                  <select name="section" defaultValue="banners">
-                    {aboutBlockSections.map((section) => (
-                      <option key={section} value={section}>
-                        {aboutBlockSectionCopy[section].label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  Display type
-                  <select name="kind" defaultValue="banner">
-                    {aboutBlockKinds.map((kind) => (
-                      <option key={kind} value={kind}>
-                        {aboutBlockKindCopy[kind]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  Sort order
-                  <input name="sort_order" type="number" defaultValue={nextAboutSortOrder} />
-                </label>
-                <label className="field">
-                  Label
-                  <input name="label" placeholder="Perspective, Name, Practice..." />
-                </label>
-                <label className="field wide-field">
-                  Title / line
-                  <input
-                    name="title"
-                    placeholder="A useful line, banner title, or tool name"
-                    required
-                  />
-                </label>
-                <label className="field textarea-field wide-field">
-                  Body
-                  <textarea name="body" placeholder="Longer copy for cards and banners." />
-                </label>
-                <label className="field textarea-field wide-field">
-                  References / tags
-                  <textarea
-                    name="reference"
-                    placeholder="One per line. Used as tags, card references, or notes."
-                  />
-                </label>
-                <label className="checkbox-field wide-field">
-                  <input name="is_active" type="checkbox" defaultChecked />
-                  Publish this block
-                </label>
-                <button className="button" type="submit">
-                  Add block
-                </button>
-              </form>
-            </div>
-
-            <div className="about-builder-sections">
-              {aboutBlockSections.map((section) => {
-                const blocks = aboutBlocksBySection.get(section) ?? [];
-
-                return (
-                  <section className="about-builder-section" key={section}>
-                    <div className="panel-title-row">
-                      <div>
-                        <h3>{aboutBlockSectionCopy[section].label}</h3>
-                        <p className="muted">{aboutBlockSectionCopy[section].detail}</p>
-                      </div>
-                      <span className="pill">{blocks.length} blocks</span>
+                <div className="about-editor-steps">
+                  {aboutEditingSteps.map((step) => (
+                    <div className="about-editor-step" key={step.number}>
+                      <span>{step.number}</span>
+                      <strong>{step.title}</strong>
+                      <small>{step.detail}</small>
                     </div>
-                    <div className="about-block-list">
-                      {blocks.map((block) => (
-                        <article className="about-builder-block" key={block.id}>
-                          <form action={updateAboutBlockAction} className="about-block-edit-form">
-                            <input name="block_id" type="hidden" value={block.id} />
-                            <div className="block-form-head">
-                              <div>
+                  ))}
+                </div>
+              </section>
+
+              <div className="about-builder-grid">
+                <form action={updateAboutSettingsAction} className="manager-panel about-settings-form">
+                  <div className="panel-title-row">
+                    <div>
+                      <p className="eyebrow">Main story</p>
+                      <h3>Hero and profile facts</h3>
+                      <p className="muted">
+                        The big headline, intro paragraph, metadata panel, and
+                        closing line on the About page.
+                      </p>
+                    </div>
+                    <a className="button secondary small" href="/about">
+                      <ExternalLink size={16} />
+                      Preview
+                    </a>
+                  </div>
+                  <label className="field">
+                    Small label above the headline
+                    <input
+                      name="hero_label"
+                      defaultValue={aboutContent.settings.heroLabel}
+                      placeholder="About / Malindu Herath"
+                      required
+                    />
+                    <small>Example: About / Malindu Herath</small>
+                  </label>
+                  <label className="field">
+                    Main headline
+                    <input
+                      name="hero_title"
+                      defaultValue={aboutContent.settings.heroTitle}
+                      placeholder="A creative eye with a technical backbone."
+                      required
+                    />
+                    <small>This is the largest line on the page.</small>
+                  </label>
+                  <label className="field textarea-field">
+                    Intro paragraph
+                    <textarea
+                      name="intro"
+                      defaultValue={aboutContent.settings.intro}
+                      placeholder="A short, human introduction."
+                    />
+                    <small>Keep this to one honest paragraph.</small>
+                  </label>
+                  <label className="field textarea-field">
+                    Closing line
+                    <textarea
+                      name="closing"
+                      defaultValue={aboutContent.settings.closing}
+                      placeholder="A simple closing thought."
+                    />
+                  </label>
+                  <label className="field textarea-field">
+                    Profile facts
+                    <textarea
+                      name="meta_items"
+                      defaultValue={metaItemsToLines(aboutContent.settings.metaItems)}
+                      placeholder={"Based in: Melbourne\nOrigin: Sri Lanka\nFocus: Photography / design / systems"}
+                    />
+                    <small>One fact per line. Use Label: Value.</small>
+                  </label>
+                  <button className="button" type="submit">
+                    <Save size={18} />
+                    Save main story
+                  </button>
+                </form>
+
+                <aside className="manager-panel about-quick-add" aria-label="Quick add About blocks">
+                  <div className="panel-title-row">
+                    <div>
+                      <p className="eyebrow">Quick add</p>
+                      <h3>Add a page piece</h3>
+                      <p className="muted">
+                        These add editable starter blocks. Add one, then refine
+                        it in the matching section below.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="about-template-grid">
+                    {aboutQuickTemplates.map((template, index) => (
+                      <form
+                        action={createAboutBlockAction}
+                        className="about-template-card"
+                        key={template.title}
+                      >
+                        <input name="section" type="hidden" value={template.section} />
+                        <input name="kind" type="hidden" value={template.kind} />
+                        <input name="sort_order" type="hidden" value={nextAboutSortOrder + index} />
+                        <input name="label" type="hidden" value={template.label} />
+                        <input name="title" type="hidden" value={template.blockTitle} />
+                        <input name="body" type="hidden" value={template.body} />
+                        <input name="reference" type="hidden" value={template.reference} />
+                        <input name="is_active" type="hidden" value="on" />
+                        <span className="label">{aboutBlockSectionCopy[template.section].label}</span>
+                        <strong>{template.title}</strong>
+                        <small>{template.description}</small>
+                        <button className="button secondary small" type="submit">
+                          Add {template.title.toLowerCase()}
+                        </button>
+                      </form>
+                    ))}
+                  </div>
+
+                  <details className="about-advanced-add">
+                    <summary>Custom block</summary>
+                    <form action={createAboutBlockAction} className="about-create-form">
+                      <label className="field">
+                        Section
+                        <select name="section" defaultValue="banners">
+                          {aboutBlockSections.map((section) => (
+                            <option key={section} value={section}>
+                              {aboutBlockSectionCopy[section].label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="field">
+                        Display type
+                        <select name="kind" defaultValue="banner">
+                          {aboutBlockKinds.map((kind) => (
+                            <option key={kind} value={kind}>
+                              {aboutBlockKindCopy[kind]}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="field">
+                        Sort
+                        <input name="sort_order" type="number" defaultValue={nextAboutSortOrder} />
+                      </label>
+                      <label className="field">
+                        Label
+                        <input name="label" placeholder="Perspective, Practice..." />
+                      </label>
+                      <label className="field wide-field">
+                        Title / line
+                        <input name="title" placeholder="Block title" required />
+                      </label>
+                      <label className="field textarea-field wide-field">
+                        Body
+                        <textarea name="body" placeholder="Longer copy if this block needs it." />
+                      </label>
+                      <label className="field textarea-field wide-field">
+                        References / tags
+                        <textarea name="reference" placeholder="One per line." />
+                      </label>
+                      <label className="checkbox-field wide-field">
+                        <input name="is_active" type="checkbox" defaultChecked />
+                        Publish this block
+                      </label>
+                      <button className="button" type="submit">
+                        Add custom block
+                      </button>
+                    </form>
+                  </details>
+                </aside>
+              </div>
+
+              <div className="about-builder-sections">
+                {aboutBlockSections.map((section, sectionIndex) => {
+                  const blocks = aboutBlocksBySection.get(section) ?? [];
+                  const liveCount = blocks.filter((block) => block.isActive).length;
+                  const sectionDefault = aboutSectionDefaults[section];
+
+                  return (
+                    <details
+                      className="about-builder-section"
+                      key={section}
+                      open={sectionIndex === 0}
+                    >
+                      <summary className="about-section-summary">
+                        <span>
+                          <span className="label">
+                            Section {String(sectionIndex + 1).padStart(2, "0")}
+                          </span>
+                          <strong>{aboutBlockSectionCopy[section].label}</strong>
+                          <small>{aboutBlockSectionCopy[section].detail}</small>
+                        </span>
+                        <span className="about-summary-pills">
+                          <span className="pill">{liveCount} live</span>
+                          <span className="pill">{blocks.length - liveCount} hidden</span>
+                        </span>
+                      </summary>
+
+                      <form action={createAboutBlockAction} className="about-section-add-form">
+                        <input name="section" type="hidden" value={section} />
+                        <input name="kind" type="hidden" value={sectionDefault.kind} />
+                        <input name="sort_order" type="hidden" value={nextAboutSortOrder + sectionIndex} />
+                        <input name="label" type="hidden" value={sectionDefault.label} />
+                        <input name="is_active" type="hidden" value="on" />
+                        <label className="field">
+                          Quick title
+                          <input
+                            name="title"
+                            placeholder={sectionDefault.titlePlaceholder}
+                            required
+                          />
+                        </label>
+                        <label className="field">
+                          Body
+                          <textarea
+                            name="body"
+                            placeholder={sectionDefault.bodyPlaceholder}
+                          />
+                        </label>
+                        <label className="field">
+                          Notes / tags
+                          <textarea
+                            name="reference"
+                            placeholder={sectionDefault.referencePlaceholder}
+                          />
+                        </label>
+                        <button className="button secondary small" type="submit">
+                          {sectionDefault.submitLabel}
+                        </button>
+                      </form>
+
+                      <div className="about-block-list">
+                        {blocks.map((block) => (
+                          <details className="about-builder-block" key={block.id}>
+                            <summary className="about-block-summary">
+                              <span>
                                 <span className="label">
                                   {aboutBlockKindCopy[block.kind]} · #{block.sortOrder}
                                 </span>
                                 <strong>{block.title}</strong>
+                                {block.body ? <small>{block.body}</small> : null}
+                              </span>
+                              <span className="about-summary-pills">
+                                <span className="pill">{block.isActive ? "Live" : "Hidden"}</span>
+                                <span className="pill">Edit</span>
+                              </span>
+                            </summary>
+                            <form action={updateAboutBlockAction} className="about-block-edit-form">
+                              <input name="block_id" type="hidden" value={block.id} />
+                              <div className="block-form-head">
+                                <div>
+                                  <span className="label">Edit block</span>
+                                  <strong>{block.title}</strong>
+                                </div>
+                                <label className="checkbox-field compact">
+                                  <input
+                                    name="is_active"
+                                    type="checkbox"
+                                    defaultChecked={block.isActive}
+                                  />
+                                  Live on About page
+                                </label>
                               </div>
-                              <label className="checkbox-field compact">
-                                <input
-                                  name="is_active"
-                                  type="checkbox"
-                                  defaultChecked={block.isActive}
-                                />
-                                Live
+                              <label className="field">
+                                Section
+                                <select name="section" defaultValue={block.section}>
+                                  {aboutBlockSections.map((sectionOption) => (
+                                    <option key={sectionOption} value={sectionOption}>
+                                      {aboutBlockSectionCopy[sectionOption].label}
+                                    </option>
+                                  ))}
+                                </select>
                               </label>
-                            </div>
-                            <label className="field">
-                              Section
-                              <select name="section" defaultValue={block.section}>
-                                {aboutBlockSections.map((sectionOption) => (
-                                  <option key={sectionOption} value={sectionOption}>
-                                    {aboutBlockSectionCopy[sectionOption].label}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            <label className="field">
-                              Type
-                              <select name="kind" defaultValue={block.kind}>
-                                {aboutBlockKinds.map((kind) => (
-                                  <option key={kind} value={kind}>
-                                    {aboutBlockKindCopy[kind]}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            <label className="field">
-                              Sort
-                              <input
-                                name="sort_order"
-                                type="number"
-                                defaultValue={block.sortOrder}
-                              />
-                            </label>
-                            <label className="field">
-                              Label
-                              <input name="label" defaultValue={block.label ?? ""} />
-                            </label>
-                            <label className="field wide-field">
-                              Title / line
-                              <input name="title" defaultValue={block.title} required />
-                            </label>
-                            <label className="field textarea-field wide-field">
-                              Body
-                              <textarea name="body" defaultValue={block.body ?? ""} />
-                            </label>
-                            <label className="field textarea-field wide-field">
-                              References / tags
-                              <textarea
-                                name="reference"
-                                defaultValue={block.reference ?? ""}
-                              />
-                            </label>
-                            <button className="button secondary small" type="submit">
-                              <Save size={16} />
-                              Save block
-                            </button>
-                          </form>
-                          <form action={deleteAboutBlockAction} className="danger-zone">
-                            <input name="block_id" type="hidden" value={block.id} />
-                            <ConfirmSubmitButton
-                              className="button danger small"
-                              confirmMessage={`Delete this About page block: ${block.title}?`}
-                            >
-                              <Trash2 size={16} />
-                              Delete block
-                            </ConfirmSubmitButton>
-                          </form>
-                        </article>
-                      ))}
-                      {!blocks.length ? (
-                        <p className="muted">No blocks in this section yet.</p>
-                      ) : null}
-                    </div>
-                  </section>
-                );
-              })}
-            </div>
-          </section>
+                              <label className="field">
+                                Type
+                                <select name="kind" defaultValue={block.kind}>
+                                  {aboutBlockKinds.map((kind) => (
+                                    <option key={kind} value={kind}>
+                                      {aboutBlockKindCopy[kind]}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="field">
+                                Sort
+                                <input
+                                  name="sort_order"
+                                  type="number"
+                                  defaultValue={block.sortOrder}
+                                />
+                              </label>
+                              <label className="field">
+                                Label
+                                <input name="label" defaultValue={block.label ?? ""} />
+                              </label>
+                              <label className="field wide-field">
+                                Title / line
+                                <input name="title" defaultValue={block.title} required />
+                              </label>
+                              <label className="field textarea-field wide-field">
+                                Body
+                                <textarea name="body" defaultValue={block.body ?? ""} />
+                              </label>
+                              <label className="field textarea-field wide-field">
+                                References / tags
+                                <textarea
+                                  name="reference"
+                                  defaultValue={block.reference ?? ""}
+                                />
+                              </label>
+                              <button className="button secondary small" type="submit">
+                                <Save size={16} />
+                                Save block
+                              </button>
+                            </form>
+                            <form action={deleteAboutBlockAction} className="danger-zone">
+                              <input name="block_id" type="hidden" value={block.id} />
+                              <ConfirmSubmitButton
+                                className="button danger small"
+                                confirmMessage={`Delete this About page block: ${block.title}?`}
+                              >
+                                <Trash2 size={16} />
+                                Delete block
+                              </ConfirmSubmitButton>
+                            </form>
+                          </details>
+                        ))}
+                        {!blocks.length ? (
+                          <p className="muted">No blocks in this section yet.</p>
+                        ) : null}
+                      </div>
+                    </details>
+                  );
+                })}
+              </div>
+            </section>
           ) : null}
 
           {activeView === "albums" ? (
