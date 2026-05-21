@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { PendingInteraction } from "@/components/PendingInteraction";
+import { SiteNav } from "@/components/SiteNav";
 import { siteConfig } from "@/config/site";
 import "./globals.css";
 
@@ -54,24 +55,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <PendingInteraction />
         </Suspense>
-        <header className="site-header">
-          <nav className="shell nav" aria-label="Main navigation">
-            <Link className="brand" href="/">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="brand-logo" src="/sig.png" alt="" aria-hidden="true" />
-              <span className="sr-only">{siteConfig.name}</span>
-            </Link>
-            <div className="nav-links">
-              <Link href={siteConfig.routes.about}>About</Link>
-              <Link href={siteConfig.routes.portfolio}>Portfolio</Link>
-              <Link href={siteConfig.routes.albums}>Albums</Link>
-              <Link href="/#book">Book</Link>
-              <Link className="button secondary" href={siteConfig.routes.login}>
-                Login
-              </Link>
-            </div>
-          </nav>
-        </header>
+        <SiteNav />
         {children}
         <footer className="footer">
           <div className="shell footer-inner">

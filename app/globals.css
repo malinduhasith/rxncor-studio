@@ -61,17 +61,17 @@ textarea {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(243, 238, 228, 0.96);
+  background: rgba(243, 238, 228, 0.94);
   border-bottom: 2px solid var(--line);
   backdrop-filter: blur(10px);
 }
 
 .nav {
-  min-height: 86px;
+  min-height: 82px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 28px;
 }
 
 .brand {
@@ -84,7 +84,7 @@ textarea {
 }
 
 .brand-logo {
-  width: 164px;
+  width: 156px;
   height: auto;
   display: block;
   filter: brightness(0);
@@ -102,25 +102,50 @@ textarea {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   color: var(--ink);
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .nav-links a:not(.button) {
-  min-height: 38px;
+  position: relative;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   border: 2px solid transparent;
-  padding: 0 10px;
+  border-radius: 4px;
+  padding: 0 11px;
+  white-space: nowrap;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+.nav-links a:hover:not(.button),
+.nav-links a[aria-current="page"]:not(.button) {
+  border-color: var(--line);
+  background: var(--surface);
 }
 
 .nav-links a:hover:not(.button) {
-  border-color: var(--line);
-  background: var(--surface);
+  transform: translateY(-1px);
+}
+
+.nav-links a[aria-current="page"]:not(.button)::before {
+  content: "";
+  position: absolute;
+  inset: auto 10px 5px;
+  height: 3px;
+  background: var(--accent);
+}
+
+.nav-login[aria-current="page"] {
+  background: var(--gold);
+  color: var(--ink);
 }
 
 .button {
@@ -2442,13 +2467,37 @@ h3 {
 }
 
 @media (max-width: 860px) {
-  .nav,
   .section-head,
   .admin-topbar,
   .admin-page-header,
   .gallery-bar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .nav {
+    min-height: 74px;
+    gap: 16px;
+  }
+
+  .brand-logo {
+    width: 132px;
+  }
+
+  .nav-links {
+    gap: 4px;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+  }
+
+  .nav-links a:not(.button) {
+    min-height: 34px;
+    padding: 0 8px;
+  }
+
+  .nav-login {
+    min-height: 38px;
+    padding: 0 12px;
   }
 
   .hero,
@@ -2592,34 +2641,42 @@ h3 {
   .nav {
     min-height: 0;
     display: grid;
-    gap: 14px;
-    padding: 14px 0 16px;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px 0 14px;
   }
 
   .brand {
+    justify-content: center;
     min-height: 32px;
   }
 
   .brand-logo {
-    width: 112px;
+    width: 118px;
   }
 
   .nav-links {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
-    font-size: 0.66rem;
-    letter-spacing: 0.08em;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    font-size: 0.58rem;
+    letter-spacing: 0.05em;
   }
 
   .nav-links a:not(.button),
   .nav-links .button {
-    min-height: 36px;
+    min-height: 34px;
     width: 100%;
-    padding: 0 6px;
+    padding: 0 4px;
     font-size: inherit;
     text-align: center;
+    box-shadow: none;
+  }
+
+  .nav-links a[aria-current="page"]:not(.button)::before {
+    inset: auto 7px 4px;
+    height: 2px;
   }
 
   .button {
