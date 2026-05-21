@@ -287,6 +287,7 @@ export default async function ClientGalleryPage({
       {album && canViewPhotos ? (
         <GalleryLightbox
           albumId={album.id}
+          albumTitle={title}
           photos={galleryPhotos}
           zipObjectKey={zipObjectKey}
           clientEmail={galleryAccess.clientEmail}

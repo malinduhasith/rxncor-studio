@@ -17,6 +17,7 @@ export type GalleryDisplayPhoto = {
 
 type GalleryLightboxProps = {
   albumId: string;
+  albumTitle: string;
   photos: GalleryDisplayPhoto[];
   zipObjectKey?: string | null;
   clientEmail?: string | null;
@@ -74,6 +75,7 @@ async function requestPreview(albumId: string, photoId: string) {
 
 export function GalleryLightbox({
   albumId,
+  albumTitle,
   photos,
   zipObjectKey,
   clientEmail
@@ -259,14 +261,15 @@ export function GalleryLightbox({
               />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className="watermark watermark-logo" src="/sig.png" alt="" aria-hidden="true" />
+              {photo.detail ? <span className="tile-date-chip">{photo.detail}</span> : null}
               <div className="tile-caption">
-                <span>
+                <span className="tile-info">
+                  <strong className="tile-album">{albumTitle}</strong>
                   <small>{photo.eyebrow}</small>
-                  <strong>{photo.title}</strong>
-                  <em>{photo.detail}</em>
+                  <em className="tile-frame">{photo.title}</em>
                   <code>{photo.filename}</code>
                 </span>
-                <span>Open</span>
+                <span className="tile-action">Open</span>
               </div>
             </button>
           ))}

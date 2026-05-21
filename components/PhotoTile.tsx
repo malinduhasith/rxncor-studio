@@ -41,14 +41,14 @@ export function PhotoTile({
           }
         />
       )}
+      {detail ? <span className="tile-date-chip">{detail}</span> : null}
       <div className="tile-caption">
-        <span>
+        <span className="tile-info">
+          <strong className="tile-album">{meta}</strong>
           <small>{eyebrow}</small>
-          <strong>{title}</strong>
-          {detail ? <em>{detail}</em> : null}
+          <em className="tile-frame">{title}</em>
           {filename ? <code>{filename}</code> : null}
         </span>
-        <span>{meta}</span>
       </div>
     </article>
   );
