@@ -4,6 +4,17 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const MAX_PENDING_MS = 12_000;
+const LOADING_LINES = [
+  "Asking DNS for directions",
+  "Negotiating with the cache",
+  "Teaching packets to queue",
+  "Waking up the pixels",
+  "Waiting for TCP to commit",
+  "Routing through the scenic subnet",
+  "Giving the server a pep talk",
+  "Compiling tiny decisions",
+  "Putting the page in order",
+];
 
 function cleanLabel(value: string | null | undefined, fallback: string) {
   const label = value?.replace(/\s+/g, " ").trim();
@@ -46,12 +57,20 @@ export function PendingInteraction() {
   const search = useMemo(() => searchParams.toString(), [searchParams]);
   const [pending, setPending] = useState(false);
   const [label, setLabel] = useState("Working");
+  const [loadingLine, setLoadingLine] = useState(LOADING_LINES[0]);
   const timeoutRef = useRef<number | null>(null);
+  const jokeIntervalRef = useRef<number | null>(null);
+  const jokeIndexRef = useRef(0);
 
   const clearPending = useCallback(() => {
     if (timeoutRef.current) {
       window.clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
+    }
+
+    if (jokeIntervalRef.current) {
+      window.clearInterval(jokeIntervalRef.current);
+      jokeIntervalRef.current = null;
     }
 
     document.body.classList.remove("is-interaction-pending");
@@ -64,17 +83,28 @@ export function PendingInteraction() {
     setPending(false);
   }, []);
 
+  const showNextLoadingLine = useCallback(() => {
+    jokeIndexRef.current = (jokeIndexRef.current + 1) % LOADING_LINES.length;
+    setLoadingLine(LOADING_LINES[jokeIndexRef.current]);
+  }, []);
+
   const startPending = useCallback((nextLabel: string) => {
     if (timeoutRef.current) {
       window.clearTimeout(timeoutRef.current);
     }
 
+    if (jokeIntervalRef.current) {
+      window.clearInterval(jokeIntervalRef.current);
+    }
+
     document.body.classList.add("is-interaction-pending");
     document.body.setAttribute("aria-busy", "true");
     setLabel(nextLabel);
+    showNextLoadingLine();
     setPending(true);
+    jokeIntervalRef.current = window.setInterval(showNextLoadingLine, 2_200);
     timeoutRef.current = window.setTimeout(clearPending, MAX_PENDING_MS);
-  }, [clearPending]);
+  }, [clearPending, showNextLoadingLine]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(clearPending);
@@ -153,7 +183,7 @@ export function PendingInteraction() {
     >
       <div className="pending-card">
         <p className="pending-eyebrow">Loading</p>
-        <h2>Working on it</h2>
+        <h2>{loadingLine}</h2>
         <p className="pending-indicator-label">{label}</p>
         <span className="pending-indicator-track" />
       </div>

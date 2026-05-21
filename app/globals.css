@@ -238,10 +238,10 @@ textarea {
 
 .pending-card h2 {
   margin: 0;
-  max-width: 9ch;
+  max-width: 13ch;
   font-family: var(--display-font);
-  font-size: 7rem;
-  line-height: 0.86;
+  font-size: clamp(4.2rem, 8vw, 7rem);
+  line-height: 0.9;
   letter-spacing: 0;
 }
 
@@ -3079,8 +3079,8 @@ h3 {
   }
 
   .pending-card h2 {
-    max-width: 8ch;
-    font-size: 4.2rem;
+    max-width: 11ch;
+    font-size: 3.6rem;
   }
 
   .pending-indicator-label {
