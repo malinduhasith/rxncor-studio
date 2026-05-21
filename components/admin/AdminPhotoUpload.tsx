@@ -79,12 +79,26 @@ async function signUpload(albumId: string, kind: string, file: File) {
   return (await response.json()) as SignedUpload;
 }
 
-function uploadToR2(signedUpload: SignedUpload, file: File, label: string) {
+async function uploadToR2(signedUpload: SignedUpload, file: File, label: string) {
+  const contentType = file.type || "application/octet-stream";
+  let uploadBody: Blob;
+
+  try {
+    const buffer = await file.arrayBuffer();
+    uploadBody = new Blob([buffer], { type: contentType });
+  } catch (error) {
+    throw new Error(
+      `${label} could not be read from this device before upload. Try moving the files to a local folder, then select them again. ${
+        error instanceof Error ? error.message : ""
+      }`.trim()
+    );
+  }
+
   return new Promise<void>((resolve, reject) => {
     const request = new XMLHttpRequest();
 
     request.open("PUT", signedUpload.uploadUrl);
-    request.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    request.setRequestHeader("Content-Type", contentType);
 
     request.onload = () => {
       if (request.status >= 200 && request.status < 300) {
@@ -111,12 +125,16 @@ function uploadToR2(signedUpload: SignedUpload, file: File, label: string) {
       );
     };
 
+    request.onabort = () => {
+      reject(new Error(`${label} R2 PUT was cancelled by the browser for ${file.name}.`));
+    };
+
     request.ontimeout = () => {
       reject(new Error(`${label} R2 PUT timed out for ${file.name}.`));
     };
 
     request.timeout = 10 * 60 * 1000;
-    request.send(file);
+    request.send(uploadBody);
   });
 }
 
