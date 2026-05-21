@@ -726,6 +726,11 @@ h3 {
   animation: editorialReveal 520ms ease both;
 }
 
+.photo-tile {
+  content-visibility: auto;
+  contain-intrinsic-size: 260px;
+}
+
 .photo-fill {
   position: absolute;
   inset: 0;
@@ -2062,6 +2067,25 @@ h3 {
 
 .lightbox-grid .photo-tile:nth-child(10n + 4) {
   min-height: 300px;
+}
+
+.gallery-load-sentinel,
+.gallery-load-summary {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 0 6px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.gallery-load-sentinel span,
+.gallery-load-summary {
+  font-size: 0.84rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .watermark,

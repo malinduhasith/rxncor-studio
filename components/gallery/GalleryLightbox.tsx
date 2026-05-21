@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, X } from "lucide-react";
 
 export type GalleryDisplayPhoto = {
@@ -16,6 +16,9 @@ type GalleryLightboxProps = {
   zipObjectKey?: string | null;
   clientEmail?: string | null;
 };
+
+const INITIAL_VISIBLE_PHOTOS = 48;
+const VISIBLE_PHOTO_INCREMENT = 48;
 
 async function requestDownload(
   albumId: string,
@@ -73,8 +76,41 @@ export function GalleryLightbox({
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [status, setStatus] = useState("");
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
+  const [visibleCount, setVisibleCount] = useState(() =>
+    Math.min(INITIAL_VISIBLE_PHOTOS, photos.length)
+  );
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const selectedPhoto = selectedIndex === null ? null : photos[selectedIndex];
   const selectedPreviewUrl = selectedPhoto ? previewUrls[selectedPhoto.id] : null;
+  const safeVisibleCount = Math.min(visibleCount, photos.length);
+  const visiblePhotos = photos.slice(0, safeVisibleCount);
+  const hasMorePhotos = safeVisibleCount < photos.length;
+
+  const loadMorePhotos = useCallback(() => {
+    setVisibleCount((current) =>
+      Math.min(current + VISIBLE_PHOTO_INCREMENT, photos.length)
+    );
+  }, [photos.length]);
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+
+    if (!node || !hasMorePhotos || typeof IntersectionObserver === "undefined") {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          loadMorePhotos();
+        }
+      },
+      { rootMargin: "700px 0px" }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMorePhotos, loadMorePhotos]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -184,7 +220,7 @@ export function GalleryLightbox({
         </div>
         {status ? <p className="muted">{status}</p> : null}
         <div className="lightbox-grid">
-          {photos.map((photo, index) => (
+          {visiblePhotos.map((photo, index) => (
             <button
               className="photo-tile photo-button"
               key={photo.id}
@@ -196,7 +232,7 @@ export function GalleryLightbox({
                 className="photo-img"
                 src={photo.thumbnailDisplayUrl}
                 alt={photo.filename}
-                loading="lazy"
+                loading={index < 8 ? "eager" : "lazy"}
                 decoding="async"
               />
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -210,6 +246,18 @@ export function GalleryLightbox({
               </div>
             </button>
           ))}
+          {hasMorePhotos ? (
+            <div className="gallery-load-sentinel" ref={loadMoreRef}>
+              <button className="button secondary" onClick={loadMorePhotos} type="button">
+                Load more photos
+              </button>
+              <span>
+                {safeVisibleCount}/{photos.length} shown
+              </span>
+            </div>
+          ) : photos.length > INITIAL_VISIBLE_PHOTOS ? (
+            <p className="gallery-load-summary">{photos.length} photos loaded</p>
+          ) : null}
         </div>
       </section>
       {selectedPhoto ? (
