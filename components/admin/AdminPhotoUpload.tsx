@@ -15,6 +15,8 @@ type SignedUpload = {
   publicUrl: string;
 };
 
+type R2UploadKind = "thumbnails" | "previews" | "full";
+
 type AdminPhotoUploadProps = {
   albums: UploadAlbum[];
   defaultAlbumId?: string;
@@ -132,6 +134,17 @@ async function cleanupUploadedKeys(keys: string[]) {
   }).catch(() => null);
 }
 
+async function signAndUploadPart(
+  albumId: string,
+  kind: R2UploadKind,
+  file: File,
+  label: string
+) {
+  const signedUpload = await signUpload(albumId, kind, file);
+  await uploadToR2(signedUpload, file, label);
+  return signedUpload;
+}
+
 async function runServerR2Diagnostic() {
   const response = await fetch("/api/uploads/diagnostic", {
     method: "POST"
@@ -219,29 +232,32 @@ function buildPhotoSets(thumbnails: File[], previews: File[], fulls: File[]) {
 }
 
 async function uploadPhotoSet(albumId: string, photoSet: PhotoSet) {
-  const [thumbnailUpload, previewUpload, fullUpload] = await Promise.all([
-    signUpload(albumId, "thumbnails", photoSet.thumbnail),
-    signUpload(albumId, "previews", photoSet.preview),
-    signUpload(albumId, "full", photoSet.full)
-  ]);
-  const uploadedKeys = [thumbnailUpload.key, previewUpload.key, fullUpload.key];
+  const uploadedKeys: string[] = [];
 
   try {
-    const uploadResults = await Promise.allSettled([
-      uploadToR2(thumbnailUpload, photoSet.thumbnail, "Thumbnail"),
-      uploadToR2(previewUpload, photoSet.preview, "Preview"),
-      uploadToR2(fullUpload, photoSet.full, "Full-res")
-    ]);
-    const uploadErrors = uploadResults
-      .filter((result): result is PromiseRejectedResult => result.status === "rejected")
-      .map((result) =>
-        result.reason instanceof Error ? result.reason.message : "Unknown R2 upload error."
-      );
+    const thumbnailUpload = await signAndUploadPart(
+      albumId,
+      "thumbnails",
+      photoSet.thumbnail,
+      "Thumbnail"
+    );
+    uploadedKeys.push(thumbnailUpload.key);
 
-    if (uploadErrors.length) {
-      await cleanupUploadedKeys(uploadedKeys);
-      throw new Error(uploadErrors.join(" | "));
-    }
+    const previewUpload = await signAndUploadPart(
+      albumId,
+      "previews",
+      photoSet.preview,
+      "Preview"
+    );
+    uploadedKeys.push(previewUpload.key);
+
+    const fullUpload = await signAndUploadPart(
+      albumId,
+      "full",
+      photoSet.full,
+      "Full-res"
+    );
+    uploadedKeys.push(fullUpload.key);
 
     const photoResponse = await fetch("/api/photos", {
       method: "POST",
@@ -452,7 +468,7 @@ export function AdminPhotoUpload({
     try {
       const result = await uploadWithLimit(
         photoSets,
-        2,
+        1,
         (photoSet) => uploadPhotoSetWithRetry(albumId, photoSet),
         (index, photoSet) => {
           setActivePhoto(`Working on ${index}/${photoSets.length}: ${photoSet.full.name}`);
