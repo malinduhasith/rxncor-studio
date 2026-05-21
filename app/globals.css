@@ -155,6 +155,144 @@ textarea {
   transform: translate(2px, 2px);
 }
 
+.pending-indicator {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 34px;
+  border-bottom: 2px solid var(--line);
+  background: var(--ink);
+  color: var(--paper);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-100%);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.pending-indicator[data-visible="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.pending-indicator-track {
+  position: absolute;
+  inset: auto 0 0;
+  height: 4px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.pending-indicator-track::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 42%;
+  background: var(--gold);
+  animation: pending-track 950ms ease-in-out infinite;
+}
+
+.pending-indicator-label {
+  position: relative;
+  padding: 6px 18px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+body.is-interaction-pending {
+  cursor: progress;
+}
+
+a[data-pending="true"],
+button[data-pending="true"],
+form[data-pending="true"] button[type="submit"] {
+  opacity: 0.68;
+  pointer-events: none;
+}
+
+.button[data-pending="true"]::after,
+form[data-pending="true"] button[type="submit"]::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: pending-spin 720ms linear infinite;
+}
+
+.route-loading {
+  min-height: 60svh;
+  display: grid;
+  place-items: center;
+}
+
+.route-loading-panel {
+  width: min(720px, 100%);
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  padding: 30px;
+  background: var(--surface);
+  box-shadow: 8px 8px 0 rgba(17, 16, 14, 0.15);
+}
+
+.route-loading-panel h1 {
+  margin: 0;
+  font-family: var(--display-font);
+  font-size: clamp(3rem, 10vw, 6.5rem);
+  line-height: 0.9;
+}
+
+.route-loading-panel p:not(.eyebrow) {
+  margin: 14px 0 22px;
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+.route-loading-bar {
+  display: block;
+  height: 10px;
+  overflow: hidden;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+}
+
+.route-loading-bar::after {
+  content: "";
+  display: block;
+  width: 45%;
+  height: 100%;
+  background: var(--accent);
+  animation: pending-track 950ms ease-in-out infinite;
+}
+
+@keyframes pending-track {
+  0% {
+    transform: translateX(-110%);
+  }
+
+  50% {
+    transform: translateX(85%);
+  }
+
+  100% {
+    transform: translateX(260%);
+  }
+}
+
+@keyframes pending-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .hero {
   position: relative;
   min-height: calc(100svh - 86px);

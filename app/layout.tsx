@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
+import { PendingInteraction } from "@/components/PendingInteraction";
 import { siteConfig } from "@/config/site";
 import "./globals.css";
 
@@ -49,6 +51,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <Suspense fallback={null}>
+          <PendingInteraction />
+        </Suspense>
         <header className="site-header">
           <nav className="shell nav" aria-label="Main navigation">
             <Link className="brand" href="/">
