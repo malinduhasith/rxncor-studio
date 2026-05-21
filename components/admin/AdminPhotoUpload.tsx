@@ -24,9 +24,19 @@ type AdminPhotoUploadProps = {
 
 type PhotoSet = {
   baseName: string;
-  thumbnail: File;
-  preview: File;
+  thumbnail: File | null;
+  preview: File | null;
   full: File;
+};
+
+type PhotoUploadMetadata = {
+  camera_model?: string;
+  lens_model?: string;
+  focal_length?: string;
+  aperture?: string;
+  shutter_speed?: string;
+  iso?: string;
+  captured_at?: string;
 };
 
 type SelectionSummary = {
@@ -34,6 +44,8 @@ type SelectionSummary = {
   previews: number;
   fulls: number;
   matched: number;
+  generatedThumbnails: number;
+  generatedPreviews: number;
   fullSize: number;
 };
 
@@ -41,6 +53,14 @@ type UploadFailure = {
   index: number;
   filename: string;
   message: string;
+};
+
+type PreparedPhotoSet = PhotoSet & {
+  thumbnail: File;
+  preview: File;
+  metadata: PhotoUploadMetadata;
+  generatedThumbnail: boolean;
+  generatedPreview: boolean;
 };
 
 class R2UploadError extends Error {
@@ -231,7 +251,7 @@ function baseName(filename: string) {
   return withoutExtension
     .toLowerCase()
     .replace(/\s+/g, "-")
-    .replace(/[-_](thumb|thumbnail|preview|web|screen|full|large)$/i, "");
+    .replace(/[-_](thumb|thumbnail|preview|web|screen|full[-_]?res|fullres|full|large)$/i, "");
 }
 
 function filesByBaseName(files: File[]) {
@@ -246,6 +266,153 @@ function fileSizeLabel(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+function generatedFilename(source: File, suffix: "thumb" | "preview") {
+  return `${baseName(source.name)}_${suffix}.webp`;
+}
+
+function formatNumber(value: number, precision = 1) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(precision);
+}
+
+function asNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function asString(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function cleanCameraModel(make: unknown, model: unknown) {
+  const makeText = asString(make);
+  const modelText = asString(model);
+
+  if (!makeText) {
+    return modelText ?? undefined;
+  }
+
+  if (!modelText) {
+    return makeText;
+  }
+
+  return modelText.toLowerCase().includes(makeText.toLowerCase())
+    ? modelText
+    : `${makeText} ${modelText}`;
+}
+
+function formatExposureTime(value: unknown) {
+  const exposure = asNumber(value);
+
+  if (!exposure) {
+    return undefined;
+  }
+
+  return exposure < 1
+    ? `1/${Math.round(1 / exposure)}`
+    : `${formatNumber(exposure)}s`;
+}
+
+function formatExifDate(value: unknown) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString();
+  }
+
+  const text = asString(value);
+
+  if (!text) {
+    return undefined;
+  }
+
+  const date = new Date(text.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3"));
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
+async function readPhotoMetadata(file: File): Promise<PhotoUploadMetadata> {
+  try {
+    const exifr = await import("exifr");
+    const data = (await exifr.parse(file)) as Record<string, unknown> | undefined;
+
+    if (!data) {
+      return {};
+    }
+
+    const focalLength = asNumber(data.FocalLength);
+    const aperture = asNumber(data.FNumber);
+    const iso = asNumber(data.ISO);
+
+    return {
+      camera_model: cleanCameraModel(data.Make, data.Model),
+      lens_model: asString(data.LensModel) ?? undefined,
+      focal_length: focalLength ? `${formatNumber(focalLength)}mm` : undefined,
+      aperture: aperture ? `f/${formatNumber(aperture)}` : undefined,
+      shutter_speed: formatExposureTime(data.ExposureTime),
+      iso: iso ? `ISO ${Math.round(iso)}` : undefined,
+      captured_at: formatExifDate(data.DateTimeOriginal ?? data.CreateDate)
+    };
+  } catch {
+    return {};
+  }
+}
+
+async function decodeImage(file: File) {
+  const objectUrl = URL.createObjectURL(file);
+
+  try {
+    const image = new Image();
+    image.decoding = "async";
+    image.src = objectUrl;
+    await image.decode();
+    return image;
+  } catch {
+    URL.revokeObjectURL(objectUrl);
+    throw new Error(`${file.name} could not be decoded for automatic image generation.`);
+  }
+}
+
+async function createImageVariant(
+  source: File,
+  longEdge: number,
+  suffix: "thumb" | "preview",
+  quality: number
+) {
+  const image = await decodeImage(source);
+
+  try {
+    const scale = Math.min(1, longEdge / Math.max(image.naturalWidth, image.naturalHeight));
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const canvas = document.createElement("canvas");
+
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext("2d", {
+      alpha: false,
+      desynchronized: true
+    });
+
+    if (!context) {
+      throw new Error("Browser canvas is not available.");
+    }
+
+    context.drawImage(image, 0, 0, width, height);
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/webp", quality)
+    );
+
+    if (!blob) {
+      throw new Error(`Could not create ${suffix} image for ${source.name}.`);
+    }
+
+    return new File([blob], generatedFilename(source, suffix), {
+      type: "image/webp",
+      lastModified: Date.now()
+    });
+  } finally {
+    URL.revokeObjectURL(image.src);
+  }
+}
+
 function sleep(milliseconds: number) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
@@ -253,15 +420,11 @@ function sleep(milliseconds: number) {
 function buildPhotoSets(thumbnails: File[], previews: File[], fulls: File[]) {
   const thumbnailMap = filesByBaseName(thumbnails);
   const previewMap = filesByBaseName(previews);
-  const matched = fulls
-    .map((full) => {
+  const sortedFulls = sortByName(fulls);
+  const matched = sortedFulls.map((full) => {
       const key = baseName(full.name);
-      const thumbnail = thumbnailMap.get(key);
-      const preview = previewMap.get(key);
-
-      if (!thumbnail || !preview) {
-        return null;
-      }
+      const thumbnail = thumbnailMap.get(key) ?? null;
+      const preview = previewMap.get(key) ?? null;
 
       return {
         baseName: key,
@@ -269,17 +432,19 @@ function buildPhotoSets(thumbnails: File[], previews: File[], fulls: File[]) {
         preview,
         full
       };
-    })
-    .filter((set): set is PhotoSet => Boolean(set));
+    });
 
-  if (matched.length > 0) {
+  if (
+    !thumbnails.length ||
+    !previews.length ||
+    matched.some((set) => set.thumbnail || set.preview)
+  ) {
     return matched;
   }
 
   if (thumbnails.length === previews.length && previews.length === fulls.length) {
     const sortedThumbnails = sortByName(thumbnails);
     const sortedPreviews = sortByName(previews);
-    const sortedFulls = sortByName(fulls);
 
     return sortedFulls.map((full, index) => ({
       baseName: baseName(full.name),
@@ -292,34 +457,99 @@ function buildPhotoSets(thumbnails: File[], previews: File[], fulls: File[]) {
   return [];
 }
 
-async function uploadPhotoSet(albumId: string, photoSet: PhotoSet) {
+async function logUploadEvent(event: {
+  album_id: string;
+  filename: string;
+  status: "failed" | "partial" | "success";
+  message: string;
+  size_bytes: number;
+  duration_ms?: number;
+}) {
+  await fetch("/api/uploads/events", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      ...event,
+      event_type: "photo"
+    })
+  }).catch(() => null);
+}
+
+async function preparePhotoSet(
+  photoSet: PhotoSet,
+  onStage?: (message: string) => void
+): Promise<PreparedPhotoSet> {
+  onStage?.(`Reading EXIF metadata from ${photoSet.full.name}`);
+  const metadata = await readPhotoMetadata(photoSet.full);
+  let thumbnail = photoSet.thumbnail;
+  let preview = photoSet.preview;
+  let generatedThumbnail = false;
+  let generatedPreview = false;
+
+  if (!thumbnail) {
+    onStage?.(`Generating thumbnail for ${photoSet.full.name}`);
+    thumbnail = await createImageVariant(photoSet.full, 400, "thumb", 0.78);
+    generatedThumbnail = true;
+  }
+
+  if (!preview) {
+    onStage?.(`Generating preview for ${photoSet.full.name}`);
+    preview = await createImageVariant(photoSet.full, 2200, "preview", 0.84);
+    generatedPreview = true;
+  }
+
+  return {
+    ...photoSet,
+    thumbnail,
+    preview,
+    metadata,
+    generatedThumbnail,
+    generatedPreview
+  };
+}
+
+async function uploadPhotoSet(
+  albumId: string,
+  photoSet: PhotoSet,
+  onStage?: (message: string) => void
+) {
   const uploadedKeys: string[] = [];
+  const startedAt = performance.now();
+  const preparedSet = await preparePhotoSet(photoSet, onStage);
+  const totalSize =
+    preparedSet.thumbnail.size + preparedSet.preview.size + preparedSet.full.size;
 
   try {
+    onStage?.(`Uploading thumbnail for ${photoSet.full.name}`);
     const thumbnailUpload = await signAndUploadPart(
       albumId,
       "thumbnails",
-      photoSet.thumbnail,
+      preparedSet.thumbnail,
       "Thumbnail"
     );
     uploadedKeys.push(thumbnailUpload.key);
 
+    onStage?.(`Uploading preview for ${photoSet.full.name}`);
     const previewUpload = await signAndUploadPart(
       albumId,
       "previews",
-      photoSet.preview,
+      preparedSet.preview,
       "Preview"
     );
     uploadedKeys.push(previewUpload.key);
 
+    onStage?.(`Uploading full-res file for ${photoSet.full.name}`);
     const fullUpload = await signAndUploadPart(
       albumId,
       "full",
-      photoSet.full,
+      preparedSet.full,
       "Full-res"
     );
     uploadedKeys.push(fullUpload.key);
 
+    onStage?.(`Saving photo record for ${photoSet.full.name}`);
     const photoResponse = await fetch("/api/photos", {
       method: "POST",
       headers: {
@@ -331,7 +561,15 @@ async function uploadPhotoSet(albumId: string, photoSet: PhotoSet) {
         thumbnail_url: thumbnailUpload.publicUrl,
         preview_url: previewUpload.publicUrl,
         full_res_url: fullUpload.publicUrl,
-        r2_object_key: fullUpload.key
+        r2_object_key: fullUpload.key,
+        ...preparedSet.metadata,
+        thumbnail_size_bytes: preparedSet.thumbnail.size,
+        preview_size_bytes: preparedSet.preview.size,
+        full_size_bytes: preparedSet.full.size,
+        file_size_bytes: totalSize,
+        generated_thumbnail: preparedSet.generatedThumbnail,
+        generated_preview: preparedSet.generatedPreview,
+        upload_duration_ms: Math.round(performance.now() - startedAt)
       })
     });
 
@@ -347,12 +585,18 @@ async function uploadPhotoSet(albumId: string, photoSet: PhotoSet) {
   }
 }
 
-async function uploadPhotoSetWithRetry(albumId: string, photoSet: PhotoSet, attempts = 3) {
+async function uploadPhotoSetWithRetry(
+  albumId: string,
+  photoSet: PhotoSet,
+  onStage?: (message: string) => void,
+  attempts = 3
+) {
   let lastError: unknown;
+  const startedAt = performance.now();
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
-      await uploadPhotoSet(albumId, photoSet);
+      await uploadPhotoSet(albumId, photoSet, onStage);
       return;
     } catch (error) {
       lastError = error;
@@ -364,6 +608,15 @@ async function uploadPhotoSetWithRetry(albumId: string, photoSet: PhotoSet, atte
   }
 
   const message = lastError instanceof Error ? lastError.message : "Upload failed.";
+  await logUploadEvent({
+    album_id: albumId,
+    filename: photoSet.full.name,
+    status: "failed",
+    message: `Failed after ${attempts} attempts. ${message}`,
+    size_bytes:
+      photoSet.full.size + (photoSet.thumbnail?.size ?? 0) + (photoSet.preview?.size ?? 0),
+    duration_ms: Math.round(performance.now() - startedAt)
+  });
   throw new Error(`Failed after ${attempts} attempts. ${message}`);
 }
 
@@ -447,6 +700,8 @@ export function AdminPhotoUpload({
     previews: 0,
     fulls: 0,
     matched: 0,
+    generatedThumbnails: 0,
+    generatedPreviews: 0,
     fullSize: 0
   });
   const defaultAlbumId =
@@ -475,6 +730,8 @@ export function AdminPhotoUpload({
       previews: previews.length,
       fulls: fulls.length,
       matched: matched.length,
+      generatedThumbnails: matched.filter((set) => !set.thumbnail).length,
+      generatedPreviews: matched.filter((set) => !set.preview).length,
       fullSize: fulls.reduce((total, file) => total + file.size, 0)
     });
   }
@@ -493,9 +750,9 @@ export function AdminPhotoUpload({
     const previews = fileList(formData, "previews");
     const fulls = fileList(formData, "fulls");
 
-    if (!albumId || !thumbnails.length || !previews.length || !fulls.length) {
+    if (!albumId || !fulls.length) {
       setStatusKind("error");
-      setStatus("Choose an album and all three export groups.");
+      setStatus("Choose an album and at least one full-res image.");
       return;
     }
 
@@ -504,15 +761,7 @@ export function AdminPhotoUpload({
     if (!photoSets.length) {
       setStatusKind("error");
       setStatus(
-        "No matching files found. Use matching names like img_001_thumb.jpg, img_001_preview.jpg, and img_001.jpg."
-      );
-      return;
-    }
-
-    if (photoSets.length !== fulls.length) {
-      setStatusKind("error");
-      setStatus(
-        `Matched ${photoSets.length}/${fulls.length} full-res files. Check thumbnail and preview filenames before uploading.`
+        "No image files found. Choose the full-res JPEGs, then thumbnails and previews can be generated automatically."
       );
       return;
     }
@@ -530,7 +779,10 @@ export function AdminPhotoUpload({
       const result = await uploadWithLimit(
         photoSets,
         1,
-        (photoSet) => uploadPhotoSetWithRetry(albumId, photoSet),
+        (photoSet) =>
+          uploadPhotoSetWithRetry(albumId, photoSet, (message) =>
+            setActivePhoto(message)
+          ),
         (index, photoSet) => {
           setActivePhoto(`Working on ${index}/${photoSets.length}: ${photoSet.full.name}`);
         },
@@ -626,8 +878,9 @@ export function AdminPhotoUpload({
       <div className="upload-guidance">
         <strong>Upload a full album in one run</strong>
         <span>
-          Choose matching thumbnail, preview, and full-res exports. Matching names are
-          paired automatically.
+          Choose the full-res JPEGs. The browser will read EXIF, generate WebP
+          thumbnails/previews, upload everything to R2, then save the photo records.
+          You can still add your own thumbnails or previews as overrides.
         </span>
       </div>
       <div className="upload-diagnostic">
@@ -644,27 +897,25 @@ export function AdminPhotoUpload({
         ) : null}
       </div>
       <label className="field">
-        Thumbnail images
+        Thumbnail images <small>Optional override</small>
         <input
           name="thumbnails"
           type="file"
           accept="image/jpeg,image/jpg,image/webp,image/*"
           multiple
-          required
         />
       </label>
       <label className="field">
-        Preview images
+        Preview images <small>Optional override</small>
         <input
           name="previews"
           type="file"
           accept="image/jpeg,image/jpg,image/webp,image/*"
           multiple
-          required
         />
       </label>
       <label className="field">
-        Full-res images
+        Full-res images <small>Required source files</small>
         <input
           name="fulls"
           type="file"
@@ -678,10 +929,12 @@ export function AdminPhotoUpload({
         {isUploading ? "Uploading" : "Upload album photos"}
       </button>
       <div className="upload-summary">
-        <span>{selection.thumbnails} thumbnails</span>
-        <span>{selection.previews} previews</span>
+        <span>{selection.thumbnails} supplied thumbnails</span>
+        <span>{selection.previews} supplied previews</span>
         <span>{selection.fulls} full-res</span>
-        <span>{selection.matched} matched</span>
+        <span>{selection.generatedThumbnails} auto thumbnails</span>
+        <span>{selection.generatedPreviews} auto previews</span>
+        <span>{selection.matched} ready</span>
         <span>{fileSizeLabel(selection.fullSize)}</span>
       </div>
       {isUploading && totalCount ? (

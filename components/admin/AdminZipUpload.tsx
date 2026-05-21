@@ -61,6 +61,24 @@ async function cleanupUploadedKeys(keys: string[]) {
   }).catch(() => null);
 }
 
+async function logZipFailure(albumId: string, zipFile: File, message: string, durationMs: number) {
+  await fetch("/api/uploads/events", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      album_id: albumId,
+      filename: zipFile.name,
+      event_type: "zip",
+      status: "failed",
+      message,
+      size_bytes: zipFile.size,
+      duration_ms: durationMs
+    })
+  }).catch(() => null);
+}
+
 export function AdminZipUpload({
   albums,
   defaultAlbumId: preferredAlbumId
@@ -102,6 +120,7 @@ export function AdminZipUpload({
     setIsUploading(true);
     setStatusTone("info");
     setStatus("Creating ZIP upload link...");
+    const startedAt = performance.now();
 
     try {
       const signedUpload = await signZipUpload(albumId, zipFile);
@@ -128,7 +147,10 @@ export function AdminZipUpload({
           },
           body: JSON.stringify({
             album_id: albumId,
-            download_zip_url: signedUpload.publicUrl
+            download_zip_url: signedUpload.publicUrl,
+            filename: zipFile.name,
+            zip_size_bytes: zipFile.size,
+            upload_duration_ms: Math.round(performance.now() - startedAt)
           })
         });
 
@@ -143,6 +165,12 @@ export function AdminZipUpload({
 
       window.location.assign("/admin?view=uploads&notice=zip-uploaded#uploads");
     } catch (error) {
+      await logZipFailure(
+        albumId,
+        zipFile,
+        error instanceof Error ? error.message : "ZIP upload failed.",
+        Math.round(performance.now() - startedAt)
+      );
       setStatusTone("error");
       setStatus(error instanceof Error ? error.message : "ZIP upload failed.");
       setIsUploading(false);

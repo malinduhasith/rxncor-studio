@@ -5,8 +5,19 @@ import { objectKeyFromPublicUrl } from "@/lib/r2";
 
 const zipSchema = z.object({
   album_id: z.string().uuid(),
-  download_zip_url: z.string().min(1)
+  download_zip_url: z.string().min(1),
+  filename: z.string().trim().max(240).optional(),
+  zip_size_bytes: z.number().int().nonnegative().optional(),
+  upload_duration_ms: z.number().int().nonnegative().optional()
 });
+
+function requestIp(request: Request) {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("x-real-ip") ??
+    null
+  );
+}
 
 export async function POST(request: Request) {
   const parsed = zipSchema.safeParse(await request.json().catch(() => null));
@@ -50,6 +61,21 @@ export async function POST(request: Request) {
 
   if (error) {
     return noStoreJson({ error: "ZIP link could not be saved." }, { status: 400 });
+  }
+
+  try {
+    await supabase.from("upload_events").insert({
+      album_id: payload.album_id,
+      filename: payload.filename ?? zipObjectKey.split("/").pop(),
+      event_type: "zip",
+      status: "success",
+      message: "ZIP uploaded and linked to album.",
+      size_bytes: payload.zip_size_bytes ?? 0,
+      duration_ms: payload.upload_duration_ms,
+      ip_address: requestIp(request)
+    });
+  } catch {
+    // Monitoring should never block a finished ZIP upload.
   }
 
   return noStoreJson({ album });

@@ -48,6 +48,12 @@ export type Photo = {
   iso: string | null;
   captured_at: string | null;
   location: string | null;
+  thumbnail_size_bytes: number | null;
+  preview_size_bytes: number | null;
+  full_size_bytes: number | null;
+  file_size_bytes: number | null;
+  generated_thumbnail: boolean;
+  generated_preview: boolean;
   is_selected: boolean;
   uploaded_at: string;
 };

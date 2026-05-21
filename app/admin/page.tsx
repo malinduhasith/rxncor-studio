@@ -113,6 +113,12 @@ type AdminPhoto = {
   r2_object_key: string;
   is_selected: boolean;
   uploaded_at: string;
+  thumbnail_size_bytes?: number | null;
+  preview_size_bytes?: number | null;
+  full_size_bytes?: number | null;
+  file_size_bytes?: number | null;
+  generated_thumbnail?: boolean | null;
+  generated_preview?: boolean | null;
 } & PhotoDisplaySource;
 
 type DisplayPhoto = AdminPhoto & {
@@ -128,6 +134,20 @@ type DownloadLog = {
   photo_id: string | null;
   client_email: string | null;
   downloaded_at: string;
+  ip_address: string | null;
+};
+
+type UploadEvent = {
+  id: string;
+  album_id: string | null;
+  photo_id: string | null;
+  filename: string | null;
+  event_type: "photo" | "zip" | "diagnostic" | "cleanup";
+  status: "success" | "failed" | "partial";
+  message: string | null;
+  size_bytes: number | null;
+  duration_ms: number | null;
+  created_at: string;
   ip_address: string | null;
 };
 
@@ -178,6 +198,7 @@ const adminViews = [
   "clients",
   "new-album",
   "uploads",
+  "monitoring",
   "delivery",
   "downloads",
   "requests",
@@ -216,7 +237,12 @@ const adminViewCopy: Record<AdminView, { label: string; title: string; detail: s
   uploads: {
     label: "Uploads",
     title: "Upload workflow",
-    detail: "Upload matched thumbnails, previews, full-res files, and the final delivery ZIP."
+    detail: "Upload full-res files, auto-generate delivery images, read EXIF, and attach the final ZIP."
+  },
+  monitoring: {
+    label: "Monitoring",
+    title: "Analytics and monitoring",
+    detail: "Watch upload health, failures, download activity, and tracked storage."
   },
   delivery: {
     label: "Delivery",
@@ -445,6 +471,23 @@ function formatDateTime(value: string | null) {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(new Date(value));
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+
+  const units = ["KB", "MB", "GB", "TB"];
+  let size = bytes / 1024;
+  let unitIndex = 0;
+
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${size.toFixed(size >= 10 || unitIndex === 0 ? 1 : 2)} ${units[unitIndex]}`;
 }
 
 function fileType(filename: string) {
@@ -689,7 +732,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     downloadLogsResult,
     albumClientsResult,
     inquiriesResult,
-    shootRequestsResult
+    shootRequestsResult,
+    uploadEventsResult
   ] = await Promise.all([
     supabase
       .from("clients")
@@ -723,6 +767,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         "id, client_id, album_id, name, email, phone, shoot_type, location, message, preferred_start_at, preferred_end_at, status, admin_notes, created_at, updated_at, ip_address"
       )
       .order("created_at", { ascending: false })
+      .limit(20),
+    supabase
+      .from("upload_events")
+      .select(
+        "id, album_id, photo_id, filename, event_type, status, message, size_bytes, duration_ms, created_at, ip_address"
+      )
+      .order("created_at", { ascending: false })
       .limit(20)
   ]);
 
@@ -738,16 +789,54 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const downloadCount = downloadCountResult.count ?? 0;
   const downloadLogs = (downloadLogsResult.data ?? []) as DownloadLog[];
   const inquiries = (inquiriesResult.data ?? []) as ContactInquiry[];
+  const uploadEvents = (uploadEventsResult.data ?? []) as UploadEvent[];
   const albumPhotoResult = albums.length
     ? await supabase.from("photos").select("album_id").in(
         "album_id",
         albums.map((album) => album.id)
       )
     : { data: [], error: null };
+  const photoStorageResult = albums.length
+    ? await supabase
+        .from("photos")
+        .select(
+          "album_id, thumbnail_size_bytes, preview_size_bytes, full_size_bytes, file_size_bytes, generated_thumbnail, generated_preview"
+        )
+        .in(
+          "album_id",
+          albums.map((album) => album.id)
+        )
+    : { data: [], error: null };
   const albumPhotoCounts = new Map<string, number>();
+  const albumStorageBytes = new Map<string, number>();
+  const albumGeneratedCounts = new Map<string, number>();
 
   for (const row of (albumPhotoResult.data ?? []) as { album_id: string }[]) {
     albumPhotoCounts.set(row.album_id, (albumPhotoCounts.get(row.album_id) ?? 0) + 1);
+  }
+  for (const row of (photoStorageResult.data ?? []) as {
+    album_id: string;
+    thumbnail_size_bytes: number | null;
+    preview_size_bytes: number | null;
+    full_size_bytes: number | null;
+    file_size_bytes: number | null;
+    generated_thumbnail: boolean | null;
+    generated_preview: boolean | null;
+  }[]) {
+    const bytes =
+      row.file_size_bytes ??
+      (row.thumbnail_size_bytes ?? 0) +
+        (row.preview_size_bytes ?? 0) +
+        (row.full_size_bytes ?? 0);
+
+    albumStorageBytes.set(row.album_id, (albumStorageBytes.get(row.album_id) ?? 0) + bytes);
+
+    if (row.generated_thumbnail || row.generated_preview) {
+      albumGeneratedCounts.set(
+        row.album_id,
+        (albumGeneratedCounts.get(row.album_id) ?? 0) + 1
+      );
+    }
   }
   const clientAlbumCounts = new Map<string, number>();
   const albumAssignedClientIds = new Map<string, Set<string>>();
@@ -778,7 +867,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   const adminPhotoBaseSelect =
     "id, album_id, filename, thumbnail_url, preview_url, full_res_url, r2_object_key, is_selected, uploaded_at";
-  const adminPhotoMetadataSelect = `${adminPhotoBaseSelect}, display_title, caption, camera_model, lens_model, focal_length, aperture, shutter_speed, iso, captured_at, location`;
+  const adminPhotoMetadataSelect = `${adminPhotoBaseSelect}, display_title, caption, camera_model, lens_model, focal_length, aperture, shutter_speed, iso, captured_at, location, thumbnail_size_bytes, preview_size_bytes, full_size_bytes, file_size_bytes, generated_thumbnail, generated_preview`;
   const selectedPhotoResult = selectedAlbum
     ? await (async () => {
         const metadataResult = await supabase
@@ -938,6 +1027,22 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             "Per-album photo counts could not be loaded. Album readiness and filters may be incomplete."
         }
       : null,
+    photoStorageResult.error
+      ? {
+          tone: "warning",
+          title: "Storage tracking needs setup",
+          message:
+            "Run the upload monitoring Supabase migration to show tracked storage and generated-image counts."
+        }
+      : null,
+    uploadEventsResult.error
+      ? {
+          tone: "warning",
+          title: "Upload monitoring needs setup",
+          message:
+            "Run the upload monitoring Supabase migration to store upload successes and failures."
+        }
+      : null,
     selectedPhotoResult.error
       ? {
           tone: "warning",
@@ -1052,6 +1157,32 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const newShootRequestCount = shootRequests.filter(
     (request) => request.status === "new"
   ).length;
+  const now = new Date().valueOf();
+  const dayAgo = now - 24 * 60 * 60 * 1000;
+  const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+  const recentUploadEvents = uploadEvents.filter(
+    (event) => new Date(event.created_at).getTime() >= dayAgo
+  );
+  const weeklyUploadEvents = uploadEvents.filter(
+    (event) => new Date(event.created_at).getTime() >= weekAgo
+  );
+  const recentUploadFailures = recentUploadEvents.filter(
+    (event) => event.status === "failed"
+  ).length;
+  const weeklyUploadFailures = weeklyUploadEvents.filter(
+    (event) => event.status === "failed"
+  ).length;
+  const trackedStorageBytes = [...albumStorageBytes.values()].reduce(
+    (total, bytes) => total + bytes,
+    0
+  );
+  const generatedPhotoCount = [...albumGeneratedCounts.values()].reduce(
+    (total, count) => total + count,
+    0
+  );
+  const downloadEventsToday = downloadLogs.filter(
+    (log) => new Date(log.downloaded_at).getTime() >= dayAgo
+  ).length;
   const operationalItems = [
     {
       label: "New shoot requests",
@@ -1082,6 +1213,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       label: "Recent downloads",
       detail: `${recentDownloadCount} latest log entries loaded`,
       attention: false
+    },
+    {
+      label: "Upload failures",
+      detail: `${recentUploadFailures} failed upload events in the last 24 hours`,
+      attention: recentUploadFailures > 0
     }
   ];
 
@@ -1322,6 +1458,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <a className="admin-quick-card" href={adminHref("requests")}>
                   <strong>Shoot requests</strong>
                   <span>Review booking requests and accepted shoot times.</span>
+                </a>
+                <a className="admin-quick-card" href={adminHref("monitoring")}>
+                  <strong>Monitoring</strong>
+                  <span>Track upload failures, generated files, storage, and downloads.</span>
                 </a>
                 <a className="admin-quick-card" href={adminHref("delivery")}>
                   <strong>Delivery scan</strong>
@@ -2089,6 +2229,17 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                           </td>
                           <td>
                             <span>{photo.displayLabel.detail}</span>
+                            <span>
+                              {formatBytes(
+                                photo.file_size_bytes ??
+                                  (photo.thumbnail_size_bytes ?? 0) +
+                                    (photo.preview_size_bytes ?? 0) +
+                                    (photo.full_size_bytes ?? 0)
+                              )}
+                              {photo.generated_thumbnail || photo.generated_preview
+                                ? " · auto-generated web images"
+                                : ""}
+                            </span>
                             <span>Uploaded {formatDateTime(photo.uploaded_at)}</span>
                             <code className="code-line">{photo.r2_object_key}</code>
                             <details className="photo-meta-editor">
@@ -2449,6 +2600,186 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <AdminPhotoUpload albums={albums} defaultAlbumId={selectedAlbum?.id} />
             <h3 className="subsection-title">Full album ZIP</h3>
             <AdminZipUpload albums={albums} defaultAlbumId={selectedAlbum?.id} />
+          </section>
+          ) : null}
+
+          {activeView === "monitoring" ? (
+          <section id="monitoring" className="admin-section">
+            <div className="stat-grid">
+              <div className="stat">
+                <DatabaseBackup size={20} />
+                <strong>{formatBytes(trackedStorageBytes)}</strong>
+                <span>Tracked storage</span>
+              </div>
+              <div className="stat">
+                <ImageUp size={20} />
+                <strong>{recentUploadEvents.length}</strong>
+                <span>Uploads 24h</span>
+              </div>
+              <div className="stat">
+                <CircleAlert size={20} />
+                <strong>{recentUploadFailures}</strong>
+                <span>Failed 24h</span>
+              </div>
+              <div className="stat">
+                <LinkIcon size={20} />
+                <strong>{downloadEventsToday}</strong>
+                <span>Downloads 24h</span>
+              </div>
+            </div>
+
+            <section className="workflow-panel" aria-label="Upload health">
+              <div className="panel-title-row">
+                <div>
+                  <p className="eyebrow">Upload health</p>
+                  <h2>What the system is seeing</h2>
+                  <p className="muted">
+                    Upload events are written after successful photo saves and after
+                    failed browser/R2 attempts. This gives you a trail when a large
+                    album gets interrupted.
+                  </p>
+                </div>
+                <span className="pill">{weeklyUploadFailures} failed this week</span>
+              </div>
+              <div className="readiness-grid">
+                <div
+                  className={`readiness-item ${
+                    weeklyUploadFailures ? "attention" : "complete"
+                  }`}
+                >
+                  {weeklyUploadFailures ? <CircleAlert size={18} /> : <CircleCheck size={18} />}
+                  <span>
+                    <strong>{weeklyUploadFailures} weekly upload failures</strong>
+                    <small>Check failed rows before retrying a large album.</small>
+                  </span>
+                </div>
+                <div className="readiness-item complete">
+                  <ImageUp size={18} />
+                  <span>
+                    <strong>{generatedPhotoCount} generated image sets</strong>
+                    <small>Photos where thumbnail or preview was made in-browser.</small>
+                  </span>
+                </div>
+                <div className="readiness-item complete">
+                  <DatabaseBackup size={18} />
+                  <span>
+                    <strong>{formatBytes(trackedStorageBytes)} tracked</strong>
+                    <small>Based on upload metadata saved with photo records.</small>
+                  </span>
+                </div>
+                <div className="readiness-item complete">
+                  <LinkIcon size={18} />
+                  <span>
+                    <strong>{downloadLogs.length} recent downloads loaded</strong>
+                    <small>Open Downloads for per-file client audit rows.</small>
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            <section className="workflow-panel" aria-label="Album storage summary">
+              <div className="panel-title-row">
+                <div>
+                  <p className="eyebrow">Album storage</p>
+                  <h2>Largest tracked albums</h2>
+                  <p className="muted">
+                    This is an app-side estimate from files uploaded after storage
+                    tracking was added. Cloudflare R2 remains the billing source of
+                    truth.
+                  </p>
+                </div>
+              </div>
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Album</th>
+                      <th>Photos</th>
+                      <th>Tracked size</th>
+                      <th>Auto generated</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...albums]
+                      .sort(
+                        (a, b) =>
+                          (albumStorageBytes.get(b.id) ?? 0) -
+                          (albumStorageBytes.get(a.id) ?? 0)
+                      )
+                      .slice(0, 10)
+                      .map((album) => (
+                        <tr key={album.id}>
+                          <td>
+                            <strong>{album.title}</strong>
+                            <small>{album.slug}</small>
+                          </td>
+                          <td>{albumPhotoCounts.get(album.id) ?? 0}</td>
+                          <td>{formatBytes(albumStorageBytes.get(album.id) ?? 0)}</td>
+                          <td>{albumGeneratedCounts.get(album.id) ?? 0}</td>
+                        </tr>
+                      ))}
+                    {!albums.length ? (
+                      <tr>
+                        <td colSpan={4}>No albums yet.</td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="workflow-panel" aria-label="Recent upload events">
+              <div className="panel-title-row">
+                <div>
+                  <p className="eyebrow">Event trail</p>
+                  <h2>Recent upload events</h2>
+                </div>
+                <span className="pill">{uploadEvents.length} loaded</span>
+              </div>
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>When</th>
+                      <th>Status</th>
+                      <th>Album</th>
+                      <th>File</th>
+                      <th>Size</th>
+                      <th>Time</th>
+                      <th>Message</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {uploadEvents.map((event) => (
+                      <tr key={event.id}>
+                        <td>{formatDateTime(event.created_at)}</td>
+                        <td>{event.status}</td>
+                        <td>
+                          {event.album_id
+                            ? logAlbumTitles.get(event.album_id) ?? event.album_id.slice(0, 8)
+                            : "Not captured"}
+                        </td>
+                        <td>{event.filename ?? "Not captured"}</td>
+                        <td>{formatBytes(event.size_bytes ?? 0)}</td>
+                        <td>
+                          {event.duration_ms
+                            ? `${(event.duration_ms / 1000).toFixed(1)}s`
+                            : "Not captured"}
+                        </td>
+                        <td>
+                          <p className="table-message">{event.message ?? "No message"}</p>
+                        </td>
+                      </tr>
+                    ))}
+                    {!uploadEvents.length ? (
+                      <tr>
+                        <td colSpan={7}>No upload events logged yet.</td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </section>
           ) : null}
 

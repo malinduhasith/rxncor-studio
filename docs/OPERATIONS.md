@@ -26,6 +26,14 @@ Run the latest migration in Supabase SQL Editor:
 
 [supabase/migrations/20260519_contact_inquiries.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260519_contact_inquiries.sql)
 
+[supabase/migrations/20260519_shoot_requests.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260519_shoot_requests.sql)
+
+[supabase/migrations/20260519_about_builder.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260519_about_builder.sql)
+
+[supabase/migrations/20260522_photo_display_metadata.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260522_photo_display_metadata.sql)
+
+[supabase/migrations/20260522_upload_monitoring.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260522_upload_monitoring.sql)
+
 These add:
 
 - client passwords
@@ -35,6 +43,10 @@ These add:
 - duplicate-email protection for client logins
 - a faster download-log lookup index
 - homepage contact/booking inquiries
+- shoot requests with accepted-slot overlap protection
+- editable About page content
+- EXIF/photo card metadata fields
+- upload monitoring events and tracked storage estimates
 
 ## Full Client Test
 

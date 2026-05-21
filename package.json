@@ -14,6 +14,7 @@
     "@aws-sdk/s3-request-presigner": "latest",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "latest",
+    "exifr": "^7.1.3",
     "lucide-react": "latest",
     "next": "latest",
     "react": "latest",
