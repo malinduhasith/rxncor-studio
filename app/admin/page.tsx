@@ -1222,11 +1222,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   ];
 
   return (
-    <main className="shell section">
-      <div className="admin-layout">
-        <aside className="sidebar">
-          <strong>Admin</strong>
-          {adminViews.map((viewName) => (
+    <main className="shell section admin-workspace">
+      <div className="admin-layout" data-view={activeView}>
+        <aside className="sidebar admin-sidebar" aria-label="Admin workspace navigation">
+          <strong className="admin-sidebar-title">Admin</strong>
+          {adminViews.map((viewName, index) => (
             <a
               className={activeView === viewName ? "active" : undefined}
               href={adminHref(viewName, {
@@ -1234,14 +1234,19 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 q: viewName === "albums" ? albumQuery : undefined,
                 status: viewName === "albums" ? albumStatusFilter : undefined
               })}
+              aria-current={activeView === viewName ? "page" : undefined}
               key={viewName}
             >
-              {adminViewCopy[viewName].label}
+              <span className="admin-nav-number">{String(index + 1).padStart(2, "0")}</span>
+              <span className="admin-nav-copy">
+                <span>{adminViewCopy[viewName].label}</span>
+                <small>{adminViewCopy[viewName].title}</small>
+              </span>
             </a>
           ))}
         </aside>
 
-        <section className="dashboard-panel">
+        <section className="dashboard-panel admin-main-panel">
           <div className="admin-topbar">
             <div>
               <p className="eyebrow">Admin / {activeViewCopy.label}</p>
