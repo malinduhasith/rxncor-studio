@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import {
@@ -10,6 +10,7 @@ import {
   createEmailAccessToken
 } from "@/lib/gallery-access";
 import { verifyPassword } from "@/lib/password";
+import { checkRateLimit, clientIpFromHeaders } from "@/lib/rate-limit";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const unlockSchema = z.object({
@@ -57,6 +58,25 @@ export async function unlockGalleryAction(formData: FormData) {
   const email = String(payload.data.client_email ?? "").trim().toLowerCase();
   const password = String(payload.data.password ?? "").trim();
   let accessToken: string | null = null;
+  const requestHeaders = await headers();
+  const ipAddress = clientIpFromHeaders(requestHeaders);
+  const albumLimit = checkRateLimit(
+    `album-unlock:${ipAddress}:${payload.data.album_id}`,
+    {
+      limit: 20,
+      windowMs: 15 * 60 * 1000
+    }
+  );
+  const emailLimit = email
+    ? checkRateLimit(`album-unlock:${ipAddress}:${payload.data.album_id}:${email}`, {
+        limit: 10,
+        windowMs: 15 * 60 * 1000
+      })
+    : { allowed: true, retryAfter: 0 };
+
+  if (!albumLimit.allowed || !emailLimit.allowed) {
+    redirect(`/client/${payload.data.slug}?notice=rate-limited`);
+  }
 
   if (!unlockAlbum) {
     redirect(`/client/${payload.data.slug}?notice=wrong-password`);
@@ -94,15 +114,15 @@ export async function unlockGalleryAction(formData: FormData) {
     const unlockClient = matchingClients[0] ?? null;
 
     if (!unlockClient) {
-      redirect(`/client/${payload.data.slug}?notice=client-not-found`);
+      redirect(`/client/${payload.data.slug}?notice=wrong-password`);
     }
 
     if (matchingClients.length > 1) {
-      redirect(`/client/${payload.data.slug}?notice=duplicate-client`);
+      redirect(`/client/${payload.data.slug}?notice=wrong-password`);
     }
 
     if (!unlockClient.password_hash) {
-      redirect(`/client/${payload.data.slug}?notice=client-no-password`);
+      redirect(`/client/${payload.data.slug}?notice=wrong-password`);
     }
 
     if (!verifyPassword(password, unlockClient.password_hash)) {
@@ -110,7 +130,7 @@ export async function unlockGalleryAction(formData: FormData) {
     }
 
     if (!assignedClientIds.includes(unlockClient.id)) {
-      redirect(`/client/${payload.data.slug}?notice=client-not-assigned`);
+      redirect(`/client/${payload.data.slug}?notice=wrong-password`);
     }
 
     if (unlockClient.password_hash) {

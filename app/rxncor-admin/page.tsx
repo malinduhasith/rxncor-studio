@@ -18,7 +18,8 @@ type AdminLoginPageProps = {
 
 const errorMessages: Record<string, string> = {
   invalid: "The email or password did not match a Supabase admin user.",
-  missing: "Enter both email and password."
+  missing: "Enter both email and password.",
+  "rate-limited": "Too many attempts. Wait a few minutes, then try again."
 };
 
 export default async function AdminLoginPage({ searchParams }: AdminLoginPageProps) {

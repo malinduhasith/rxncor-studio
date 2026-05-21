@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getVerifiedAdminApiClient } from "@/lib/api-auth";
+import { noStoreJson } from "@/lib/http";
 import { albumObjectKey, createUploadUrl, publicR2Url } from "@/lib/r2";
 
 const uploadSchema = z.object({
@@ -40,18 +40,18 @@ export async function POST(request: Request) {
   const parsed = uploadSchema.safeParse(await request.json().catch(() => null));
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid upload request" }, { status: 400 });
+    return noStoreJson({ error: "Invalid upload request" }, { status: 400 });
   }
 
   const payload = parsed.data;
   const supabase = await getVerifiedAdminApiClient();
 
   if (!supabase) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return noStoreJson({ error: "Unauthorized" }, { status: 401 });
   }
 
   if (!allowedContentType(payload.kind, payload.contentType)) {
-    return NextResponse.json({ error: "File type is not allowed" }, { status: 400 });
+    return noStoreJson({ error: "File type is not allowed" }, { status: 400 });
   }
 
   const { data: album, error: albumError } = await supabase
@@ -61,14 +61,14 @@ export async function POST(request: Request) {
     .single();
 
   if (albumError || !album) {
-    return NextResponse.json({ error: "Album not found" }, { status: 404 });
+    return noStoreJson({ error: "Album not found" }, { status: 404 });
   }
 
   const filename = safeFilename(payload.filename);
   const key = albumObjectKey(album.slug, payload.kind, filename);
   const uploadUrl = await createUploadUrl(key, payload.contentType);
 
-  return NextResponse.json({
+  return noStoreJson({
     key,
     uploadUrl,
     publicUrl: publicR2Url(key)

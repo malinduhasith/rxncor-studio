@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import {
@@ -6,7 +5,9 @@ import {
   getGalleryAccessForCookies,
   type AccessAlbum
 } from "@/lib/gallery-security";
+import { noStoreJson } from "@/lib/http";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
+import { checkRateLimit, clientIpFromHeaders, rateLimitHeaders } from "@/lib/rate-limit";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -21,13 +22,30 @@ export async function POST(request: Request) {
   const parsed = downloadSchema.safeParse(await request.json().catch(() => null));
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid download request" }, { status: 400 });
+    return noStoreJson({ error: "Invalid download request" }, { status: 400 });
   }
 
   const payload = parsed.data;
   const viewerSupabase = await createSupabaseServerClient();
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  const ipAddress = forwardedFor?.split(",")[0]?.trim() ?? null;
+  const ipAddress = clientIpFromHeaders(request.headers);
+  const ipLimit = checkRateLimit(`download:ip:${ipAddress}`, {
+    limit: 180,
+    windowMs: 60 * 1000
+  });
+  const albumLimit = checkRateLimit(`download:${ipAddress}:${payload.album_id}`, {
+    limit: 80,
+    windowMs: 60 * 1000
+  });
+
+  if (!ipLimit.allowed || !albumLimit.allowed) {
+    const retryAfter = Math.max(ipLimit.retryAfter, albumLimit.retryAfter);
+
+    return noStoreJson(
+      { error: "Too many download requests" },
+      { status: 429, headers: rateLimitHeaders(retryAfter) }
+    );
+  }
+
   const {
     data: { user }
   } = await viewerSupabase.auth.getUser();
@@ -45,7 +63,7 @@ export async function POST(request: Request) {
   }) | null;
 
   if (!album) {
-    return NextResponse.json({ error: "Album not found" }, { status: 404 });
+    return noStoreJson({ error: "Album not found" }, { status: 404 });
   }
 
   let verifiedObjectKey: string | null = null;
@@ -73,7 +91,7 @@ export async function POST(request: Request) {
   }
 
   if (!verifiedObjectKey) {
-    return NextResponse.json({ error: "Download file not found" }, { status: 404 });
+    return noStoreJson({ error: "Download file not found" }, { status: 404 });
   }
 
   const galleryAccess = await getGalleryAccessForCookies({
@@ -84,17 +102,17 @@ export async function POST(request: Request) {
   });
 
   if (albumRequiresUnlock(album) && !galleryAccess.canAccess && !user) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return noStoreJson({ error: "Forbidden" }, { status: 403 });
   }
 
   await supabase.from("download_logs").insert({
     album_id: payload.album_id,
     photo_id: payload.photo_id ?? null,
     client_email: galleryAccess.clientEmail,
-    ip_address: ipAddress
+    ip_address: ipAddress === "unknown" ? null : ipAddress
   });
 
   const url = await createDownloadUrl(verifiedObjectKey, downloadFilename);
 
-  return NextResponse.json({ url });
+  return noStoreJson({ url });
 }

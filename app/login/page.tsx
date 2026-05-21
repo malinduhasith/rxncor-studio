@@ -21,6 +21,7 @@ const errorMessages: Record<string, string> = {
   missing: "Enter both email and password.",
   "no-client": "No client profile was found for that email address.",
   "no-password": "This client does not have a client login password set yet.",
+  "rate-limited": "Too many attempts. Wait a few minutes, then try again.",
   "wrong-password": "That password does not match this client profile.",
   session: "Sign in again to view your albums."
 };

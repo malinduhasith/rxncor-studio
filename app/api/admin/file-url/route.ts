@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getVerifiedAdminApiClient } from "@/lib/api-auth";
+import { noStoreJson } from "@/lib/http";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
 
 const fileUrlSchema = z.object({
@@ -13,14 +13,14 @@ export async function POST(request: Request) {
   const parsed = fileUrlSchema.safeParse(await request.json().catch(() => null));
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid file link request" }, { status: 400 });
+    return noStoreJson({ error: "Invalid file link request" }, { status: 400 });
   }
 
   const payload = parsed.data;
   const supabase = await getVerifiedAdminApiClient();
 
   if (!supabase) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return noStoreJson({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { data: photo } = await supabase
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (!photo) {
-    return NextResponse.json({ error: "File not found" }, { status: 404 });
+    return noStoreJson({ error: "File not found" }, { status: 404 });
   }
 
   const key =
@@ -43,5 +43,5 @@ export async function POST(request: Request) {
     payload.kind === "full" ? photo.filename : undefined
   );
 
-  return NextResponse.json({ url });
+  return noStoreJson({ url });
 }

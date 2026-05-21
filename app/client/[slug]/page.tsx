@@ -250,6 +250,9 @@ export default async function ClientGalleryPage({
           {notice === "email-required" ? (
             <p className="alert">Enter your email before opening this gallery.</p>
           ) : null}
+          {notice === "rate-limited" ? (
+            <p className="alert">Too many attempts. Wait a few minutes, then try again.</p>
+          ) : null}
           <form action={unlockGalleryAction}>
             <input name="album_id" type="hidden" value={album.id} />
             <input name="slug" type="hidden" value={album.slug} />

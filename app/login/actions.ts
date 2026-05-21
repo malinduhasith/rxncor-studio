@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { siteConfig } from "@/config/site";
 import {
@@ -8,6 +8,7 @@ import {
   createClientSessionCookieValue
 } from "@/lib/gallery-access";
 import { verifyPassword } from "@/lib/password";
+import { checkRateLimit, clientIpFromHeaders } from "@/lib/rate-limit";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type LoginClient = {
@@ -24,6 +25,21 @@ export async function clientLoginAction(formData: FormData) {
     redirect(`${siteConfig.routes.login}?error=missing`);
   }
 
+  const requestHeaders = await headers();
+  const ipAddress = clientIpFromHeaders(requestHeaders);
+  const ipLimit = checkRateLimit(`client-login:ip:${ipAddress}`, {
+    limit: 30,
+    windowMs: 15 * 60 * 1000
+  });
+  const emailLimit = checkRateLimit(`client-login:${ipAddress}:${email}`, {
+    limit: 8,
+    windowMs: 15 * 60 * 1000
+  });
+
+  if (!ipLimit.allowed || !emailLimit.allowed) {
+    redirect(`${siteConfig.routes.login}?error=rate-limited`);
+  }
+
   const supabase = createSupabaseAdminClient();
   const { data: clients, error } = await supabase
     .from("clients")
@@ -38,19 +54,19 @@ export async function clientLoginAction(formData: FormData) {
   }
 
   if (!loginClient) {
-    redirect(`${siteConfig.routes.login}?error=no-client`);
+    redirect(`${siteConfig.routes.login}?error=invalid`);
   }
 
   if (matchingClients.length > 1) {
-    redirect(`${siteConfig.routes.login}?error=duplicate-client`);
+    redirect(`${siteConfig.routes.login}?error=invalid`);
   }
 
   if (!loginClient.password_hash) {
-    redirect(`${siteConfig.routes.login}?error=no-password`);
+    redirect(`${siteConfig.routes.login}?error=invalid`);
   }
 
   if (!verifyPassword(password, loginClient.password_hash)) {
-    redirect(`${siteConfig.routes.login}?error=wrong-password`);
+    redirect(`${siteConfig.routes.login}?error=invalid`);
   }
 
   const cookieStore = await cookies();
