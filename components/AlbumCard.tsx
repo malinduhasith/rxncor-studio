@@ -19,7 +19,12 @@ export function AlbumCard({
   coverUrl
 }: AlbumCardProps) {
   return (
-    <Link className="album-card" href={`/client/${slug}`}>
+    <Link
+      aria-label={`Open ${title}`}
+      className="album-card"
+      data-pending-label={title}
+      href={`/client/${slug}`}
+    >
       {coverUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img

@@ -55,6 +55,7 @@ export function PendingInteraction() {
     }
 
     document.body.classList.remove("is-interaction-pending");
+    document.body.removeAttribute("aria-busy");
     document
       .querySelectorAll<HTMLElement>("[data-pending='true']")
       .forEach((element) => {
@@ -69,6 +70,7 @@ export function PendingInteraction() {
     }
 
     document.body.classList.add("is-interaction-pending");
+    document.body.setAttribute("aria-busy", "true");
     setLabel(nextLabel);
     setPending(true);
     timeoutRef.current = window.setTimeout(clearPending, MAX_PENDING_MS);
@@ -97,7 +99,12 @@ export function PendingInteraction() {
       }
 
       anchor.dataset.pending = "true";
-      startPending(cleanLabel(anchor.textContent, "Loading"));
+      startPending(
+        `Opening ${cleanLabel(
+          anchor.dataset.pendingLabel ?? anchor.getAttribute("aria-label") ?? anchor.textContent,
+          "next view"
+        )}`
+      );
     }
 
     function handleSubmit(event: SubmitEvent) {
@@ -115,7 +122,14 @@ export function PendingInteraction() {
       const submitter =
         event.submitter instanceof HTMLElement ? event.submitter : null;
       submitter?.setAttribute("data-pending", "true");
-      startPending(cleanLabel(submitter?.textContent, "Saving"));
+      startPending(
+        cleanLabel(
+          submitter?.dataset.pendingLabel ??
+            submitter?.getAttribute("aria-label") ??
+            submitter?.textContent,
+          "Working"
+        )
+      );
     }
 
     document.addEventListener("click", handleClick, true);
@@ -137,8 +151,12 @@ export function PendingInteraction() {
       data-visible={pending ? "true" : "false"}
       role="status"
     >
-      <span className="pending-indicator-track" />
-      <span className="pending-indicator-label">{label}</span>
+      <div className="pending-card">
+        <p className="pending-eyebrow">Loading</p>
+        <h2>Working on it</h2>
+        <p className="pending-indicator-label">{label}</p>
+        <span className="pending-indicator-track" />
+      </div>
     </div>
   );
 }
