@@ -41,6 +41,16 @@ create table if not exists public.photos (
   preview_url text not null,
   full_res_url text not null,
   r2_object_key text not null,
+  display_title text,
+  caption text,
+  camera_model text,
+  lens_model text,
+  focal_length text,
+  aperture text,
+  shutter_speed text,
+  iso text,
+  captured_at timestamptz,
+  location text,
   is_selected boolean not null default false,
   uploaded_at timestamptz not null default now()
 );

@@ -8,6 +8,9 @@ import type { NoticeTone } from "@/lib/notices";
 export type GalleryDisplayPhoto = {
   id: string;
   filename: string;
+  title: string;
+  eyebrow: string;
+  detail: string;
   thumbnailDisplayUrl: string;
   r2ObjectKey: string;
 };
@@ -258,8 +261,10 @@ export function GalleryLightbox({
               <img className="watermark watermark-logo" src="/sig.png" alt="" aria-hidden="true" />
               <div className="tile-caption">
                 <span>
-                  <small>Delivered image</small>
-                  <strong>{photo.filename}</strong>
+                  <small>{photo.eyebrow}</small>
+                  <strong>{photo.title}</strong>
+                  <em>{photo.detail}</em>
+                  <code>{photo.filename}</code>
                 </span>
                 <span>Open</span>
               </div>
@@ -284,7 +289,10 @@ export function GalleryLightbox({
           <div className="lightbox-toolbar">
             <div>
               <span className="label">Preview</span>
-              <strong>{selectedPhoto.filename}</strong>
+              <strong>{selectedPhoto.title}</strong>
+              <small className="lightbox-meta-line">{selectedPhoto.eyebrow}</small>
+              <small className="lightbox-meta-line">{selectedPhoto.detail}</small>
+              <code>{selectedPhoto.filename}</code>
             </div>
             <div className="lightbox-toolbar-actions">
               <button

@@ -38,6 +38,16 @@ export type Photo = {
   preview_url: string;
   full_res_url: string;
   r2_object_key: string;
+  display_title: string | null;
+  caption: string | null;
+  camera_model: string | null;
+  lens_model: string | null;
+  focal_length: string | null;
+  aperture: string | null;
+  shutter_speed: string | null;
+  iso: string | null;
+  captured_at: string | null;
+  location: string | null;
   is_selected: boolean;
   uploaded_at: string;
 };

@@ -87,6 +87,20 @@ const photoIdSchema = z.object({
   photo_id: z.string().uuid()
 });
 
+const photoMetadataSchema = z.object({
+  photo_id: z.string().uuid(),
+  display_title: z.string().trim().max(120).optional().or(z.literal("")),
+  caption: z.string().trim().max(240).optional().or(z.literal("")),
+  camera_model: z.string().trim().max(120).optional().or(z.literal("")),
+  lens_model: z.string().trim().max(160).optional().or(z.literal("")),
+  focal_length: z.string().trim().max(40).optional().or(z.literal("")),
+  aperture: z.string().trim().max(40).optional().or(z.literal("")),
+  shutter_speed: z.string().trim().max(40).optional().or(z.literal("")),
+  iso: z.string().trim().max(40).optional().or(z.literal("")),
+  captured_at: z.string().trim().max(80).optional().or(z.literal("")),
+  location: z.string().trim().max(120).optional().or(z.literal(""))
+});
+
 const inquiryStatusSchema = z.object({
   inquiry_id: z.string().uuid(),
   status: z.enum(["new", "replied", "archived"])
@@ -829,6 +843,71 @@ export async function togglePhotoSelectedAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/portfolio");
   redirect(`/admin?notice=photo-updated&album=${photo.album_id}#manager`);
+}
+
+export async function updatePhotoMetadataAction(formData: FormData) {
+  const supabase = await requireAdmin();
+  const payload = photoMetadataSchema.safeParse({
+    photo_id: formData.get("photo_id"),
+    display_title: formData.get("display_title"),
+    caption: formData.get("caption"),
+    camera_model: formData.get("camera_model"),
+    lens_model: formData.get("lens_model"),
+    focal_length: formData.get("focal_length"),
+    aperture: formData.get("aperture"),
+    shutter_speed: formData.get("shutter_speed"),
+    iso: formData.get("iso"),
+    captured_at: formData.get("captured_at"),
+    location: formData.get("location")
+  });
+
+  if (!payload.success) {
+    redirect("/admin?notice=photo-error#manager");
+  }
+
+  const { data: photo } = await supabase
+    .from("photos")
+    .select("album_id")
+    .eq("id", payload.data.photo_id)
+    .maybeSingle();
+
+  if (!photo) {
+    redirect("/admin?notice=photo-error#manager");
+  }
+
+  const { data: album } = await supabase
+    .from("albums")
+    .select("slug")
+    .eq("id", photo.album_id)
+    .maybeSingle();
+  const { error } = await supabase
+    .from("photos")
+    .update({
+      display_title: emptyToNull(payload.data.display_title),
+      caption: emptyToNull(payload.data.caption),
+      camera_model: emptyToNull(payload.data.camera_model),
+      lens_model: emptyToNull(payload.data.lens_model),
+      focal_length: emptyToNull(payload.data.focal_length),
+      aperture: emptyToNull(payload.data.aperture),
+      shutter_speed: emptyToNull(payload.data.shutter_speed),
+      iso: emptyToNull(payload.data.iso),
+      captured_at: emptyToNull(payload.data.captured_at),
+      location: emptyToNull(payload.data.location)
+    })
+    .eq("id", payload.data.photo_id);
+
+  if (error) {
+    redirect(`/admin?notice=photo-error&album=${photo.album_id}#manager`);
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/portfolio");
+
+  if (album?.slug) {
+    revalidatePath(`/client/${album.slug}`);
+  }
+
+  redirect(`/admin?notice=photo-updated&view=albums&album=${photo.album_id}#manager`);
 }
 
 export async function deletePhotoAction(formData: FormData) {

@@ -13,6 +13,7 @@ import {
   getGalleryAccessForCookies
 } from "@/lib/gallery-security";
 import { galleryNotices } from "@/lib/notices";
+import { photoDisplayLabel, type PhotoDisplaySource } from "@/lib/photo-display";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -38,7 +39,7 @@ type GalleryPhoto = {
   filename: string;
   thumbnail_url: string;
   r2_object_key: string;
-};
+} & PhotoDisplaySource;
 
 type DisplayPhoto = GalleryPhoto & {
   thumbnailDisplayUrl: string;
@@ -111,13 +112,27 @@ export default async function ClientGalleryPage({
   const requiresUnlock = album ? albumRequiresUnlock(album) : false;
   const canViewPhotos =
     Boolean(user) || !requiresUnlock || galleryAccess.canAccess;
+  const photoBaseSelect = "id, filename, thumbnail_url, r2_object_key";
+  const photoMetadataSelect = `${photoBaseSelect}, display_title, caption, camera_model, lens_model, focal_length, aperture, shutter_speed, iso, captured_at, location`;
   const { data: dbPhotos } =
     album && canViewPhotos
-      ? await supabase
-          .from("photos")
-          .select("id, filename, thumbnail_url, r2_object_key")
-          .eq("album_id", album.id)
-          .order("uploaded_at", { ascending: true })
+      ? await (async () => {
+          const metadataResult = await supabase
+            .from("photos")
+            .select(photoMetadataSelect)
+            .eq("album_id", album.id)
+            .order("uploaded_at", { ascending: true });
+
+          if (!metadataResult.error) {
+            return metadataResult;
+          }
+
+          return supabase
+            .from("photos")
+            .select(photoBaseSelect)
+            .eq("album_id", album.id)
+            .order("uploaded_at", { ascending: true });
+        })()
       : { data: [] };
   const photos = (dbPhotos ?? []) as GalleryPhoto[];
   const displayPhotos: DisplayPhoto[] = await Promise.all(
@@ -149,12 +164,23 @@ export default async function ClientGalleryPage({
   const zipObjectKey = album?.download_zip_url
     ? objectKeyFromPublicUrl(album.download_zip_url)
     : null;
-  const galleryPhotos: GalleryDisplayPhoto[] = displayPhotos.map((photo) => ({
-    id: photo.id,
-    filename: photo.filename,
-    thumbnailDisplayUrl: photo.thumbnailDisplayUrl,
-    r2ObjectKey: photo.r2_object_key
-  }));
+  const galleryPhotos: GalleryDisplayPhoto[] = displayPhotos.map((photo, index) => {
+    const label = photoDisplayLabel(photo, {
+      albumTitle: title,
+      eventDate: album?.event_date,
+      index
+    });
+
+    return {
+      id: photo.id,
+      filename: label.filename,
+      title: label.title,
+      eyebrow: label.eyebrow,
+      detail: label.detail,
+      thumbnailDisplayUrl: photo.thumbnailDisplayUrl,
+      r2ObjectKey: photo.r2_object_key
+    };
+  });
   const galleryNotice = notice ? galleryNotices[notice] : undefined;
 
   return (

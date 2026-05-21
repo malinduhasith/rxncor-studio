@@ -986,6 +986,13 @@ h3 {
 .tile-caption span:first-child {
   display: grid;
   gap: 4px;
+  min-width: 0;
+}
+
+.tile-caption small,
+.tile-caption code,
+.tile-caption em {
+  display: block;
 }
 
 .tile-caption small {
@@ -993,6 +1000,30 @@ h3 {
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.tile-caption strong {
+  line-height: 1.08;
+}
+
+.tile-caption em {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.tile-caption code {
+  max-width: min(34ch, 100%);
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.68);
+  font: inherit;
+  font-size: 0.64rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .photo-tile:hover,
@@ -1456,6 +1487,25 @@ h3 {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+}
+
+.lightbox-toolbar strong,
+.lightbox-toolbar small,
+.lightbox-toolbar code {
+  display: block;
+}
+
+.lightbox-toolbar .lightbox-meta-line {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.86rem;
+}
+
+.lightbox-toolbar code {
+  margin-top: 3px;
+  color: rgba(255, 255, 255, 0.58);
+  font: inherit;
+  font-size: 0.72rem;
 }
 
 .lightbox-toolbar-actions {
@@ -2207,6 +2257,39 @@ h3 {
 .copy-detail-row small,
 .table-message + small {
   color: var(--muted);
+}
+
+.photo-meta-editor {
+  margin-top: 10px;
+}
+
+.photo-meta-editor > summary {
+  cursor: pointer;
+  color: var(--accent-strong);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.photo-meta-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(150px, 1fr));
+  gap: 0 10px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+}
+
+.photo-meta-form .field {
+  margin-bottom: 10px;
+}
+
+.photo-meta-form .button {
+  grid-column: 1 / -1;
+  justify-self: start;
 }
 
 .shoot-request-list {
@@ -3016,6 +3099,7 @@ h3 {
   .backup-list,
   .about-editor-steps,
   .about-section-add-form,
+  .photo-meta-form,
   .admin-quick-grid {
     grid-template-columns: 1fr;
   }

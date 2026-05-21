@@ -34,6 +34,7 @@ import {
   updateAboutSettingsAction,
   updateAlbumAction,
   updateClientAction,
+  updatePhotoMetadataAction,
   updateInquiryStatusAction,
   updateShootRequestAction
 } from "./actions";
@@ -58,6 +59,7 @@ import {
   type AboutBlockSection
 } from "@/lib/about-builder";
 import { adminNotices, type NoticeContent } from "@/lib/notices";
+import { photoDisplayLabel, type PhotoDisplaySource } from "@/lib/photo-display";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -111,12 +113,13 @@ type AdminPhoto = {
   r2_object_key: string;
   is_selected: boolean;
   uploaded_at: string;
-};
+} & PhotoDisplaySource;
 
 type DisplayPhoto = AdminPhoto & {
   thumbnailDisplayUrl: string | null;
   isCover: boolean;
   fileType: string;
+  displayLabel: ReturnType<typeof photoDisplayLabel>;
 };
 
 type DownloadLog = {
@@ -773,14 +776,27 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     }
   }
 
+  const adminPhotoBaseSelect =
+    "id, album_id, filename, thumbnail_url, preview_url, full_res_url, r2_object_key, is_selected, uploaded_at";
+  const adminPhotoMetadataSelect = `${adminPhotoBaseSelect}, display_title, caption, camera_model, lens_model, focal_length, aperture, shutter_speed, iso, captured_at, location`;
   const selectedPhotoResult = selectedAlbum
-    ? await supabase
-        .from("photos")
-        .select(
-          "id, album_id, filename, thumbnail_url, preview_url, full_res_url, r2_object_key, is_selected, uploaded_at"
-        )
-        .eq("album_id", selectedAlbum.id)
-        .order("uploaded_at", { ascending: true })
+    ? await (async () => {
+        const metadataResult = await supabase
+          .from("photos")
+          .select(adminPhotoMetadataSelect)
+          .eq("album_id", selectedAlbum.id)
+          .order("uploaded_at", { ascending: true });
+
+        if (!metadataResult.error) {
+          return metadataResult;
+        }
+
+        return supabase
+          .from("photos")
+          .select(adminPhotoBaseSelect)
+          .eq("album_id", selectedAlbum.id)
+          .order("uploaded_at", { ascending: true });
+      })()
     : { data: [], error: null };
   const selectedPhotos = (selectedPhotoResult.data ?? []) as AdminPhoto[];
   const selectedAlbumLogResult = selectedAlbum
@@ -793,11 +809,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     : { data: [], error: null };
   const selectedAlbumLogs = (selectedAlbumLogResult.data ?? []) as DownloadLog[];
   const displayPhotos: DisplayPhoto[] = await Promise.all(
-    selectedPhotos.map(async (photo) => ({
+    selectedPhotos.map(async (photo, index) => ({
       ...photo,
       thumbnailDisplayUrl: await signedObjectUrl(photo.thumbnail_url),
       isCover: selectedAlbum?.cover_photo_url === photo.preview_url,
-      fileType: fileType(photo.filename)
+      fileType: fileType(photo.filename),
+      displayLabel: photoDisplayLabel(photo, {
+        albumTitle: selectedAlbum?.title,
+        eventDate: selectedAlbum?.event_date,
+        index
+      })
     }))
   );
   const selectedClient = selectedAlbum
@@ -2062,12 +2083,104 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                             )}
                           </td>
                           <td>
-                            <strong>{photo.filename}</strong>
-                            <small>{photo.fileType}</small>
+                            <strong>{photo.displayLabel.title}</strong>
+                            <small>{photo.displayLabel.eyebrow}</small>
+                            <code className="code-line">{photo.filename}</code>
                           </td>
                           <td>
+                            <span>{photo.displayLabel.detail}</span>
                             <span>Uploaded {formatDateTime(photo.uploaded_at)}</span>
                             <code className="code-line">{photo.r2_object_key}</code>
+                            <details className="photo-meta-editor">
+                              <summary>Edit public card label</summary>
+                              <form action={updatePhotoMetadataAction} className="photo-meta-form">
+                                <input name="photo_id" type="hidden" value={photo.id} />
+                                <label className="field">
+                                  Card title
+                                  <input
+                                    name="display_title"
+                                    defaultValue={photo.display_title ?? ""}
+                                    placeholder={photo.displayLabel.title}
+                                  />
+                                </label>
+                                <label className="field">
+                                  Caption
+                                  <input
+                                    name="caption"
+                                    defaultValue={photo.caption ?? ""}
+                                    placeholder="Short human caption"
+                                  />
+                                </label>
+                                <label className="field">
+                                  Camera
+                                  <input
+                                    name="camera_model"
+                                    defaultValue={photo.camera_model ?? ""}
+                                    placeholder="Sony A7 IV"
+                                  />
+                                </label>
+                                <label className="field">
+                                  Lens
+                                  <input
+                                    name="lens_model"
+                                    defaultValue={photo.lens_model ?? ""}
+                                    placeholder="Sony 35mm f/1.4 GM"
+                                  />
+                                </label>
+                                <label className="field">
+                                  Focal length
+                                  <input
+                                    name="focal_length"
+                                    defaultValue={photo.focal_length ?? ""}
+                                    placeholder="35mm"
+                                  />
+                                </label>
+                                <label className="field">
+                                  Aperture
+                                  <input
+                                    name="aperture"
+                                    defaultValue={photo.aperture ?? ""}
+                                    placeholder="f/1.8"
+                                  />
+                                </label>
+                                <label className="field">
+                                  Shutter
+                                  <input
+                                    name="shutter_speed"
+                                    defaultValue={photo.shutter_speed ?? ""}
+                                    placeholder="1/250"
+                                  />
+                                </label>
+                                <label className="field">
+                                  ISO
+                                  <input
+                                    name="iso"
+                                    defaultValue={photo.iso ?? ""}
+                                    placeholder="ISO 400"
+                                  />
+                                </label>
+                                <label className="field">
+                                  Captured
+                                  <input
+                                    name="captured_at"
+                                    type="datetime-local"
+                                    defaultValue={dateTimeInputValue(photo.captured_at ?? null)}
+                                  />
+                                </label>
+                                <label className="field">
+                                  Location
+                                  <input
+                                    name="location"
+                                    defaultValue={photo.location ?? ""}
+                                    placeholder="Melbourne"
+                                  />
+                                </label>
+                                <button className="button secondary small" type="submit">
+                                  <Save size={16} />
+                                  Save label
+                                </button>
+                              </form>
+                            </details>
                           </td>
                           <td>
                             <span className="album-badges">

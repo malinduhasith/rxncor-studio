@@ -1,4 +1,5 @@
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
+import { photoDisplayLabel, type PhotoDisplaySource } from "@/lib/photo-display";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export type PublicAlbumCard = {
@@ -14,6 +15,9 @@ export type PublicPortfolioPhoto = {
   id: string;
   title: string;
   meta: string;
+  detail: string;
+  filename: string;
+  eyebrow: string;
   imageUrl: string | null;
 };
 
@@ -31,7 +35,10 @@ type PublicPhotoRow = {
   filename: string;
   preview_url: string;
   uploaded_at: string;
-};
+} & PhotoDisplaySource;
+
+const publicPhotoBaseSelect = "id, album_id, filename, preview_url, uploaded_at";
+const publicPhotoMetadataSelect = `${publicPhotoBaseSelect}, display_title, caption, camera_model, lens_model, focal_length, aperture, shutter_speed, iso, captured_at, location`;
 
 function activeAlbumFilter(album: { expires_at?: string | null }) {
   return !album.expires_at || new Date(album.expires_at) >= new Date();
@@ -107,23 +114,45 @@ export async function getPublicPortfolioPhotos(limit = 9) {
     const selectedAlbumTitles = new Map(
       selectedAlbums.map((album) => [album.id, album.title])
     );
-    const { data: selectedPhotoRows } = await supabase
+    const selectedPhotoQuery = supabase
       .from("photos")
-      .select("id, album_id, filename, preview_url, uploaded_at")
+      .select(publicPhotoMetadataSelect)
       .in("album_id", selectedAlbumIds)
       .eq("is_selected", true)
       .order("uploaded_at", { ascending: false })
       .limit(limit);
+    const selectedPhotoResult = await selectedPhotoQuery;
+    let selectedPhotoRows: unknown[] | null = selectedPhotoResult.data;
+
+    if (selectedPhotoResult.error) {
+      const fallback = await supabase
+        .from("photos")
+        .select(publicPhotoBaseSelect)
+        .in("album_id", selectedAlbumIds)
+        .eq("is_selected", true)
+        .order("uploaded_at", { ascending: false })
+        .limit(limit);
+      selectedPhotoRows = fallback.data as unknown[] | null;
+    }
+
     const selectedPhotos = (selectedPhotoRows ?? []) as PublicPhotoRow[];
 
     if (selectedPhotos.length) {
       return Promise.all(
-        selectedPhotos.map(async (photo) => ({
-          id: photo.id,
-          title: photo.filename.replace(/\.[^.]+$/, ""),
-          meta: selectedAlbumTitles.get(photo.album_id) ?? "Portfolio",
-          imageUrl: await signedUrl(photo.preview_url)
-        }))
+        selectedPhotos.map(async (photo, index) => {
+          const albumTitle = selectedAlbumTitles.get(photo.album_id) ?? "Portfolio";
+          const label = photoDisplayLabel(photo, { albumTitle, index });
+
+          return {
+            id: photo.id,
+            title: label.title,
+            meta: albumTitle,
+            detail: label.detail,
+            filename: label.filename,
+            eyebrow: label.eyebrow,
+            imageUrl: await signedUrl(photo.preview_url)
+          };
+        })
       );
     }
   }
@@ -146,20 +175,40 @@ export async function getPublicPortfolioPhotos(limit = 9) {
     return [];
   }
 
-  const { data: photoRows } = await supabase
+  const photoResult = await supabase
     .from("photos")
-    .select("id, album_id, filename, preview_url, uploaded_at")
+    .select(publicPhotoMetadataSelect)
     .in("album_id", albumIds)
     .order("uploaded_at", { ascending: false })
     .limit(limit);
+  let photoRows: unknown[] | null = photoResult.data;
+
+  if (photoResult.error) {
+    const fallback = await supabase
+      .from("photos")
+      .select(publicPhotoBaseSelect)
+      .in("album_id", albumIds)
+      .order("uploaded_at", { ascending: false })
+      .limit(limit);
+    photoRows = fallback.data as unknown[] | null;
+  }
+
   const photos = (photoRows ?? []) as PublicPhotoRow[];
 
   return Promise.all(
-    photos.map(async (photo) => ({
-      id: photo.id,
-      title: photo.filename.replace(/\.[^.]+$/, ""),
-      meta: albumTitles.get(photo.album_id) ?? "Portfolio",
-      imageUrl: await signedUrl(photo.preview_url)
-    }))
+    photos.map(async (photo, index) => {
+      const albumTitle = albumTitles.get(photo.album_id) ?? "Portfolio";
+      const label = photoDisplayLabel(photo, { albumTitle, index });
+
+      return {
+        id: photo.id,
+        title: label.title,
+        meta: albumTitle,
+        detail: label.detail,
+        filename: label.filename,
+        eyebrow: label.eyebrow,
+        imageUrl: await signedUrl(photo.preview_url)
+      };
+    })
   );
 }

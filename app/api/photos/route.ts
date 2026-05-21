@@ -9,8 +9,22 @@ const photoSchema = z.object({
   thumbnail_url: z.string().min(1),
   preview_url: z.string().min(1),
   full_res_url: z.string().min(1),
-  r2_object_key: z.string().min(1)
+  r2_object_key: z.string().min(1),
+  display_title: z.string().trim().max(120).optional(),
+  caption: z.string().trim().max(240).optional(),
+  camera_model: z.string().trim().max(120).optional(),
+  lens_model: z.string().trim().max(160).optional(),
+  focal_length: z.string().trim().max(40).optional(),
+  aperture: z.string().trim().max(40).optional(),
+  shutter_speed: z.string().trim().max(40).optional(),
+  iso: z.string().trim().max(40).optional(),
+  captured_at: z.string().trim().max(80).optional(),
+  location: z.string().trim().max(120).optional()
 });
+
+function optionalText(value: string | undefined) {
+  return value?.trim() || undefined;
+}
 
 export async function POST(request: Request) {
   const parsed = photoSchema.safeParse(await request.json().catch(() => null));
@@ -66,13 +80,28 @@ export async function POST(request: Request) {
   }
 
   const photoPayload = {
-    ...payload,
+    album_id: payload.album_id,
+    filename: payload.filename,
+    thumbnail_url: payload.thumbnail_url,
+    preview_url: payload.preview_url,
+    full_res_url: payload.full_res_url,
+    r2_object_key: payload.r2_object_key,
+    display_title: optionalText(payload.display_title),
+    caption: optionalText(payload.caption),
+    camera_model: optionalText(payload.camera_model),
+    lens_model: optionalText(payload.lens_model),
+    focal_length: optionalText(payload.focal_length),
+    aperture: optionalText(payload.aperture),
+    shutter_speed: optionalText(payload.shutter_speed),
+    iso: optionalText(payload.iso),
+    captured_at: optionalText(payload.captured_at),
+    location: optionalText(payload.location),
     uploaded_at: new Date().toISOString()
   };
 
   const writeQuery = existingPhoto
     ? supabase.from("photos").update(photoPayload).eq("id", existingPhoto.id)
-    : supabase.from("photos").insert(payload);
+    : supabase.from("photos").insert(photoPayload);
 
   const { data: photo, error } = await writeQuery
     .select()

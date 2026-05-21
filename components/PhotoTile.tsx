@@ -3,6 +3,9 @@ import type { CSSProperties } from "react";
 type PhotoTileProps = {
   title: string;
   meta: string;
+  detail?: string;
+  filename?: string;
+  eyebrow?: string;
   colors?: string[];
   imageUrl?: string | null;
 };
@@ -10,6 +13,9 @@ type PhotoTileProps = {
 export function PhotoTile({
   title,
   meta,
+  detail,
+  filename,
+  eyebrow = "Selected frame",
   colors = ["#713d2f", "#d8b35f"],
   imageUrl
 }: PhotoTileProps) {
@@ -37,8 +43,10 @@ export function PhotoTile({
       )}
       <div className="tile-caption">
         <span>
-          <small>Selected frame</small>
+          <small>{eyebrow}</small>
           <strong>{title}</strong>
+          {detail ? <em>{detail}</em> : null}
+          {filename ? <code>{filename}</code> : null}
         </span>
         <span>{meta}</span>
       </div>

@@ -16,6 +16,9 @@ export default async function PortfolioPage() {
       key={photo.id}
       title={photo.title}
       meta={photo.meta}
+      detail={photo.detail}
+      filename={photo.filename}
+      eyebrow={photo.eyebrow}
       imageUrl={photo.imageUrl}
     />
   ));
