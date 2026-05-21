@@ -35,14 +35,11 @@ type GalleryPhoto = {
   id: string;
   filename: string;
   thumbnail_url: string;
-  preview_url: string;
-  full_res_url: string;
   r2_object_key: string;
 };
 
 type DisplayPhoto = GalleryPhoto & {
   thumbnailDisplayUrl: string;
-  previewDisplayUrl: string;
 };
 
 type ClientGalleryPageProps = {
@@ -116,9 +113,7 @@ export default async function ClientGalleryPage({
     album && canViewPhotos
       ? await supabase
           .from("photos")
-          .select(
-            "id, filename, thumbnail_url, preview_url, full_res_url, r2_object_key"
-          )
+          .select("id, filename, thumbnail_url, r2_object_key")
           .eq("album_id", album.id)
           .order("uploaded_at", { ascending: true })
       : { data: [] };
@@ -126,12 +121,10 @@ export default async function ClientGalleryPage({
   const displayPhotos: DisplayPhoto[] = await Promise.all(
     photos.map(async (photo) => {
       const thumbnailKey = objectKeyFromPublicUrl(photo.thumbnail_url);
-      const previewKey = objectKeyFromPublicUrl(photo.preview_url);
 
       return {
         ...photo,
-        thumbnailDisplayUrl: await createDownloadUrl(thumbnailKey),
-        previewDisplayUrl: await createDownloadUrl(previewKey)
+        thumbnailDisplayUrl: await createDownloadUrl(thumbnailKey)
       };
     })
   );
@@ -158,7 +151,6 @@ export default async function ClientGalleryPage({
     id: photo.id,
     filename: photo.filename,
     thumbnailDisplayUrl: photo.thumbnailDisplayUrl,
-    previewDisplayUrl: photo.previewDisplayUrl,
     r2ObjectKey: photo.r2_object_key
   }));
 
@@ -197,7 +189,7 @@ export default async function ClientGalleryPage({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 key={photo.id}
-                src={photo.previewDisplayUrl}
+                src={photo.thumbnailDisplayUrl}
                 alt={`${title} preview ${index + 1}`}
                 loading={index === 0 ? "eager" : "lazy"}
                 decoding="async"

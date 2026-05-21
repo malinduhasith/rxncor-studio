@@ -43,6 +43,16 @@ type UploadFailure = {
   message: string;
 };
 
+class R2UploadError extends Error {
+  constructor(
+    message: string,
+    readonly canRetryWithBlob = false
+  ) {
+    super(message);
+    this.name = "R2UploadError";
+  }
+}
+
 async function responseMessage(response: Response, fallback: string) {
   const text = await response.text().catch(() => "");
 
@@ -79,21 +89,14 @@ async function signUpload(albumId: string, kind: string, file: File) {
   return (await response.json()) as SignedUpload;
 }
 
-async function uploadToR2(signedUpload: SignedUpload, file: File, label: string) {
+function putR2Body(
+  signedUpload: SignedUpload,
+  body: Blob | File,
+  file: File,
+  label: string,
+  mode: "direct" | "blob"
+) {
   const contentType = file.type || "application/octet-stream";
-  let uploadBody: Blob;
-
-  try {
-    const buffer = await file.arrayBuffer();
-    uploadBody = new Blob([buffer], { type: contentType });
-  } catch (error) {
-    throw new Error(
-      `${label} could not be read from this device before upload. Try moving the files to a local folder, then select them again. ${
-        error instanceof Error ? error.message : ""
-      }`.trim()
-    );
-  }
-
   return new Promise<void>((resolve, reject) => {
     const request = new XMLHttpRequest();
 
@@ -117,16 +120,22 @@ async function uploadToR2(signedUpload: SignedUpload, file: File, label: string)
 
     request.onerror = () => {
       reject(
-        new Error(
-          `${label} R2 PUT failed before R2 returned a response. Browser status 0 usually means CORS, local-file access, an extension, or network blocking. File type: ${
+        new R2UploadError(
+          `${label} R2 PUT failed before R2 returned a response during ${mode} upload. Browser status 0 usually means CORS, local-file access, an extension, or network blocking. File type: ${
             file.type || "unknown"
-          }, size: ${fileSizeLabel(file.size)}.`
+          }, size: ${fileSizeLabel(file.size)}.`,
+          mode === "direct"
         )
       );
     };
 
     request.onabort = () => {
-      reject(new Error(`${label} R2 PUT was cancelled by the browser for ${file.name}.`));
+      reject(
+        new R2UploadError(
+          `${label} R2 PUT was cancelled by the browser for ${file.name}.`,
+          mode === "direct"
+        )
+      );
     };
 
     request.ontimeout = () => {
@@ -134,8 +143,42 @@ async function uploadToR2(signedUpload: SignedUpload, file: File, label: string)
     };
 
     request.timeout = 10 * 60 * 1000;
-    request.send(uploadBody);
+    request.send(body);
   });
+}
+
+async function uploadToR2(signedUpload: SignedUpload, file: File, label: string) {
+  try {
+    await putR2Body(signedUpload, file, file, label, "direct");
+    return;
+  } catch (error) {
+    if (!(error instanceof R2UploadError) || !error.canRetryWithBlob) {
+      throw error;
+    }
+
+    let uploadBody: Blob;
+
+    try {
+      const buffer = await file.arrayBuffer();
+      uploadBody = new Blob([buffer], {
+        type: file.type || "application/octet-stream"
+      });
+    } catch (readError) {
+      throw new Error(
+        `${label} could not be read from this device before retrying upload. Try moving the files to a local folder, then select them again. ${
+          readError instanceof Error ? readError.message : ""
+        }`.trim()
+      );
+    }
+
+    try {
+      await putR2Body(signedUpload, uploadBody, file, label, "blob");
+    } catch (retryError) {
+      const retryMessage =
+        retryError instanceof Error ? retryError.message : "Blob retry failed.";
+      throw new Error(`${error.message} Blob retry also failed: ${retryMessage}`);
+    }
+  }
 }
 
 async function cleanupUploadedKeys(keys: string[]) {

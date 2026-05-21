@@ -3,7 +3,6 @@ import {
   CircleAlert,
   CircleCheck,
   DatabaseBackup,
-  Download,
   ExternalLink,
   FileArchive,
   ImageUp,
@@ -38,6 +37,7 @@ import {
   updateInquiryStatusAction,
   updateShootRequestAction
 } from "./actions";
+import { AdminFileActionButton } from "@/components/admin/AdminFileActionButton";
 import { AdminPhotoUpload } from "@/components/admin/AdminPhotoUpload";
 import { AdminZipUpload } from "@/components/admin/AdminZipUpload";
 import { AlbumSlugFields } from "@/components/admin/AlbumSlugFields";
@@ -154,8 +154,6 @@ type AdminPhoto = {
 
 type DisplayPhoto = AdminPhoto & {
   thumbnailDisplayUrl: string | null;
-  previewDisplayUrl: string | null;
-  fullDownloadUrl: string | null;
   isCover: boolean;
   fileType: string;
 };
@@ -720,8 +718,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     selectedPhotos.map(async (photo) => ({
       ...photo,
       thumbnailDisplayUrl: await signedObjectUrl(photo.thumbnail_url),
-      previewDisplayUrl: await signedObjectUrl(photo.preview_url),
-      fullDownloadUrl: await signedObjectUrl(photo.r2_object_key),
       isCover: selectedAlbum?.cover_photo_url === photo.preview_url,
       fileType: fileType(photo.filename)
     }))
@@ -799,6 +795,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   );
   const nextAboutSortOrder =
     Math.max(0, ...aboutContent.blocks.map((block) => block.sortOrder)) + 10;
+  const albumsNeedingZipCount = albums.filter(
+    (album) => (albumPhotoCounts.get(album.id) ?? 0) > 0 && !album.download_zip_url
+  ).length;
+  const expiredAlbumCount = albums.filter(
+    (album) => album.expires_at && new Date(album.expires_at) < new Date()
+  ).length;
+  const draftAlbumCount = albums.filter(
+    (album) => albumStatus(album, albumPhotoCounts.get(album.id) ?? 0) === "Draft"
+  ).length;
 
   return (
     <main className="shell section">
@@ -889,6 +894,57 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   <span>Downloads</span>
                 </div>
               </div>
+
+              <section className="workflow-panel" aria-label="Resource monitor">
+                <div className="panel-title-row">
+                  <div>
+                    <p className="eyebrow">Resource monitor</p>
+                    <h2>Load and storage guardrails</h2>
+                    <p className="muted">
+                      Album pages now load signed thumbnails first. Large previews,
+                      full-res files, and admin file links are created only when opened
+                      or downloaded.
+                    </p>
+                  </div>
+                  <DatabaseBackup size={26} />
+                </div>
+                <div className="readiness-grid">
+                  <div className="readiness-item complete">
+                    <ImageUp size={18} />
+                    <span>
+                      <strong>{photoCount} photo records</strong>
+                      <small>Keep exports and ZIPs backed up outside R2.</small>
+                    </span>
+                  </div>
+                  <div
+                    className={`readiness-item ${
+                      albumsNeedingZipCount ? "attention" : "complete"
+                    }`}
+                  >
+                    <FileArchive size={18} />
+                    <span>
+                      <strong>{albumsNeedingZipCount} need ZIPs</strong>
+                      <small>Albums with photos but no final delivery ZIP.</small>
+                    </span>
+                  </div>
+                  <div
+                    className={`readiness-item ${draftAlbumCount ? "attention" : "complete"}`}
+                  >
+                    <CircleAlert size={18} />
+                    <span>
+                      <strong>{draftAlbumCount} drafts</strong>
+                      <small>Albums with no uploaded photos yet.</small>
+                    </span>
+                  </div>
+                  <div className="readiness-item complete">
+                    <CalendarDays size={18} />
+                    <span>
+                      <strong>{expiredAlbumCount} expired</strong>
+                      <small>Archive or reopen from the album manager.</small>
+                    </span>
+                  </div>
+                </div>
+              </section>
 
               {selectedAlbum ? (
                 <section className="workflow-panel" aria-label="Selected album readiness">
@@ -1602,26 +1658,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                           </td>
                           <td>
                             <div className="table-actions">
-                              {photo.previewDisplayUrl ? (
-                                <a
-                                  className="button secondary small"
-                                  href={photo.previewDisplayUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  <ExternalLink size={16} />
-                                  Preview
-                                </a>
-                              ) : null}
-                              {photo.fullDownloadUrl ? (
-                                <a
-                                  className="button secondary small"
-                                  href={photo.fullDownloadUrl}
-                                >
-                                  <Download size={16} />
-                                  Full
-                                </a>
-                              ) : null}
+                              <AdminFileActionButton
+                                albumId={selectedAlbum.id}
+                                photoId={photo.id}
+                                kind="preview"
+                              />
+                              <AdminFileActionButton
+                                albumId={selectedAlbum.id}
+                                photoId={photo.id}
+                                kind="full"
+                              />
                               <form action={setCoverPhotoAction}>
                                 <input name="photo_id" type="hidden" value={photo.id} />
                                 <button

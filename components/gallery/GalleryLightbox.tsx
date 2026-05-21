@@ -7,7 +7,6 @@ export type GalleryDisplayPhoto = {
   id: string;
   filename: string;
   thumbnailDisplayUrl: string;
-  previewDisplayUrl: string;
   r2ObjectKey: string;
 };
 
@@ -45,6 +44,26 @@ async function requestDownload(
   window.location.assign(payload.url);
 }
 
+async function requestPreview(albumId: string, photoId: string) {
+  const response = await fetch("/api/gallery/preview", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      album_id: albumId,
+      photo_id: photoId
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error("Preview could not be prepared.");
+  }
+
+  const payload = (await response.json()) as { url: string };
+  return payload.url;
+}
+
 export function GalleryLightbox({
   albumId,
   photos,
@@ -53,7 +72,9 @@ export function GalleryLightbox({
 }: GalleryLightboxProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [status, setStatus] = useState("");
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
   const selectedPhoto = selectedIndex === null ? null : photos[selectedIndex];
+  const selectedPreviewUrl = selectedPhoto ? previewUrls[selectedPhoto.id] : null;
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -81,6 +102,40 @@ export function GalleryLightbox({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [photos.length, selectedIndex]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPreview() {
+      if (!selectedPhoto || previewUrls[selectedPhoto.id]) {
+        return;
+      }
+
+      setStatus("Loading preview...");
+
+      try {
+        const url = await requestPreview(albumId, selectedPhoto.id);
+
+        if (!cancelled) {
+          setPreviewUrls((current) => ({
+            ...current,
+            [selectedPhoto.id]: url
+          }));
+          setStatus("");
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setStatus(error instanceof Error ? error.message : "Preview failed.");
+        }
+      }
+    }
+
+    loadPreview();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [albumId, previewUrls, selectedPhoto]);
 
   async function downloadPhoto(photo: GalleryDisplayPhoto) {
     setStatus("Preparing download...");
@@ -204,7 +259,7 @@ export function GalleryLightbox({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             className="lightbox-image"
-            src={selectedPhoto.previewDisplayUrl}
+            src={selectedPreviewUrl ?? selectedPhoto.thumbnailDisplayUrl}
             alt={selectedPhoto.filename}
             decoding="async"
           />
