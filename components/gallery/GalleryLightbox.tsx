@@ -267,7 +267,6 @@ export function GalleryLightbox({
                   <strong className="tile-album">{albumTitle}</strong>
                   <small>{photo.eyebrow}</small>
                   <em className="tile-frame">{photo.title}</em>
-                  <code>{photo.filename}</code>
                 </span>
                 <span className="tile-action">Open</span>
               </div>

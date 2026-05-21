@@ -4,7 +4,6 @@ type PhotoTileProps = {
   title: string;
   meta: string;
   detail?: string;
-  filename?: string;
   eyebrow?: string;
   colors?: string[];
   imageUrl?: string | null;
@@ -14,7 +13,6 @@ export function PhotoTile({
   title,
   meta,
   detail,
-  filename,
   eyebrow = "Selected frame",
   colors = ["#713d2f", "#d8b35f"],
   imageUrl
@@ -47,7 +45,6 @@ export function PhotoTile({
           <strong className="tile-album">{meta}</strong>
           <small>{eyebrow}</small>
           <em className="tile-frame">{title}</em>
-          {filename ? <code>{filename}</code> : null}
         </span>
       </div>
     </article>
