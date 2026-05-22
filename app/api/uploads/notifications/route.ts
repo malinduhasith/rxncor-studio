@@ -4,6 +4,7 @@ import {
   sendGalleryUpdateEmails,
   sendPhotoUploadNotificationEmail,
 } from "@/lib/email";
+import { logAdminAudit } from "@/lib/audit-log";
 import { noStoreJson } from "@/lib/http";
 import { siteConfig } from "@/config/site";
 
@@ -126,6 +127,34 @@ export async function POST(request: Request) {
       });
     }
   }
+
+  await logAdminAudit(supabase, {
+    action:
+      payload.failed > 0
+        ? "upload.photos.needs_attention"
+        : "upload.photos.completed",
+    entityType: "album",
+    entityId: album.id,
+    summary:
+      payload.failed > 0
+        ? `Photo upload for ${album.title} finished with ${payload.failed} failure(s).`
+        : `Uploaded ${payload.uploaded} photo set(s) to ${album.title}.`,
+    metadata: {
+      album_title: album.title,
+      album_slug: album.slug,
+      total: payload.total,
+      uploaded: payload.uploaded,
+      failed: payload.failed,
+      skipped: payload.skipped,
+      generated_thumbnails: payload.generated_thumbnails,
+      generated_previews: payload.generated_previews,
+      total_size_bytes: payload.total_size_bytes ?? null,
+      duration_ms: payload.duration_ms ?? null,
+      admin_email: result,
+      client_email: clientEmail,
+      notify_clients: payload.notify_clients,
+    },
+  });
 
   return noStoreJson({ ok: true, email: result, clientEmail });
 }

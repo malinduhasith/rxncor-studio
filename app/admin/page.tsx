@@ -3545,9 +3545,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     <p className="eyebrow">Audit trail</p>
                     <h2>Recent admin changes</h2>
                     <p className="muted">
-                      A lightweight record of album, client, delivery, request,
-                      and page-builder actions. Helpful when you need to
-                      remember what changed before a client saw it.
+                      A lightweight record of album, upload, delivery, client,
+                      request, and page-builder actions. Email delivery attempts
+                      are shown in the Email chain above.
                     </p>
                   </div>
                   <span className="pill">{auditLogs.length} loaded</span>

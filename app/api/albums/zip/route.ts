@@ -4,6 +4,7 @@ import {
   sendGalleryUpdateEmails,
   sendZipUploadNotificationEmail,
 } from "@/lib/email";
+import { logAdminAudit } from "@/lib/audit-log";
 import { noStoreJson } from "@/lib/http";
 import { objectKeyFromPublicUrl } from "@/lib/r2";
 import { siteConfig } from "@/config/site";
@@ -151,6 +152,25 @@ export async function POST(request: Request) {
       });
     }
   }
+
+  const zipFilename = payload.filename ?? zipObjectKey.split("/").pop();
+
+  await logAdminAudit(supabase, {
+    action: "upload.zip.completed",
+    entityType: "album",
+    entityId: album.id,
+    summary: `Attached ZIP ${zipFilename ?? "album download"} to ${album.title}.`,
+    metadata: {
+      album_title: album.title,
+      album_slug: album.slug,
+      filename: zipFilename ?? null,
+      zip_object_key: zipObjectKey,
+      zip_size_bytes: payload.zip_size_bytes ?? null,
+      upload_duration_ms: payload.upload_duration_ms ?? null,
+      client_email: clientEmail,
+      notify_clients: payload.notify_clients,
+    },
+  });
 
   return noStoreJson({ album, clientEmail });
 }
