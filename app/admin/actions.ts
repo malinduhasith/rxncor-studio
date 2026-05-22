@@ -9,6 +9,7 @@ import {
   aboutBlockSections,
   parseMetaItemsFromLines
 } from "@/lib/about-builder";
+import { sendAlbumReadyEmails, sendShootStatusEmail } from "@/lib/email";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { deleteR2Object, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -119,7 +120,8 @@ const shootRequestUpdateSchema = z.object({
   message: z.string().trim().max(2000).optional().or(z.literal("")),
   admin_notes: z.string().trim().max(2000).optional().or(z.literal("")),
   create_client: z.boolean(),
-  create_album: z.boolean()
+  create_album: z.boolean(),
+  email_client_update: z.boolean()
 });
 
 const shootRequestIdSchema = z.object({
@@ -1021,6 +1023,76 @@ export async function removeZipAction(formData: FormData) {
   redirect(`/admin?notice=zip-removed&album=${payload.data.album_id}#manager`);
 }
 
+export async function sendAlbumReadyEmailAction(formData: FormData) {
+  const supabase = await requireAdmin();
+  const payload = albumIdSchema.safeParse({
+    album_id: formData.get("album_id")
+  });
+
+  if (!payload.success) {
+    redirect("/admin?view=albums&notice=email-error#manager");
+  }
+
+  const { data: album } = await supabase
+    .from("albums")
+    .select(
+      "id, title, slug, is_password_protected, requires_email, allow_client_password_access, download_zip_url"
+    )
+    .eq("id", payload.data.album_id)
+    .maybeSingle();
+
+  if (!album) {
+    redirect("/admin?view=albums&notice=email-error#manager");
+  }
+
+  const { data: assignments } = await supabase
+    .from("album_clients")
+    .select("client_id")
+    .eq("album_id", payload.data.album_id);
+  const clientIds = (assignments ?? []).map((assignment) => assignment.client_id);
+
+  if (!clientIds.length) {
+    redirect(`/admin?view=albums&notice=email-no-recipients&album=${album.id}#manager`);
+  }
+
+  const { data: clients } = await supabase
+    .from("clients")
+    .select("name, email, password_hash")
+    .in("id", clientIds);
+  const { count } = await supabase
+    .from("photos")
+    .select("id", { count: "exact", head: true })
+    .eq("album_id", album.id);
+
+  const result = await sendAlbumReadyEmails({
+    albumTitle: album.title,
+    albumUrl: `${siteConfig.url}${siteConfig.routes.clientGallery}/${album.slug}`,
+    photoCount: count ?? 0,
+    hasZip: Boolean(album.download_zip_url),
+    isPasswordProtected: Boolean(album.is_password_protected),
+    requiresEmail: Boolean(album.requires_email),
+    clients: ((clients ?? []) as Array<{
+      name: string;
+      email: string | null;
+      password_hash: string | null;
+    }>).map((client) => ({
+      name: client.name,
+      email: client.email,
+      hasClientPassword: Boolean(client.password_hash)
+    }))
+  });
+
+  if (result.skipped) {
+    redirect(`/admin?view=albums&notice=email-not-configured&album=${album.id}#manager`);
+  }
+
+  if (!result.sent || result.failed) {
+    redirect(`/admin?view=albums&notice=email-error&album=${album.id}#manager`);
+  }
+
+  redirect(`/admin?view=albums&notice=email-sent&album=${album.id}#manager`);
+}
+
 export async function updateInquiryStatusAction(formData: FormData) {
   const supabase = await requireAdmin();
   const payload = inquiryStatusSchema.safeParse({
@@ -1060,7 +1132,8 @@ export async function updateShootRequestAction(formData: FormData) {
     message: formData.get("message"),
     admin_notes: formData.get("admin_notes"),
     create_client: formData.get("create_client") === "on",
-    create_album: formData.get("create_album") === "on"
+    create_album: formData.get("create_album") === "on",
+    email_client_update: formData.get("email_client_update") === "on"
   });
 
   if (
@@ -1089,7 +1162,7 @@ export async function updateShootRequestAction(formData: FormData) {
 
   const { data: existingShoot } = await supabase
     .from("shoot_requests")
-    .select("client_id, album_id")
+    .select("client_id, album_id, status")
     .eq("id", payload.data.shoot_request_id)
     .maybeSingle();
 
@@ -1154,6 +1227,44 @@ export async function updateShootRequestAction(formData: FormData) {
         ? "/admin?notice=shoot-request-conflict#shoot-requests"
         : "/admin?notice=shoot-request-error#shoot-requests"
     );
+  }
+
+  if (payload.data.email_client_update) {
+    let albumUrl: string | null = null;
+
+    if (albumId) {
+      const { data: album } = await supabase
+        .from("albums")
+        .select("slug")
+        .eq("id", albumId)
+        .maybeSingle();
+
+      if (album?.slug) {
+        albumUrl = `${siteConfig.url}${siteConfig.routes.clientGallery}/${album.slug}`;
+      }
+    }
+
+    const emailResult = await sendShootStatusEmail({
+      name: payload.data.name,
+      email: payload.data.email.toLowerCase(),
+      status: payload.data.status,
+      shootType: payload.data.shoot_type,
+      start: payload.data.preferred_start_at,
+      end: payload.data.preferred_end_at,
+      location: payload.data.location || null,
+      albumUrl
+    });
+
+    if (emailResult.skipped) {
+      redirect("/admin?notice=email-not-configured#shoot-requests");
+    }
+
+    if (!emailResult.sent || emailResult.failed) {
+      redirect("/admin?notice=email-error#shoot-requests");
+    }
+
+    revalidatePath("/admin");
+    redirect("/admin?notice=shoot-request-emailed#shoot-requests");
   }
 
   revalidatePath("/admin");

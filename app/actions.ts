@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { sendContactEmails, sendShootRequestEmails } from "@/lib/email";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const contactSchema = z.object({
@@ -96,6 +97,18 @@ export async function submitShootRequestAction(formData: FormData) {
     redirect("/?shoot=error#book");
   }
 
+  await sendShootRequestEmails({
+    name: payload.data.name,
+    email: payload.data.email.toLowerCase(),
+    phone: payload.data.phone || null,
+    shootType: payload.data.shoot_type,
+    location: payload.data.location || null,
+    start: payload.data.preferred_start_at,
+    end: payload.data.preferred_end_at,
+    message: payload.data.message || null,
+    ipAddress
+  });
+
   redirect("/?shoot=sent#book");
 }
 
@@ -126,6 +139,14 @@ export async function submitContactAction(formData: FormData) {
   if (error) {
     redirect("/?contact=error#contact");
   }
+
+  await sendContactEmails({
+    name: payload.data.name,
+    email: payload.data.email.toLowerCase(),
+    phone: payload.data.phone || null,
+    message: payload.data.message,
+    ipAddress
+  });
 
   redirect("/?contact=sent#contact");
 }

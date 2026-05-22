@@ -9,7 +9,11 @@ type EnvName =
   | "CLOUDFLARE_R2_SECRET_ACCESS_KEY"
   | "CLOUDFLARE_R2_BUCKET"
   | "CLOUDFLARE_R2_PUBLIC_BASE_URL"
-  | "NEXT_PUBLIC_R2_PUBLIC_BASE_URL";
+  | "NEXT_PUBLIC_R2_PUBLIC_BASE_URL"
+  | "RESEND_API_KEY"
+  | "EMAIL_FROM"
+  | "EMAIL_REPLY_TO"
+  | "ADMIN_NOTIFICATION_EMAIL";
 
 export function requiredEnv(name: EnvName) {
   const value = process.env[name];

@@ -8,6 +8,7 @@ import {
   ImageUp,
   Link as LinkIcon,
   LockKeyhole,
+  Mail,
   Save,
   Search,
   Star,
@@ -27,6 +28,7 @@ import {
   removeClientPasswordAction,
   removeZipAction,
   resetClientPasswordAction,
+  sendAlbumReadyEmailAction,
   setCoverPhotoAction,
   signOutAction,
   togglePhotoSelectedAction,
@@ -2013,7 +2015,20 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                             albums, add the password you set.
                           </p>
                         </div>
-                        <CopyTextButton text={selectedShareMessage} label="Copy message" />
+                        <div className="inline-actions">
+                          <form action={sendAlbumReadyEmailAction}>
+                            <input name="album_id" type="hidden" value={selectedAlbum.id} />
+                            <button
+                              className="button small"
+                              type="submit"
+                              disabled={!selectedAssignedClients.some((client) => client.email)}
+                            >
+                              <Mail size={16} />
+                              Email clients
+                            </button>
+                          </form>
+                          <CopyTextButton text={selectedShareMessage} label="Copy message" />
+                        </div>
                       </div>
                       <pre>{selectedShareMessage}</pre>
                       <div className="copy-detail-list">
@@ -3014,6 +3029,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <label className="checkbox-field">
                         <input name="create_album" type="checkbox" />
                         Create draft private album for accepted work
+                      </label>
+                      <label className="checkbox-field">
+                        <input name="email_client_update" type="checkbox" />
+                        Email client this status update
                       </label>
                       <div className="inline-actions">
                         <button className="button" type="submit">

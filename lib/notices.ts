@@ -122,6 +122,26 @@ export const adminNotices: Record<string, NoticeContent> = {
     title: "ZIP action failed",
     message: "The ZIP action could not be completed."
   },
+  "email-sent": {
+    tone: "success",
+    title: "Email sent",
+    message: "The gallery email was sent to assigned clients with saved email addresses."
+  },
+  "email-not-configured": {
+    tone: "warning",
+    title: "Email is not configured",
+    message: "Add the Resend email environment variables in Vercel before sending mail."
+  },
+  "email-no-recipients": {
+    tone: "warning",
+    title: "No email recipients",
+    message: "Assign clients with saved email addresses before sending a gallery email."
+  },
+  "email-error": {
+    tone: "error",
+    title: "Email failed",
+    message: "The saved action worked, but the email provider did not accept the message."
+  },
   "inquiry-updated": {
     tone: "success",
     title: "Inquiry updated",
@@ -136,6 +156,11 @@ export const adminNotices: Record<string, NoticeContent> = {
     tone: "success",
     title: "Shoot request updated",
     message: "The booking request was saved."
+  },
+  "shoot-request-emailed": {
+    tone: "success",
+    title: "Shoot request updated",
+    message: "The request was saved and the client was emailed."
   },
   "shoot-request-deleted": {
     tone: "success",
