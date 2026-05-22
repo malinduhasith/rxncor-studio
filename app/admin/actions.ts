@@ -1188,6 +1188,7 @@ export async function sendAlbumReadyEmailAction(formData: FormData) {
     .eq("album_id", album.id);
 
   const result = await sendAlbumReadyEmails({
+    albumId: album.id,
     albumTitle: album.title,
     albumUrl: `${siteConfig.url}${siteConfig.routes.clientGallery}/${album.slug}`,
     photoCount: count ?? 0,
@@ -1390,7 +1391,8 @@ export async function updateShootRequestAction(formData: FormData) {
       start: payload.data.preferred_start_at,
       end: payload.data.preferred_end_at,
       location: payload.data.location || null,
-      albumUrl
+      albumUrl,
+      relatedId: payload.data.shoot_request_id
     });
 
     if (emailResult.skipped) {

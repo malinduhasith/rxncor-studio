@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { getVerifiedAdminApiClient } from "@/lib/api-auth";
-import { sendGalleryUpdateEmails, sendZipUploadNotificationEmail } from "@/lib/email";
+import {
+  sendGalleryUpdateEmails,
+  sendZipUploadNotificationEmail,
+} from "@/lib/email";
 import { noStoreJson } from "@/lib/http";
 import { objectKeyFromPublicUrl } from "@/lib/r2";
 import { siteConfig } from "@/config/site";
@@ -11,7 +14,7 @@ const zipSchema = z.object({
   filename: z.string().trim().max(240).optional(),
   zip_size_bytes: z.number().int().nonnegative().optional(),
   upload_duration_ms: z.number().int().nonnegative().optional(),
-  notify_clients: z.boolean().default(false)
+  notify_clients: z.boolean().default(false),
 });
 
 function requestIp(request: Request) {
@@ -51,7 +54,7 @@ export async function POST(request: Request) {
   if (!zipObjectKey.startsWith(`albums/${currentAlbum.slug}/zip/`)) {
     return noStoreJson(
       { error: "ZIP file does not match this album." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -59,11 +62,16 @@ export async function POST(request: Request) {
     .from("albums")
     .update({ download_zip_url: payload.download_zip_url })
     .eq("id", payload.album_id)
-    .select("id, title, slug, is_password_protected, requires_email, download_zip_url")
+    .select(
+      "id, title, slug, is_password_protected, requires_email, download_zip_url",
+    )
     .single();
 
   if (error) {
-    return noStoreJson({ error: "ZIP link could not be saved." }, { status: 400 });
+    return noStoreJson(
+      { error: "ZIP link could not be saved." },
+      { status: 400 },
+    );
   }
 
   try {
@@ -75,7 +83,7 @@ export async function POST(request: Request) {
       message: "ZIP uploaded and linked to album.",
       size_bytes: payload.zip_size_bytes ?? 0,
       duration_ms: payload.upload_duration_ms,
-      ip_address: requestIp(request)
+      ip_address: requestIp(request),
     });
   } catch {
     // Monitoring should never block a finished ZIP upload.
@@ -83,11 +91,12 @@ export async function POST(request: Request) {
 
   try {
     await sendZipUploadNotificationEmail({
+      albumId: album.id,
       albumTitle: album.title,
       albumSlug: album.slug,
       filename: payload.filename ?? zipObjectKey.split("/").pop(),
       zipSizeBytes: payload.zip_size_bytes,
-      durationMs: payload.upload_duration_ms
+      durationMs: payload.upload_duration_ms,
     });
   } catch (error) {
     console.error("ZIP upload notification failed", error);
@@ -100,7 +109,9 @@ export async function POST(request: Request) {
       .from("album_clients")
       .select("client_id")
       .eq("album_id", album.id);
-    const clientIds = (assignments ?? []).map((assignment) => assignment.client_id);
+    const clientIds = (assignments ?? []).map(
+      (assignment) => assignment.client_id,
+    );
 
     if (clientIds.length) {
       const [{ data: clients }, { count }] = await Promise.all([
@@ -111,26 +122,29 @@ export async function POST(request: Request) {
         supabase
           .from("photos")
           .select("id", { count: "exact", head: true })
-          .eq("album_id", album.id)
+          .eq("album_id", album.id),
       ]);
 
       clientEmail = await sendGalleryUpdateEmails({
         updateKind: "zip",
+        albumId: album.id,
         albumTitle: album.title,
         albumUrl: `${siteConfig.url}${siteConfig.routes.clientGallery}/${album.slug}`,
         photoCount: count ?? 0,
         hasZip: true,
         isPasswordProtected: Boolean(album.is_password_protected),
         requiresEmail: Boolean(album.requires_email),
-        clients: ((clients ?? []) as Array<{
-          name: string;
-          email: string | null;
-          password_hash: string | null;
-        }>).map((client) => ({
+        clients: (
+          (clients ?? []) as Array<{
+            name: string;
+            email: string | null;
+            password_hash: string | null;
+          }>
+        ).map((client) => ({
           name: client.name,
           email: client.email,
-          hasClientPassword: Boolean(client.password_hash)
-        }))
+          hasClientPassword: Boolean(client.password_hash),
+        })),
       }).catch((error: unknown) => {
         console.error("Client ZIP notification failed", error);
         return { sent: 0, failed: 1, skipped: false };

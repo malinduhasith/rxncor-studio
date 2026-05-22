@@ -10,7 +10,8 @@ const exportTables = [
   "upload_events",
   "contact_inquiries",
   "shoot_requests",
-  "admin_audit_logs"
+  "email_events",
+  "admin_audit_logs",
 ] as const;
 
 type ExportTable = (typeof exportTables)[number];
@@ -41,14 +42,16 @@ function toCsv(rows: Array<Record<string, unknown>>) {
 
   const columns = Object.keys(rows[0]);
   const header = columns.map(csvCell).join(",");
-  const body = rows.map((row) => columns.map((column) => csvCell(row[column])).join(","));
+  const body = rows.map((row) =>
+    columns.map((column) => csvCell(row[column])).join(","),
+  );
 
   return [header, ...body].join("\n");
 }
 
 async function fetchTable(
   supabase: Awaited<ReturnType<typeof getVerifiedAdminApiClient>>,
-  table: ExportTable
+  table: ExportTable,
 ) {
   if (!supabase) {
     return { rows: [], error: "Unauthorized." };
@@ -58,7 +61,7 @@ async function fetchTable(
 
   return {
     rows: (data ?? []) as Array<Record<string, unknown>>,
-    error: error?.message ?? null
+    error: error?.message ?? null,
   };
 }
 
@@ -77,7 +80,7 @@ export async function GET(request: Request) {
     if (!isExportTable(tableParam)) {
       return noStoreJson(
         { error: "Choose one table when exporting CSV." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -91,36 +94,37 @@ export async function GET(request: Request) {
       headers: {
         "Cache-Control": "no-store",
         "Content-Disposition": `attachment; filename="${tableParam}-${filenameStamp()}.csv"`,
-        "Content-Type": "text/csv; charset=utf-8"
-      }
+        "Content-Type": "text/csv; charset=utf-8",
+      },
     });
   }
 
-  const tables = tableParam && isExportTable(tableParam) ? [tableParam] : exportTables;
+  const tables =
+    tableParam && isExportTable(tableParam) ? [tableParam] : exportTables;
   const exportedTables = Object.fromEntries(
     await Promise.all(
       tables.map(async (table) => {
         const result = await fetchTable(supabase, table);
         return [table, result];
-      })
-    )
+      }),
+    ),
   );
 
   return new Response(
     JSON.stringify(
       {
         exported_at: new Date().toISOString(),
-        tables: exportedTables
+        tables: exportedTables,
       },
       null,
-      2
+      2,
     ),
     {
       headers: {
         "Cache-Control": "no-store",
         "Content-Disposition": `attachment; filename="rxncor-studio-export-${filenameStamp()}.json"`,
-        "Content-Type": "application/json; charset=utf-8"
-      }
-    }
+        "Content-Type": "application/json; charset=utf-8",
+      },
+    },
   );
 }

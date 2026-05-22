@@ -2,14 +2,14 @@ import { z } from "zod";
 import { getVerifiedAdminApiClient } from "@/lib/api-auth";
 import {
   sendGalleryUpdateEmails,
-  sendPhotoUploadNotificationEmail
+  sendPhotoUploadNotificationEmail,
 } from "@/lib/email";
 import { noStoreJson } from "@/lib/http";
 import { siteConfig } from "@/config/site";
 
 const failedFileSchema = z.object({
   filename: z.string().trim().min(1).max(240),
-  message: z.string().trim().min(1).max(500)
+  message: z.string().trim().min(1).max(500),
 });
 
 const uploadNotificationSchema = z.object({
@@ -24,16 +24,19 @@ const uploadNotificationSchema = z.object({
   total_size_bytes: z.number().int().nonnegative().optional(),
   duration_ms: z.number().int().nonnegative().optional(),
   notify_clients: z.boolean().default(false),
-  failed_files: z.array(failedFileSchema).max(10).optional()
+  failed_files: z.array(failedFileSchema).max(10).optional(),
 });
 
 export async function POST(request: Request) {
   const parsed = uploadNotificationSchema.safeParse(
-    await request.json().catch(() => null)
+    await request.json().catch(() => null),
   );
 
   if (!parsed.success) {
-    return noStoreJson({ error: "Invalid upload notification." }, { status: 400 });
+    return noStoreJson(
+      { error: "Invalid upload notification." },
+      { status: 400 },
+    );
   }
 
   const supabase = await getVerifiedAdminApiClient();
@@ -46,7 +49,7 @@ export async function POST(request: Request) {
   const { data: album } = await supabase
     .from("albums")
     .select(
-      "id, title, slug, is_password_protected, requires_email, download_zip_url"
+      "id, title, slug, is_password_protected, requires_email, download_zip_url",
     )
     .eq("id", payload.album_id)
     .maybeSingle();
@@ -56,6 +59,7 @@ export async function POST(request: Request) {
   }
 
   const result = await sendPhotoUploadNotificationEmail({
+    albumId: album.id,
     albumTitle: album.title,
     albumSlug: album.slug,
     total: payload.total,
@@ -66,7 +70,7 @@ export async function POST(request: Request) {
     generatedPreviews: payload.generated_previews,
     totalSizeBytes: payload.total_size_bytes,
     durationMs: payload.duration_ms,
-    failedFiles: payload.failed_files
+    failedFiles: payload.failed_files,
   }).catch((error: unknown) => {
     console.error("Photo upload notification failed", error);
     return { sent: 0, failed: 1, skipped: false };
@@ -79,7 +83,9 @@ export async function POST(request: Request) {
       .from("album_clients")
       .select("client_id")
       .eq("album_id", album.id);
-    const clientIds = (assignments ?? []).map((assignment) => assignment.client_id);
+    const clientIds = (assignments ?? []).map(
+      (assignment) => assignment.client_id,
+    );
 
     if (clientIds.length) {
       const [{ data: clients }, { count }] = await Promise.all([
@@ -90,11 +96,12 @@ export async function POST(request: Request) {
         supabase
           .from("photos")
           .select("id", { count: "exact", head: true })
-          .eq("album_id", album.id)
+          .eq("album_id", album.id),
       ]);
 
       clientEmail = await sendGalleryUpdateEmails({
         updateKind: "photos",
+        albumId: album.id,
         albumTitle: album.title,
         albumUrl: `${siteConfig.url}${siteConfig.routes.clientGallery}/${album.slug}`,
         photoCount: count ?? payload.uploaded,
@@ -102,15 +109,17 @@ export async function POST(request: Request) {
         hasZip: Boolean(album.download_zip_url),
         isPasswordProtected: Boolean(album.is_password_protected),
         requiresEmail: Boolean(album.requires_email),
-        clients: ((clients ?? []) as Array<{
-          name: string;
-          email: string | null;
-          password_hash: string | null;
-        }>).map((client) => ({
+        clients: (
+          (clients ?? []) as Array<{
+            name: string;
+            email: string | null;
+            password_hash: string | null;
+          }>
+        ).map((client) => ({
           name: client.name,
           email: client.email,
-          hasClientPassword: Boolean(client.password_hash)
-        }))
+          hasClientPassword: Boolean(client.password_hash),
+        })),
       }).catch((error: unknown) => {
         console.error("Client photo upload notification failed", error);
         return { sent: 0, failed: 1, skipped: false };

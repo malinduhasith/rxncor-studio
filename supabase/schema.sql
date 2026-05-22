@@ -87,6 +87,24 @@ create table if not exists public.admin_audit_logs (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.email_events (
+  id uuid primary key default gen_random_uuid(),
+  email_type text not null,
+  recipient text,
+  subject text not null,
+  status text not null
+    check (status in ('sent', 'failed', 'skipped')),
+  provider text not null default 'resend',
+  provider_status integer,
+  message text,
+  album_id uuid references public.albums(id) on delete set null,
+  client_id uuid references public.clients(id) on delete set null,
+  related_type text,
+  related_id text,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.download_logs (
   id uuid primary key default gen_random_uuid(),
   album_id uuid not null references public.albums(id) on delete cascade,
@@ -147,6 +165,14 @@ create index if not exists admin_audit_logs_created_at_idx
   on public.admin_audit_logs(created_at desc);
 create index if not exists admin_audit_logs_entity_idx
   on public.admin_audit_logs(entity_type, entity_id, created_at desc);
+create index if not exists email_events_created_at_idx
+  on public.email_events(created_at desc);
+create index if not exists email_events_status_created_idx
+  on public.email_events(status, created_at desc);
+create index if not exists email_events_album_created_idx
+  on public.email_events(album_id, created_at desc);
+create index if not exists email_events_type_created_idx
+  on public.email_events(email_type, created_at desc);
 create index if not exists download_logs_photo_id_idx on public.download_logs(photo_id);
 create index if not exists download_logs_album_id_idx on public.download_logs(album_id);
 create index if not exists contact_inquiries_created_at_idx
@@ -167,6 +193,7 @@ alter table public.photos enable row level security;
 alter table public.download_logs enable row level security;
 alter table public.upload_events enable row level security;
 alter table public.admin_audit_logs enable row level security;
+alter table public.email_events enable row level security;
 alter table public.contact_inquiries enable row level security;
 alter table public.shoot_requests enable row level security;
 
@@ -226,6 +253,21 @@ begin
   ) then
     create policy "Admins can manage about page settings"
       on public.about_page_settings for all
+      using (auth.role() = 'authenticated')
+      with check (auth.role() = 'authenticated');
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'email_events'
+      and policyname = 'Admins can manage email events'
+  ) then
+    create policy "Admins can manage email events"
+      on public.email_events for all
       using (auth.role() = 'authenticated')
       with check (auth.role() = 'authenticated');
   end if;

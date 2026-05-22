@@ -121,3 +121,20 @@ export type AdminAuditLog = {
   metadata: Record<string, unknown>;
   created_at: string;
 };
+
+export type EmailEvent = {
+  id: string;
+  email_type: string;
+  recipient: string | null;
+  subject: string;
+  status: "sent" | "failed" | "skipped";
+  provider: string;
+  provider_status: number | null;
+  message: string | null;
+  album_id: string | null;
+  client_id: string | null;
+  related_type: string | null;
+  related_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};
