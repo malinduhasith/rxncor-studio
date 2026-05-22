@@ -23,6 +23,10 @@ root domain.
   status update".
 - Admin album manager: "Email clients" sends the gallery link to assigned
   clients with saved email addresses.
+- Admin photo upload: one operational summary email to Malindu when a batch
+  finishes or has failures.
+- Admin ZIP upload: one operational email to Malindu when a full album ZIP is
+  attached.
 
 ## Vercel Environment Variables
 
@@ -51,4 +55,6 @@ ADMIN_NOTIFICATION_EMAIL=malinduhasith@gmail.com
 2. Submit a shoot request with your own email.
 3. In admin, assign a client with an email to an album.
 4. Click "Email clients" in the album manager.
-5. Check Resend logs if anything does not arrive.
+5. Upload one small photo set and confirm the admin upload summary arrives.
+6. Upload one small ZIP and confirm the ZIP upload summary arrives.
+7. Check Resend logs if anything does not arrive.

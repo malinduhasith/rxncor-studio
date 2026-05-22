@@ -477,6 +477,32 @@ async function logUploadEvent(event: {
   }).catch(() => null);
 }
 
+async function notifyPhotoBatchUpload(event: {
+  album_id: string;
+  total: number;
+  uploaded: number;
+  failed: number;
+  generated_thumbnails: number;
+  generated_previews: number;
+  total_size_bytes: number;
+  duration_ms: number;
+  failed_files?: Array<{
+    filename: string;
+    message: string;
+  }>;
+}) {
+  await fetch("/api/uploads/notifications", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      type: "photo-batch",
+      ...event
+    })
+  }).catch(() => null);
+}
+
 async function preparePhotoSet(
   photoSet: PhotoSet,
   onStage?: (message: string) => void
@@ -766,6 +792,31 @@ export function AdminPhotoUpload({
       return;
     }
 
+    const uploadStartedAt = performance.now();
+    const generatedThumbnails = photoSets.filter((set) => !set.thumbnail).length;
+    const generatedPreviews = photoSets.filter((set) => !set.preview).length;
+    const totalSizeBytes = fulls.reduce((total, file) => total + file.size, 0);
+    let latestSuccessful = 0;
+    let latestProcessed = 0;
+    const sendUploadNotification = (result: {
+      successful: number;
+      failures: UploadFailure[];
+    }) =>
+      notifyPhotoBatchUpload({
+        album_id: albumId,
+        total: photoSets.length,
+        uploaded: result.successful,
+        failed: result.failures.length,
+        generated_thumbnails: generatedThumbnails,
+        generated_previews: generatedPreviews,
+        total_size_bytes: totalSizeBytes,
+        duration_ms: Math.round(performance.now() - uploadStartedAt),
+        failed_files: result.failures.slice(0, 10).map((failure) => ({
+          filename: failure.filename,
+          message: failure.message.slice(0, 500)
+        }))
+      });
+
     setIsUploading(true);
     setCompletedCount(0);
     setProcessedCount(0);
@@ -787,6 +838,8 @@ export function AdminPhotoUpload({
           setActivePhoto(`Working on ${index}/${photoSets.length}: ${photoSet.full.name}`);
         },
         ({ processed, successful, failures }) => {
+          latestProcessed = processed;
+          latestSuccessful = successful;
           setProcessedCount(processed);
           setCompletedCount(successful);
           setFailedUploads(failures);
@@ -799,6 +852,7 @@ export function AdminPhotoUpload({
       );
 
       if (result.failures.length) {
+        await sendUploadNotification(result);
         setStatusKind("error");
         setStatus(
           result.stoppedEarly
@@ -809,10 +863,22 @@ export function AdminPhotoUpload({
         return;
       }
 
+      await sendUploadNotification(result);
       window.location.assign("/admin?view=uploads&notice=photos-uploaded#uploads");
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload failed.";
+      await sendUploadNotification({
+        successful: latestSuccessful,
+        failures: [
+          {
+            index: latestProcessed + 1,
+            filename: "Upload workflow",
+            message
+          }
+        ]
+      });
       setStatusKind("error");
-      setStatus(error instanceof Error ? error.message : "Upload failed.");
+      setStatus(message);
       setIsUploading(false);
     }
   }

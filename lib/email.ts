@@ -60,6 +60,30 @@ type ShootStatusInput = {
   albumUrl?: string | null;
 };
 
+type PhotoUploadNotificationInput = {
+  albumTitle: string;
+  albumSlug: string;
+  total: number;
+  uploaded: number;
+  failed: number;
+  generatedThumbnails: number;
+  generatedPreviews: number;
+  totalSizeBytes?: number | null;
+  durationMs?: number | null;
+  failedFiles?: Array<{
+    filename: string;
+    message: string;
+  }>;
+};
+
+type ZipUploadNotificationInput = {
+  albumTitle: string;
+  albumSlug: string;
+  filename?: string | null;
+  zipSizeBytes?: number | null;
+  durationMs?: number | null;
+};
+
 function emailConfig() {
   return {
     apiKey: optionalEnv("RESEND_API_KEY"),
@@ -94,6 +118,39 @@ function formatWhen(value: string) {
     timeStyle: "short",
     timeZone: "Australia/Melbourne"
   }).format(date);
+}
+
+function formatBytes(bytes: number | null | undefined) {
+  if (typeof bytes !== "number" || !Number.isFinite(bytes)) {
+    return "Not captured";
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+
+  if (bytes < 1024 * 1024 * 1024) {
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  }
+
+  return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
+}
+
+function formatDuration(milliseconds: number | null | undefined) {
+  if (typeof milliseconds !== "number" || !Number.isFinite(milliseconds)) {
+    return "Not captured";
+  }
+
+  const seconds = Math.max(0, Math.round(milliseconds / 1000));
+
+  if (seconds < 60) {
+    return `${seconds}s`;
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
+  return remainingSeconds ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
 }
 
 function textRows(rows: Array<[string, string | null | undefined]>) {
@@ -344,4 +401,85 @@ export async function sendAlbumReadyEmails(input: AlbumReadyInput) {
   );
 
   return mergeResults(results);
+}
+
+export async function sendPhotoUploadNotificationEmail(
+  input: PhotoUploadNotificationInput
+) {
+  const config = emailConfig();
+  const galleryUrl = `${siteConfig.url}/client/${input.albumSlug}`;
+  const rows: Array<[string, string | null | undefined]> = [
+    ["Album", input.albumTitle],
+    ["Slug", input.albumSlug],
+    ["Uploaded", `${input.uploaded}/${input.total}`],
+    ["Failed", String(input.failed)],
+    ["Auto thumbnails", String(input.generatedThumbnails)],
+    ["Auto previews", String(input.generatedPreviews)],
+    ["Full-res size", formatBytes(input.totalSizeBytes)],
+    ["Duration", formatDuration(input.durationMs)],
+    ["Gallery", galleryUrl]
+  ];
+  const failedList = input.failedFiles?.length
+    ? `<div style="margin-top:18px;padding:16px;border:1px solid #d35d43;background:#fff1ea;color:#8f2418;line-height:1.55;">
+        <strong style="display:block;margin-bottom:8px;color:#8f2418;">Failed files</strong>
+        <ol style="margin:0;padding-left:20px;">
+          ${input.failedFiles
+            .map(
+              (failure) =>
+                `<li style="margin:0 0 10px;"><strong>${escapeHtml(
+                  failure.filename
+                )}</strong><br />${escapeHtml(failure.message)}</li>`
+            )
+            .join("")}
+        </ol>
+      </div>`
+    : "";
+  const title = input.failed ? "Photo upload needs attention" : "Photo upload finished";
+  const intro = input.failed
+    ? `${input.albumTitle} uploaded ${input.uploaded} of ${input.total} photo sets. Check the failed files before sending this gallery to a client.`
+    : `${input.albumTitle} finished uploading ${input.uploaded} photo sets.`;
+
+  return sendEmail({
+    to: config.adminEmail,
+    subject: `${title} - ${input.albumTitle}`,
+    text: `${intro}\n\n${textRows(rows)}${
+      input.failedFiles?.length
+        ? `\n\nFailed files:\n${input.failedFiles
+            .map((failure) => `- ${failure.filename}: ${failure.message}`)
+            .join("\n")}`
+        : ""
+    }`,
+    html: emailShell(
+      title,
+      intro,
+      `<table style="width:100%;border-collapse:collapse;border:1px solid #ddd6c8;">${htmlRows(rows)}</table>${failedList}`,
+      { href: `${siteConfig.url}/admin?view=uploads`, label: "Open uploads" }
+    )
+  });
+}
+
+export async function sendZipUploadNotificationEmail(input: ZipUploadNotificationInput) {
+  const config = emailConfig();
+  const galleryUrl = `${siteConfig.url}/client/${input.albumSlug}`;
+  const rows: Array<[string, string | null | undefined]> = [
+    ["Album", input.albumTitle],
+    ["Slug", input.albumSlug],
+    ["ZIP file", input.filename],
+    ["ZIP size", formatBytes(input.zipSizeBytes)],
+    ["Duration", formatDuration(input.durationMs)],
+    ["Gallery", galleryUrl]
+  ];
+  const intro = `${input.albumTitle} now has a full album ZIP attached. Clients will see the ZIP download button when they can access the gallery.`;
+
+  return sendEmail({
+    to: config.adminEmail,
+    subject: `ZIP upload finished - ${input.albumTitle}`,
+    text: `${intro}\n\n${textRows(rows)}`,
+    html: emailShell(
+      "ZIP upload finished",
+      intro,
+      `<table style="width:100%;border-collapse:collapse;border:1px solid #ddd6c8;">${htmlRows(rows)}</table>`,
+      { href: `${siteConfig.url}/admin?view=uploads`, label: "Open uploads" }
+    )
+  });
 }

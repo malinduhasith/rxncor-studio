@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getVerifiedAdminApiClient } from "@/lib/api-auth";
+import { sendZipUploadNotificationEmail } from "@/lib/email";
 import { noStoreJson } from "@/lib/http";
 import { objectKeyFromPublicUrl } from "@/lib/r2";
 
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
 
   const { data: currentAlbum } = await supabase
     .from("albums")
-    .select("id, slug")
+    .select("id, title, slug")
     .eq("id", payload.album_id)
     .maybeSingle();
 
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
     .from("albums")
     .update({ download_zip_url: payload.download_zip_url })
     .eq("id", payload.album_id)
-    .select("id, download_zip_url")
+    .select("id, title, slug, download_zip_url")
     .single();
 
   if (error) {
@@ -76,6 +77,18 @@ export async function POST(request: Request) {
     });
   } catch {
     // Monitoring should never block a finished ZIP upload.
+  }
+
+  try {
+    await sendZipUploadNotificationEmail({
+      albumTitle: album.title,
+      albumSlug: album.slug,
+      filename: payload.filename ?? zipObjectKey.split("/").pop(),
+      zipSizeBytes: payload.zip_size_bytes,
+      durationMs: payload.upload_duration_ms
+    });
+  } catch (error) {
+    console.error("ZIP upload notification failed", error);
   }
 
   return noStoreJson({ album });
