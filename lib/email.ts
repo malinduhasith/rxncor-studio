@@ -49,6 +49,11 @@ type AlbumReadyInput = {
   }>;
 };
 
+type GalleryUpdateInput = AlbumReadyInput & {
+  updateKind: "photos" | "zip";
+  uploadedCount?: number;
+};
+
 type ShootStatusInput = {
   name: string;
   email: string;
@@ -395,6 +400,75 @@ export async function sendAlbumReadyEmails(input: AlbumReadyInput) {
             ["ZIP", input.hasZip ? "Ready" : "Not attached"],
             ["Access", accessNotes.join(" ")]
           ])}</table>`,
+          { href: input.albumUrl, label: "Open gallery" }
+        )
+      });
+    })
+  );
+
+  return mergeResults(results);
+}
+
+export async function sendGalleryUpdateEmails(input: GalleryUpdateInput) {
+  const recipients = input.clients.filter((client) => client.email);
+
+  if (!recipients.length) {
+    return { sent: 0, failed: 0, skipped: true };
+  }
+
+  const copy =
+    input.updateKind === "zip"
+      ? {
+          title: "ZIP download is ready",
+          subject: `ZIP download is ready - ${input.albumTitle}`,
+          intro: (name: string) =>
+            `Hi ${name}, the full album ZIP for ${input.albumTitle} is ready to download.`
+        }
+      : {
+          title: "New photos added",
+          subject: `New photos added - ${input.albumTitle}`,
+          intro: (name: string) =>
+            `Hi ${name}, new photos have been added to ${input.albumTitle}.`
+        };
+
+  const results = await Promise.all(
+    recipients.map((client) => {
+      const accessNotes = [
+        input.requiresEmail ? "This gallery asks for your email before viewing." : null,
+        input.isPasswordProtected
+          ? client.hasClientPassword
+            ? "Use your client email and personal client password, or the gallery password if one was shared."
+            : "Use the gallery password shared by Malindu."
+          : client.hasClientPassword
+            ? "You can also sign in from the client login page with your client password."
+            : null,
+        input.hasZip ? "The full album ZIP is available inside the gallery." : null
+      ].filter(Boolean);
+
+      const rows: Array<[string, string | null | undefined]> = [
+        ["Album", input.albumTitle],
+        ["Photos in gallery", String(input.photoCount)],
+        [
+          input.updateKind === "zip" ? "ZIP" : "New upload",
+          input.updateKind === "zip"
+            ? "Ready"
+            : input.uploadedCount
+              ? `${input.uploadedCount} photo set${input.uploadedCount === 1 ? "" : "s"}`
+              : "Finished"
+        ],
+        ["Access", accessNotes.join(" ")]
+      ];
+
+      return sendEmail({
+        to: client.email as string,
+        subject: copy.subject,
+        text: `${copy.intro(client.name)}\n\n${textRows(rows)}\nLink: ${
+          input.albumUrl
+        }\n\n- Malindu`,
+        html: emailShell(
+          copy.title,
+          copy.intro(client.name),
+          `<table style="width:100%;border-collapse:collapse;border:1px solid #ddd6c8;">${htmlRows(rows)}</table>`,
           { href: input.albumUrl, label: "Open gallery" }
         )
       });

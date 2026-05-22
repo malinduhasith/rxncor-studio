@@ -494,6 +494,7 @@ async function notifyPhotoBatchUpload(event: {
   generated_previews: number;
   total_size_bytes: number;
   duration_ms: number;
+  notify_clients: boolean;
   failed_files?: Array<{
     filename: string;
     message: string;
@@ -807,6 +808,7 @@ export function AdminPhotoUpload({
     const thumbnails = fileList(formData, "thumbnails");
     const previews = fileList(formData, "previews");
     const fulls = fileList(formData, "fulls");
+    const shouldNotifyClients = formData.get("notify_clients") === "on";
 
     if (!albumId || !fulls.length) {
       setStatusKind("error");
@@ -879,6 +881,8 @@ export function AdminPhotoUpload({
           generated_previews: generatedPreviews,
           total_size_bytes: totalSizeBytes,
           duration_ms: Math.round(performance.now() - uploadStartedAt),
+          notify_clients:
+            shouldNotifyClients && result.successful > 0 && result.failures.length === 0,
           failed_files: result.failures.slice(0, 10).map((failure) => ({
             filename: failure.filename,
             message: failure.message.slice(0, 500)
@@ -941,6 +945,7 @@ export function AdminPhotoUpload({
         generated_previews: uploadSets.filter((set) => !set.preview).length,
         total_size_bytes: uploadSets.reduce((total, set) => total + set.full.size, 0),
         duration_ms: Math.round(performance.now() - uploadStartedAt),
+        notify_clients: false,
         failed_files: [
           {
             filename: "Upload workflow",
@@ -1036,6 +1041,11 @@ export function AdminPhotoUpload({
       <label className="checkbox-field">
         <input name="skip_existing" type="checkbox" defaultChecked />
         Skip photo sets that already exist in this album
+      </label>
+      <label className="checkbox-field">
+        <input name="notify_clients" type="checkbox" defaultChecked />
+        Email assigned clients after a successful upload
+        <small>Only sends if the whole selected batch finishes without failures.</small>
       </label>
       <label className="field">
         Thumbnail images <small>Optional override</small>

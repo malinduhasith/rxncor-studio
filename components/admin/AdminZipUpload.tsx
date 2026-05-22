@@ -110,6 +110,7 @@ export function AdminZipUpload({
     const formData = new FormData(event.currentTarget);
     const albumId = String(formData.get("album_id") ?? "");
     const zipFile = formData.get("zip") as File | null;
+    const shouldNotifyClients = formData.get("notify_clients") === "on";
 
     if (!albumId || !zipFile?.size) {
       setStatusTone("warning");
@@ -150,7 +151,8 @@ export function AdminZipUpload({
             download_zip_url: signedUpload.publicUrl,
             filename: zipFile.name,
             zip_size_bytes: zipFile.size,
-            upload_duration_ms: Math.round(performance.now() - startedAt)
+            upload_duration_ms: Math.round(performance.now() - startedAt),
+            notify_clients: shouldNotifyClients
           })
         });
 
@@ -201,6 +203,10 @@ export function AdminZipUpload({
             setZipSummary(file ? `${file.name} · ${fileSizeLabel(file.size)}` : "");
           }}
         />
+      </label>
+      <label className="checkbox-field">
+        <input name="notify_clients" type="checkbox" defaultChecked />
+        Email assigned clients when this ZIP is ready
       </label>
       <button className="button secondary" type="submit" disabled={!hasAlbums || isUploading}>
         <FileArchive size={18} />

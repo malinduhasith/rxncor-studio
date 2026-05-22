@@ -1,15 +1,17 @@
 import { z } from "zod";
 import { getVerifiedAdminApiClient } from "@/lib/api-auth";
-import { sendZipUploadNotificationEmail } from "@/lib/email";
+import { sendGalleryUpdateEmails, sendZipUploadNotificationEmail } from "@/lib/email";
 import { noStoreJson } from "@/lib/http";
 import { objectKeyFromPublicUrl } from "@/lib/r2";
+import { siteConfig } from "@/config/site";
 
 const zipSchema = z.object({
   album_id: z.string().uuid(),
   download_zip_url: z.string().min(1),
   filename: z.string().trim().max(240).optional(),
   zip_size_bytes: z.number().int().nonnegative().optional(),
-  upload_duration_ms: z.number().int().nonnegative().optional()
+  upload_duration_ms: z.number().int().nonnegative().optional(),
+  notify_clients: z.boolean().default(false)
 });
 
 function requestIp(request: Request) {
@@ -36,7 +38,7 @@ export async function POST(request: Request) {
 
   const { data: currentAlbum } = await supabase
     .from("albums")
-    .select("id, title, slug")
+    .select("id, title, slug, is_password_protected, requires_email")
     .eq("id", payload.album_id)
     .maybeSingle();
 
@@ -57,7 +59,7 @@ export async function POST(request: Request) {
     .from("albums")
     .update({ download_zip_url: payload.download_zip_url })
     .eq("id", payload.album_id)
-    .select("id, title, slug, download_zip_url")
+    .select("id, title, slug, is_password_protected, requires_email, download_zip_url")
     .single();
 
   if (error) {
@@ -91,5 +93,50 @@ export async function POST(request: Request) {
     console.error("ZIP upload notification failed", error);
   }
 
-  return noStoreJson({ album });
+  let clientEmail = { sent: 0, failed: 0, skipped: true };
+
+  if (payload.notify_clients) {
+    const { data: assignments } = await supabase
+      .from("album_clients")
+      .select("client_id")
+      .eq("album_id", album.id);
+    const clientIds = (assignments ?? []).map((assignment) => assignment.client_id);
+
+    if (clientIds.length) {
+      const [{ data: clients }, { count }] = await Promise.all([
+        supabase
+          .from("clients")
+          .select("name, email, password_hash")
+          .in("id", clientIds),
+        supabase
+          .from("photos")
+          .select("id", { count: "exact", head: true })
+          .eq("album_id", album.id)
+      ]);
+
+      clientEmail = await sendGalleryUpdateEmails({
+        updateKind: "zip",
+        albumTitle: album.title,
+        albumUrl: `${siteConfig.url}${siteConfig.routes.clientGallery}/${album.slug}`,
+        photoCount: count ?? 0,
+        hasZip: true,
+        isPasswordProtected: Boolean(album.is_password_protected),
+        requiresEmail: Boolean(album.requires_email),
+        clients: ((clients ?? []) as Array<{
+          name: string;
+          email: string | null;
+          password_hash: string | null;
+        }>).map((client) => ({
+          name: client.name,
+          email: client.email,
+          hasClientPassword: Boolean(client.password_hash)
+        }))
+      }).catch((error: unknown) => {
+        console.error("Client ZIP notification failed", error);
+        return { sent: 0, failed: 1, skipped: false };
+      });
+    }
+  }
+
+  return noStoreJson({ album, clientEmail });
 }
