@@ -282,6 +282,11 @@ export const adminLoginNotices: Record<string, NoticeContent> = {
     tone: "warning",
     title: "Too many attempts",
     message: "Wait a few minutes, then try again."
+  },
+  unauthorized: {
+    tone: "error",
+    title: "Admin access blocked",
+    message: "This email is not in the admin allowlist for rxncor.studio."
   }
 };
 
@@ -339,6 +344,11 @@ export const shootRequestNotices: Record<string, NoticeContent> = {
     title: "Booking setup needed",
     message: "Shoot requests need the latest Supabase migration before this form can save."
   },
+  "rate-limited": {
+    tone: "warning",
+    title: "Too many requests",
+    message: "Wait a little while, then send the request again."
+  },
   error: {
     tone: "error",
     title: "Request could not be sent",
@@ -356,5 +366,10 @@ export const contactNotices: Record<string, NoticeContent> = {
     tone: "error",
     title: "Message could not be sent",
     message: "Check the fields and try again."
+  },
+  "rate-limited": {
+    tone: "warning",
+    title: "Too many messages",
+    message: "Wait a little while, then try again."
   }
 };

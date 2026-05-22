@@ -55,6 +55,13 @@ type UploadFailure = {
   message: string;
 };
 
+type ExistingUploadPhoto = {
+  id: string;
+  filename: string;
+  r2_object_key: string;
+  uploaded_at: string;
+};
+
 type PreparedPhotoSet = PhotoSet & {
   thumbnail: File;
   preview: File;
@@ -482,6 +489,7 @@ async function notifyPhotoBatchUpload(event: {
   total: number;
   uploaded: number;
   failed: number;
+  skipped: number;
   generated_thumbnails: number;
   generated_previews: number;
   total_size_bytes: number;
@@ -501,6 +509,30 @@ async function notifyPhotoBatchUpload(event: {
       ...event
     })
   }).catch(() => null);
+}
+
+async function existingPhotoFilenames(albumId: string) {
+  const response = await fetch("/api/uploads/existing", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ album_id: albumId })
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await responseMessage(response, "Could not check existing album photos.")
+    );
+  }
+
+  const payload = (await response.json()) as {
+    photos?: ExistingUploadPhoto[];
+  };
+
+  return new Set(
+    (payload.photos ?? []).map((photo) => photo.filename.trim().toLowerCase())
+  );
 }
 
 async function preparePhotoSet(
@@ -792,30 +824,11 @@ export function AdminPhotoUpload({
       return;
     }
 
+    const skipExisting = formData.get("skip_existing") === "on";
     const uploadStartedAt = performance.now();
-    const generatedThumbnails = photoSets.filter((set) => !set.thumbnail).length;
-    const generatedPreviews = photoSets.filter((set) => !set.preview).length;
-    const totalSizeBytes = fulls.reduce((total, file) => total + file.size, 0);
     let latestSuccessful = 0;
-    let latestProcessed = 0;
-    const sendUploadNotification = (result: {
-      successful: number;
-      failures: UploadFailure[];
-    }) =>
-      notifyPhotoBatchUpload({
-        album_id: albumId,
-        total: photoSets.length,
-        uploaded: result.successful,
-        failed: result.failures.length,
-        generated_thumbnails: generatedThumbnails,
-        generated_previews: generatedPreviews,
-        total_size_bytes: totalSizeBytes,
-        duration_ms: Math.round(performance.now() - uploadStartedAt),
-        failed_files: result.failures.slice(0, 10).map((failure) => ({
-          filename: failure.filename,
-          message: failure.message.slice(0, 500)
-        }))
-      });
+    let uploadSets = photoSets;
+    let skippedExisting = 0;
 
     setIsUploading(true);
     setCompletedCount(0);
@@ -827,26 +840,77 @@ export function AdminPhotoUpload({
     setStatus(`Preparing ${photoSets.length} photo sets for upload...`);
 
     try {
+      if (skipExisting) {
+        setStatus("Checking this album for files that are already saved...");
+        const existingFilenames = await existingPhotoFilenames(albumId);
+        uploadSets = photoSets.filter(
+          (photoSet) => !existingFilenames.has(photoSet.full.name.trim().toLowerCase())
+        );
+        skippedExisting = photoSets.length - uploadSets.length;
+
+        if (!uploadSets.length) {
+          setTotalCount(0);
+          setStatusKind("info");
+          setStatus(
+            `All ${photoSets.length} selected photo sets are already saved in this album.`
+          );
+          setIsUploading(false);
+          return;
+        }
+      }
+
+      const generatedThumbnails = uploadSets.filter((set) => !set.thumbnail).length;
+      const generatedPreviews = uploadSets.filter((set) => !set.preview).length;
+      const totalSizeBytes = uploadSets.reduce(
+        (total, set) => total + set.full.size,
+        0
+      );
+      const sendUploadNotification = (result: {
+        successful: number;
+        failures: UploadFailure[];
+      }) =>
+        notifyPhotoBatchUpload({
+          album_id: albumId,
+          total: photoSets.length,
+          uploaded: result.successful,
+          failed: result.failures.length,
+          skipped: skippedExisting,
+          generated_thumbnails: generatedThumbnails,
+          generated_previews: generatedPreviews,
+          total_size_bytes: totalSizeBytes,
+          duration_ms: Math.round(performance.now() - uploadStartedAt),
+          failed_files: result.failures.slice(0, 10).map((failure) => ({
+            filename: failure.filename,
+            message: failure.message.slice(0, 500)
+          }))
+        });
+
+      setTotalCount(uploadSets.length);
+      setStatus(
+        skippedExisting
+          ? `Skipped ${skippedExisting} existing photo sets. Uploading ${uploadSets.length} remaining sets...`
+          : `Uploading ${uploadSets.length} photo sets...`
+      );
+
       const result = await uploadWithLimit(
-        photoSets,
+        uploadSets,
         1,
         (photoSet) =>
           uploadPhotoSetWithRetry(albumId, photoSet, (message) =>
             setActivePhoto(message)
           ),
         (index, photoSet) => {
-          setActivePhoto(`Working on ${index}/${photoSets.length}: ${photoSet.full.name}`);
+          setActivePhoto(`Working on ${index}/${uploadSets.length}: ${photoSet.full.name}`);
         },
         ({ processed, successful, failures }) => {
-          latestProcessed = processed;
           latestSuccessful = successful;
           setProcessedCount(processed);
           setCompletedCount(successful);
           setFailedUploads(failures);
           setStatus(
             failures.length
-              ? `Processed ${processed}/${photoSets.length}. Uploaded ${successful}, failed ${failures.length}.`
-              : `Uploaded ${successful}/${photoSets.length} photo sets...`
+              ? `Processed ${processed}/${uploadSets.length}. Uploaded ${successful}, failed ${failures.length}, skipped ${skippedExisting}.`
+              : `Uploaded ${successful}/${uploadSets.length} photo sets. Skipped ${skippedExisting} existing sets...`
           );
         },
       );
@@ -857,7 +921,7 @@ export function AdminPhotoUpload({
         setStatus(
           result.stoppedEarly
             ? `Stopped early because the first ${result.failures.length} uploads failed. This usually points to an R2/CORS/config issue, not bad filenames.`
-            : `Uploaded ${result.successful}/${photoSets.length} photo sets. ${result.failures.length} failed. You can retry after checking the failed files below.`
+            : `Uploaded ${result.successful}/${uploadSets.length} new photo sets. ${result.failures.length} failed. ${skippedExisting} existing sets were skipped. You can retry after checking the failed files below.`
         );
         setIsUploading(false);
         return;
@@ -867,11 +931,18 @@ export function AdminPhotoUpload({
       window.location.assign("/admin?view=uploads&notice=photos-uploaded#uploads");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload failed.";
-      await sendUploadNotification({
-        successful: latestSuccessful,
-        failures: [
+      await notifyPhotoBatchUpload({
+        album_id: albumId,
+        total: photoSets.length,
+        uploaded: latestSuccessful,
+        failed: 1,
+        skipped: skippedExisting,
+        generated_thumbnails: uploadSets.filter((set) => !set.thumbnail).length,
+        generated_previews: uploadSets.filter((set) => !set.preview).length,
+        total_size_bytes: uploadSets.reduce((total, set) => total + set.full.size, 0),
+        duration_ms: Math.round(performance.now() - uploadStartedAt),
+        failed_files: [
           {
-            index: latestProcessed + 1,
             filename: "Upload workflow",
             message
           }
@@ -962,6 +1033,10 @@ export function AdminPhotoUpload({
           <p className={`upload-message ${diagnosticKind}`}>{diagnosticStatus}</p>
         ) : null}
       </div>
+      <label className="checkbox-field">
+        <input name="skip_existing" type="checkbox" defaultChecked />
+        Skip photo sets that already exist in this album
+      </label>
       <label className="field">
         Thumbnail images <small>Optional override</small>
         <input

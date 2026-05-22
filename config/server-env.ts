@@ -13,7 +13,8 @@ type EnvName =
   | "RESEND_API_KEY"
   | "EMAIL_FROM"
   | "EMAIL_REPLY_TO"
-  | "ADMIN_NOTIFICATION_EMAIL";
+  | "ADMIN_NOTIFICATION_EMAIL"
+  | "ADMIN_EMAILS";
 
 export function requiredEnv(name: EnvName) {
   const value = process.env[name];

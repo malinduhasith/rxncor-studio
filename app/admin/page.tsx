@@ -60,6 +60,7 @@ import {
   type AboutBlockKind,
   type AboutBlockSection
 } from "@/lib/about-builder";
+import { isAdminEmailAllowed } from "@/lib/admin-auth";
 import { adminNotices, type NoticeContent } from "@/lib/notices";
 import { photoDisplayLabel, type PhotoDisplaySource } from "@/lib/photo-display";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
@@ -151,6 +152,16 @@ type UploadEvent = {
   duration_ms: number | null;
   created_at: string;
   ip_address: string | null;
+};
+
+type AdminAuditLog = {
+  id: string;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  summary: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
 };
 
 type ContactInquiry = {
@@ -724,6 +735,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     redirect(siteConfig.routes.adminLogin);
   }
 
+  if (!isAdminEmailAllowed(user.email)) {
+    redirect(`${siteConfig.routes.adminLogin}?error=unauthorized`);
+  }
+
   const [
     clientsResult,
     albumsResult,
@@ -735,7 +750,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     albumClientsResult,
     inquiriesResult,
     shootRequestsResult,
-    uploadEventsResult
+    uploadEventsResult,
+    auditLogsResult
   ] = await Promise.all([
     supabase
       .from("clients")
@@ -776,6 +792,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         "id, album_id, photo_id, filename, event_type, status, message, size_bytes, duration_ms, created_at, ip_address"
       )
       .order("created_at", { ascending: false })
+      .limit(20),
+    supabase
+      .from("admin_audit_logs")
+      .select("id, action, entity_type, entity_id, summary, metadata, created_at")
+      .order("created_at", { ascending: false })
       .limit(20)
   ]);
 
@@ -792,6 +813,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const downloadLogs = (downloadLogsResult.data ?? []) as DownloadLog[];
   const inquiries = (inquiriesResult.data ?? []) as ContactInquiry[];
   const uploadEvents = (uploadEventsResult.data ?? []) as UploadEvent[];
+  const auditLogs = (auditLogsResult.data ?? []) as AdminAuditLog[];
   const albumPhotoResult = albums.length
     ? await supabase.from("photos").select("album_id").in(
         "album_id",
@@ -1043,6 +1065,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           title: "Upload monitoring needs setup",
           message:
             "Run the upload monitoring Supabase migration to store upload successes and failures."
+        }
+      : null,
+    auditLogsResult.error
+      ? {
+          tone: "warning",
+          title: "Admin audit trail needs setup",
+          message:
+            "Run the admin audit/export Supabase migration to store admin change history."
         }
       : null,
     selectedPhotoResult.error
@@ -2031,6 +2061,34 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         </div>
                       </div>
                       <pre>{selectedShareMessage}</pre>
+                      <div className="delivery-summary-grid">
+                        <div>
+                          <span className="label">Email subject</span>
+                          <strong>{selectedAlbum.title} is ready - rxncor.studio</strong>
+                        </div>
+                        <div>
+                          <span className="label">Recipients</span>
+                          <strong>
+                            {selectedAssignedClients.filter((client) => client.email).length} ready
+                          </strong>
+                          <small>
+                            {selectedAssignedClients
+                              .map((client) => client.email)
+                              .filter(Boolean)
+                              .join(", ") || "Add client emails before sending."}
+                          </small>
+                        </div>
+                        <div>
+                          <span className="label">Access note</span>
+                          <strong>
+                            {selectedAlbum.is_password_protected
+                              ? "Gallery password required"
+                              : selectedAlbum.allow_client_password_access !== false
+                                ? "Client password login"
+                                : "Email gate only"}
+                          </strong>
+                        </div>
+                      </div>
                       <div className="copy-detail-list">
                         {selectedAssignedClients.map((client) => (
                           <div className="copy-detail-row" key={client.id}>
@@ -2800,6 +2858,52 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </table>
               </div>
             </section>
+
+            <section className="workflow-panel" aria-label="Admin audit trail">
+              <div className="panel-title-row">
+                <div>
+                  <p className="eyebrow">Audit trail</p>
+                  <h2>Recent admin changes</h2>
+                  <p className="muted">
+                    A lightweight record of album, client, delivery, request, and page-builder
+                    actions. Helpful when you need to remember what changed before a client saw it.
+                  </p>
+                </div>
+                <span className="pill">{auditLogs.length} loaded</span>
+              </div>
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>When</th>
+                      <th>Action</th>
+                      <th>Object</th>
+                      <th>Summary</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditLogs.map((log) => (
+                      <tr key={log.id}>
+                        <td>{formatDateTime(log.created_at)}</td>
+                        <td>{log.action}</td>
+                        <td>
+                          <strong>{log.entity_type}</strong>
+                          <small>{log.entity_id ?? "No object id"}</small>
+                        </td>
+                        <td>
+                          <p className="table-message">{log.summary}</p>
+                        </td>
+                      </tr>
+                    ))}
+                    {!auditLogs.length ? (
+                      <tr>
+                        <td colSpan={4}>No admin changes logged yet.</td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </section>
           ) : null}
 
@@ -3147,7 +3251,21 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <div className="feature-list backup-list">
               <div className="feature">
                 <h3>Supabase export</h3>
-                <p>Export clients, albums, album_clients, photos, downloads, and inquiries weekly.</p>
+                <p>Export clients, albums, album_clients, photos, downloads, uploads, requests, inquiries, and audit rows weekly.</p>
+                <div className="inline-actions">
+                  <a className="button small" href="/api/admin/export?format=json">
+                    Download full JSON
+                  </a>
+                  <a className="button secondary small" href="/api/admin/export?format=csv&table=clients">
+                    Clients CSV
+                  </a>
+                  <a className="button secondary small" href="/api/admin/export?format=csv&table=albums">
+                    Albums CSV
+                  </a>
+                  <a className="button secondary small" href="/api/admin/export?format=csv&table=photos">
+                    Photos CSV
+                  </a>
+                </div>
               </div>
               <div className="feature">
                 <h3>R2 delivery files</h3>

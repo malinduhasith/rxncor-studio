@@ -205,6 +205,39 @@ export default async function ClientGalleryPage({
       </div>
 
       {album && canViewPhotos && displayPhotos.length ? (
+        <section className="client-delivery-summary" aria-label="Gallery delivery status">
+          <div>
+            <span className="label">Photo set</span>
+            <strong>{displayPhotos.length} files ready</strong>
+            <small>Open any frame for preview and single-photo download.</small>
+          </div>
+          <div>
+            <span className="label">Full ZIP</span>
+            <strong>{zipObjectKey ? "Attached" : "Not attached yet"}</strong>
+            <small>
+              {zipObjectKey
+                ? "Use the ZIP button in the lightbox toolbar."
+                : "The final archive will appear here when it is delivered."}
+            </small>
+          </div>
+          <div>
+            <span className="label">Access</span>
+            <strong>{isProtected ? "Protected" : "Open link"}</strong>
+            <small>
+              {galleryAccess.clientEmail
+                ? `Unlocked for ${galleryAccess.clientEmail}.`
+                : "Keep this gallery link private."}
+            </small>
+          </div>
+          <div>
+            <span className="label">Expiry</span>
+            <strong>{album.expires_at ? album.expires_at.slice(0, 10) : "No expiry"}</strong>
+            <small>Ask for reopening if you need more time.</small>
+          </div>
+        </section>
+      ) : null}
+
+      {album && canViewPhotos && displayPhotos.length ? (
         <section className="album-hero-collage" aria-label="Album preview collage">
           <div className="collage-copy">
             <span className="label">Album view</span>

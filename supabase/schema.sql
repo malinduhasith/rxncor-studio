@@ -77,6 +77,16 @@ create table if not exists public.upload_events (
   ip_address text
 );
 
+create table if not exists public.admin_audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  action text not null,
+  entity_type text not null,
+  entity_id text,
+  summary text not null,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.download_logs (
   id uuid primary key default gen_random_uuid(),
   album_id uuid not null references public.albums(id) on delete cascade,
@@ -133,6 +143,10 @@ create index if not exists upload_events_album_created_idx
   on public.upload_events(album_id, created_at desc);
 create index if not exists upload_events_status_created_idx
   on public.upload_events(status, created_at desc);
+create index if not exists admin_audit_logs_created_at_idx
+  on public.admin_audit_logs(created_at desc);
+create index if not exists admin_audit_logs_entity_idx
+  on public.admin_audit_logs(entity_type, entity_id, created_at desc);
 create index if not exists download_logs_photo_id_idx on public.download_logs(photo_id);
 create index if not exists download_logs_album_id_idx on public.download_logs(album_id);
 create index if not exists contact_inquiries_created_at_idx
@@ -152,6 +166,7 @@ alter table public.album_clients enable row level security;
 alter table public.photos enable row level security;
 alter table public.download_logs enable row level security;
 alter table public.upload_events enable row level security;
+alter table public.admin_audit_logs enable row level security;
 alter table public.contact_inquiries enable row level security;
 alter table public.shoot_requests enable row level security;
 
@@ -211,6 +226,21 @@ begin
   ) then
     create policy "Admins can manage about page settings"
       on public.about_page_settings for all
+      using (auth.role() = 'authenticated')
+      with check (auth.role() = 'authenticated');
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'admin_audit_logs'
+      and policyname = 'Admins can manage audit logs'
+  ) then
+    create policy "Admins can manage audit logs"
+      on public.admin_audit_logs for all
       using (auth.role() = 'authenticated')
       with check (auth.role() = 'authenticated');
   end if;

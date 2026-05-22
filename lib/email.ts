@@ -66,6 +66,7 @@ type PhotoUploadNotificationInput = {
   total: number;
   uploaded: number;
   failed: number;
+  skipped: number;
   generatedThumbnails: number;
   generatedPreviews: number;
   totalSizeBytes?: number | null;
@@ -412,6 +413,7 @@ export async function sendPhotoUploadNotificationEmail(
     ["Album", input.albumTitle],
     ["Slug", input.albumSlug],
     ["Uploaded", `${input.uploaded}/${input.total}`],
+    ["Skipped existing", String(input.skipped)],
     ["Failed", String(input.failed)],
     ["Auto thumbnails", String(input.generatedThumbnails)],
     ["Auto previews", String(input.generatedPreviews)],
@@ -436,8 +438,8 @@ export async function sendPhotoUploadNotificationEmail(
     : "";
   const title = input.failed ? "Photo upload needs attention" : "Photo upload finished";
   const intro = input.failed
-    ? `${input.albumTitle} uploaded ${input.uploaded} of ${input.total} photo sets. Check the failed files before sending this gallery to a client.`
-    : `${input.albumTitle} finished uploading ${input.uploaded} photo sets.`;
+    ? `${input.albumTitle} uploaded ${input.uploaded} of ${input.total} photo sets and skipped ${input.skipped} existing sets. Check the failed files before sending this gallery to a client.`
+    : `${input.albumTitle} finished uploading ${input.uploaded} photo sets and skipped ${input.skipped} existing sets.`;
 
   return sendEmail({
     to: config.adminEmail,

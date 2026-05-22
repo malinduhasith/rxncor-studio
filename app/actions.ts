@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { sendContactEmails, sendShootRequestEmails } from "@/lib/email";
+import { checkRateLimit, clientIpFromHeaders } from "@/lib/rate-limit";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const contactSchema = z.object({
@@ -78,8 +79,16 @@ export async function submitShootRequestAction(formData: FormData) {
   }
 
   const requestHeaders = await headers();
-  const forwardedFor = requestHeaders.get("x-forwarded-for");
-  const ipAddress = forwardedFor?.split(",")[0]?.trim() ?? null;
+  const ipAddress = clientIpFromHeaders(requestHeaders);
+  const rateLimit = checkRateLimit(`shoot:${ipAddress}`, {
+    limit: 4,
+    windowMs: 60 * 60 * 1000
+  });
+
+  if (!rateLimit.allowed) {
+    redirect("/?shoot=rate-limited#book");
+  }
+
   const supabase = createSupabaseAdminClient();
   const { error } = await supabase.from("shoot_requests").insert({
     name: payload.data.name,
@@ -90,7 +99,7 @@ export async function submitShootRequestAction(formData: FormData) {
     preferred_start_at: payload.data.preferred_start_at,
     preferred_end_at: payload.data.preferred_end_at,
     message: payload.data.message || null,
-    ip_address: ipAddress
+    ip_address: ipAddress === "unknown" ? null : ipAddress
   });
 
   if (error) {
@@ -106,7 +115,7 @@ export async function submitShootRequestAction(formData: FormData) {
     start: payload.data.preferred_start_at,
     end: payload.data.preferred_end_at,
     message: payload.data.message || null,
-    ipAddress
+    ipAddress: ipAddress === "unknown" ? null : ipAddress
   });
 
   redirect("/?shoot=sent#book");
@@ -125,15 +134,23 @@ export async function submitContactAction(formData: FormData) {
   }
 
   const requestHeaders = await headers();
-  const forwardedFor = requestHeaders.get("x-forwarded-for");
-  const ipAddress = forwardedFor?.split(",")[0]?.trim() ?? null;
+  const ipAddress = clientIpFromHeaders(requestHeaders);
+  const rateLimit = checkRateLimit(`contact:${ipAddress}`, {
+    limit: 5,
+    windowMs: 60 * 60 * 1000
+  });
+
+  if (!rateLimit.allowed) {
+    redirect("/?contact=rate-limited#contact");
+  }
+
   const supabase = createSupabaseAdminClient();
   const { error } = await supabase.from("contact_inquiries").insert({
     name: payload.data.name,
     email: payload.data.email.toLowerCase(),
     phone: payload.data.phone || null,
     message: payload.data.message,
-    ip_address: ipAddress
+    ip_address: ipAddress === "unknown" ? null : ipAddress
   });
 
   if (error) {
@@ -145,7 +162,7 @@ export async function submitContactAction(formData: FormData) {
     email: payload.data.email.toLowerCase(),
     phone: payload.data.phone || null,
     message: payload.data.message,
-    ipAddress
+    ipAddress: ipAddress === "unknown" ? null : ipAddress
   });
 
   redirect("/?contact=sent#contact");

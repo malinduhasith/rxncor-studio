@@ -9,6 +9,8 @@ import {
   aboutBlockSections,
   parseMetaItemsFromLines
 } from "@/lib/about-builder";
+import { isAdminEmailAllowed } from "@/lib/admin-auth";
+import { logAdminAudit } from "@/lib/audit-log";
 import { sendAlbumReadyEmails, sendShootStatusEmail } from "@/lib/email";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { deleteR2Object, objectKeyFromPublicUrl } from "@/lib/r2";
@@ -25,6 +27,11 @@ async function requireAdmin() {
 
   if (!user) {
     redirect(siteConfig.routes.adminLogin);
+  }
+
+  if (!isAdminEmailAllowed(user.email)) {
+    await supabase.auth.signOut();
+    redirect(`${siteConfig.routes.adminLogin}?error=unauthorized`);
   }
 
   return createSupabaseAdminClient();
@@ -432,6 +439,14 @@ export async function createClientAction(formData: FormData) {
     redirect("/admin?notice=client-password-error#clients");
   }
 
+  await logAdminAudit(supabase, {
+    action: "client.create",
+    entityType: "client",
+    entityId: client.id,
+    summary: `Created client ${payload.data.name}`,
+    metadata: { email, has_password: Boolean(rawPassword) }
+  });
+
   revalidatePath("/admin");
   redirect("/admin?notice=client-created#clients");
 }
@@ -494,6 +509,18 @@ export async function updateClientAction(formData: FormData) {
     redirect("/admin?notice=client-password-error#clients");
   }
 
+  await logAdminAudit(supabase, {
+    action: "client.update",
+    entityType: "client",
+    entityId: payload.data.client_id,
+    summary: `Updated client ${payload.data.name}`,
+    metadata: {
+      email,
+      password_changed: Boolean(rawPassword),
+      password_removed: payload.data.remove_password
+    }
+  });
+
   revalidatePath("/admin");
   redirect("/admin?notice=client-updated#clients");
 }
@@ -525,6 +552,13 @@ export async function resetClientPasswordAction(formData: FormData) {
     redirect("/admin?notice=client-password-error#clients");
   }
 
+  await logAdminAudit(supabase, {
+    action: "client.password.reset",
+    entityType: "client",
+    entityId: payload.data.client_id,
+    summary: "Reset client portal password"
+  });
+
   revalidatePath("/admin");
   redirect("/admin?notice=client-password-reset#clients");
 }
@@ -548,6 +582,13 @@ export async function removeClientPasswordAction(formData: FormData) {
     redirect("/admin?notice=client-password-error#clients");
   }
 
+  await logAdminAudit(supabase, {
+    action: "client.password.remove",
+    entityType: "client",
+    entityId: payload.data.client_id,
+    summary: "Removed client portal password"
+  });
+
   revalidatePath("/admin");
   redirect("/admin?notice=client-password-removed#clients");
 }
@@ -567,6 +608,13 @@ export async function deleteClientAction(formData: FormData) {
   if (error) {
     redirect("/admin?notice=client-error#clients");
   }
+
+  await logAdminAudit(supabase, {
+    action: "client.delete",
+    entityType: "client",
+    entityId: payload.data.client_id,
+    summary: "Deleted client record"
+  });
 
   revalidatePath("/admin");
   redirect("/admin?notice=client-deleted#clients");
@@ -638,6 +686,19 @@ export async function createAlbumAction(formData: FormData) {
   if (assignmentError) {
     redirect("/admin?notice=album-error#albums");
   }
+
+  await logAdminAudit(supabase, {
+    action: "album.create",
+    entityType: "album",
+    entityId: album.id,
+    summary: `Created album ${payload.data.title}`,
+    metadata: {
+      slug: generatedSlug,
+      assigned_clients: assignedClientIds.length,
+      is_public: payload.data.is_public,
+      has_password: Boolean(passwordHash)
+    }
+  });
 
   revalidatePath("/admin");
   redirect("/admin?notice=album-created#albums");
@@ -720,6 +781,20 @@ export async function updateAlbumAction(formData: FormData) {
     redirect(`/admin?notice=album-update-error&album=${payload.data.album_id}#manager`);
   }
 
+  await logAdminAudit(supabase, {
+    action: "album.update",
+    entityType: "album",
+    entityId: payload.data.album_id,
+    summary: `Updated album ${payload.data.title}`,
+    metadata: {
+      slug: payload.data.slug,
+      assigned_clients: assignedClientIds.length,
+      is_public: payload.data.is_public,
+      password_changed: Boolean(rawPassword),
+      password_removed: payload.data.remove_password
+    }
+  });
+
   revalidatePath("/admin");
   revalidatePath("/albums");
   revalidatePath(`/client/${payload.data.slug}`);
@@ -772,6 +847,14 @@ export async function deleteAlbumAction(formData: FormData) {
     revalidatePath(`/client/${album.slug}`);
   }
 
+  await logAdminAudit(supabase, {
+    action: "album.delete",
+    entityType: "album",
+    entityId: payload.data.album_id,
+    summary: `Deleted album ${album?.slug ?? payload.data.album_id}`,
+    metadata: { deleted_r2_objects: r2Keys.length }
+  });
+
   revalidatePath("/admin");
   revalidatePath("/albums");
   revalidatePath("/portfolio");
@@ -807,6 +890,14 @@ export async function setCoverPhotoAction(formData: FormData) {
     redirect(`/admin?notice=photo-error&album=${photo.album_id}#manager`);
   }
 
+  await logAdminAudit(supabase, {
+    action: "photo.cover.set",
+    entityType: "photo",
+    entityId: payload.data.photo_id,
+    summary: "Set album cover photo",
+    metadata: { album_id: photo.album_id }
+  });
+
   revalidatePath("/admin");
   revalidatePath("/albums");
   revalidatePath("/portfolio");
@@ -841,6 +932,14 @@ export async function togglePhotoSelectedAction(formData: FormData) {
   if (error) {
     redirect(`/admin?notice=photo-error&album=${photo.album_id}#manager`);
   }
+
+  await logAdminAudit(supabase, {
+    action: "photo.selection.toggle",
+    entityType: "photo",
+    entityId: payload.data.photo_id,
+    summary: !photo.is_selected ? "Selected portfolio photo" : "Unselected portfolio photo",
+    metadata: { album_id: photo.album_id }
+  });
 
   revalidatePath("/admin");
   revalidatePath("/portfolio");
@@ -902,6 +1001,14 @@ export async function updatePhotoMetadataAction(formData: FormData) {
     redirect(`/admin?notice=photo-error&album=${photo.album_id}#manager`);
   }
 
+  await logAdminAudit(supabase, {
+    action: "photo.metadata.update",
+    entityType: "photo",
+    entityId: payload.data.photo_id,
+    summary: "Updated photo metadata",
+    metadata: { album_id: photo.album_id }
+  });
+
   revalidatePath("/admin");
   revalidatePath("/portfolio");
 
@@ -925,7 +1032,7 @@ export async function deletePhotoAction(formData: FormData) {
   const { data: photo } = await supabase
     .from("photos")
     .select(
-      "album_id, thumbnail_url, preview_url, full_res_url, r2_object_key"
+      "album_id, filename, thumbnail_url, preview_url, full_res_url, r2_object_key"
     )
     .eq("id", payload.data.photo_id)
     .maybeSingle();
@@ -972,6 +1079,14 @@ export async function deletePhotoAction(formData: FormData) {
     ])
   );
 
+  await logAdminAudit(supabase, {
+    action: "photo.delete",
+    entityType: "photo",
+    entityId: payload.data.photo_id,
+    summary: "Deleted photo and R2 objects",
+    metadata: { album_id: photo.album_id, filename: photo.filename }
+  });
+
   if (album?.slug) {
     revalidatePath(`/client/${album.slug}`);
   }
@@ -1014,6 +1129,14 @@ export async function removeZipAction(formData: FormData) {
   if (zipKey) {
     await deleteR2Objects([zipKey]);
   }
+
+  await logAdminAudit(supabase, {
+    action: "album.zip.remove",
+    entityType: "album",
+    entityId: payload.data.album_id,
+    summary: "Removed album ZIP",
+    metadata: { zip_key: zipKey }
+  });
 
   if (album?.slug) {
     revalidatePath(`/client/${album.slug}`);
@@ -1090,6 +1213,14 @@ export async function sendAlbumReadyEmailAction(formData: FormData) {
     redirect(`/admin?view=albums&notice=email-error&album=${album.id}#manager`);
   }
 
+  await logAdminAudit(supabase, {
+    action: "album.email.ready",
+    entityType: "album",
+    entityId: album.id,
+    summary: `Sent album ready email for ${album.title}`,
+    metadata: { recipients: clientIds.length }
+  });
+
   redirect(`/admin?view=albums&notice=email-sent&album=${album.id}#manager`);
 }
 
@@ -1112,6 +1243,13 @@ export async function updateInquiryStatusAction(formData: FormData) {
   if (error) {
     redirect("/admin?notice=inquiry-error#inquiries");
   }
+
+  await logAdminAudit(supabase, {
+    action: "inquiry.status.update",
+    entityType: "contact_inquiry",
+    entityId: payload.data.inquiry_id,
+    summary: `Marked inquiry ${payload.data.status}`
+  });
 
   revalidatePath("/admin");
   redirect("/admin?notice=inquiry-updated#inquiries");
@@ -1263,9 +1401,33 @@ export async function updateShootRequestAction(formData: FormData) {
       redirect("/admin?notice=email-error#shoot-requests");
     }
 
+    await logAdminAudit(supabase, {
+      action: "shoot_request.update.email",
+      entityType: "shoot_request",
+      entityId: payload.data.shoot_request_id,
+      summary: `Updated shoot request and emailed ${payload.data.email}`,
+      metadata: {
+        status: payload.data.status,
+        client_id: clientId,
+        album_id: albumId
+      }
+    });
+
     revalidatePath("/admin");
     redirect("/admin?notice=shoot-request-emailed#shoot-requests");
   }
+
+  await logAdminAudit(supabase, {
+    action: "shoot_request.update",
+    entityType: "shoot_request",
+    entityId: payload.data.shoot_request_id,
+    summary: `Updated shoot request for ${payload.data.name}`,
+    metadata: {
+      status: payload.data.status,
+      client_id: clientId,
+      album_id: albumId
+    }
+  });
 
   revalidatePath("/admin");
   redirect("/admin?notice=shoot-request-updated#shoot-requests");
@@ -1289,6 +1451,13 @@ export async function deleteShootRequestAction(formData: FormData) {
   if (error) {
     redirect("/admin?notice=shoot-request-error#shoot-requests");
   }
+
+  await logAdminAudit(supabase, {
+    action: "shoot_request.delete",
+    entityType: "shoot_request",
+    entityId: payload.data.shoot_request_id,
+    summary: "Deleted shoot request"
+  });
 
   revalidatePath("/admin");
   redirect("/admin?notice=shoot-request-deleted#shoot-requests");
@@ -1328,6 +1497,13 @@ export async function updateAboutSettingsAction(formData: FormData) {
     redirect("/admin?view=about&notice=about-setup-error#about-builder");
   }
 
+  await logAdminAudit(supabase, {
+    action: "about.settings.update",
+    entityType: "about_page_settings",
+    entityId: "main",
+    summary: "Updated About page hero and intro"
+  });
+
   revalidatePath("/admin");
   revalidatePath("/about");
   redirect("/admin?view=about&notice=about-updated#about-builder");
@@ -1350,20 +1526,32 @@ export async function createAboutBlockAction(formData: FormData) {
     redirect("/admin?view=about&notice=about-block-error#about-builder");
   }
 
-  const { error } = await supabase.from("about_page_blocks").insert({
-    section: payload.data.section,
-    kind: payload.data.kind,
-    label: emptyToNull(payload.data.label),
-    title: payload.data.title,
-    body: emptyToNull(payload.data.body),
-    reference: emptyToNull(payload.data.reference),
-    sort_order: payload.data.sort_order,
-    is_active: payload.data.is_active
-  });
+  const { data: block, error } = await supabase
+    .from("about_page_blocks")
+    .insert({
+      section: payload.data.section,
+      kind: payload.data.kind,
+      label: emptyToNull(payload.data.label),
+      title: payload.data.title,
+      body: emptyToNull(payload.data.body),
+      reference: emptyToNull(payload.data.reference),
+      sort_order: payload.data.sort_order,
+      is_active: payload.data.is_active
+    })
+    .select("id")
+    .single();
 
-  if (error) {
+  if (error || !block) {
     redirect("/admin?view=about&notice=about-setup-error#about-builder");
   }
+
+  await logAdminAudit(supabase, {
+    action: "about.block.create",
+    entityType: "about_page_block",
+    entityId: block.id,
+    summary: `Created About block ${payload.data.title}`,
+    metadata: { section: payload.data.section, kind: payload.data.kind }
+  });
 
   revalidatePath("/admin");
   revalidatePath("/about");
@@ -1407,6 +1595,14 @@ export async function updateAboutBlockAction(formData: FormData) {
     redirect("/admin?view=about&notice=about-block-error#about-builder");
   }
 
+  await logAdminAudit(supabase, {
+    action: "about.block.update",
+    entityType: "about_page_block",
+    entityId: payload.data.block_id,
+    summary: `Updated About block ${payload.data.title}`,
+    metadata: { section: payload.data.section, kind: payload.data.kind }
+  });
+
   revalidatePath("/admin");
   revalidatePath("/about");
   redirect("/admin?view=about&notice=about-block-updated#about-builder");
@@ -1430,6 +1626,13 @@ export async function deleteAboutBlockAction(formData: FormData) {
   if (error) {
     redirect("/admin?view=about&notice=about-block-error#about-builder");
   }
+
+  await logAdminAudit(supabase, {
+    action: "about.block.delete",
+    entityType: "about_page_block",
+    entityId: payload.data.block_id,
+    summary: "Deleted About block"
+  });
 
   revalidatePath("/admin");
   revalidatePath("/about");

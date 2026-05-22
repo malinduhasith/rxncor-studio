@@ -111,3 +111,13 @@ export type AboutPageBlock = {
   created_at: string;
   updated_at: string;
 };
+
+export type AdminAuditLog = {
+  id: string;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  summary: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};

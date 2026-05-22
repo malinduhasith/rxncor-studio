@@ -34,6 +34,8 @@ Run the latest migration in Supabase SQL Editor:
 
 [supabase/migrations/20260522_upload_monitoring.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260522_upload_monitoring.sql)
 
+[supabase/migrations/20260522_admin_audit_and_exports.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260522_admin_audit_and_exports.sql)
+
 These add:
 
 - client passwords
@@ -47,6 +49,7 @@ These add:
 - editable About page content
 - EXIF/photo card metadata fields
 - upload monitoring events and tracked storage estimates
+- admin audit logs and admin export endpoints
 
 ## Full Client Test
 
@@ -67,11 +70,12 @@ These add:
 
 Do this weekly while the site is active:
 
-1. Supabase Dashboard -> Table Editor -> export `clients`, `albums`, `album_clients`, `photos`, `download_logs`, and `contact_inquiries`.
-2. Keep a local copy of delivered ZIP files.
-3. Do not rely on the website project as your photo backup. R2 is delivery storage.
-4. Before deleting an album, confirm you have the Lightroom/Capture One exports and ZIP elsewhere.
-5. Keep a monthly copy of the R2 album ZIPs on another drive or cloud backup.
+1. Use Admin -> Backups -> Download full JSON for a quick app-side export.
+2. Supabase Dashboard -> Table Editor -> export `clients`, `albums`, `album_clients`, `photos`, `download_logs`, `upload_events`, `shoot_requests`, `contact_inquiries`, and `admin_audit_logs`.
+3. Keep a local copy of delivered ZIP files.
+4. Do not rely on the website project as your photo backup. R2 is delivery storage.
+5. Before deleting an album, confirm you have the Lightroom/Capture One exports and ZIP elsewhere.
+6. Keep a monthly copy of the R2 album ZIPs on another drive or cloud backup.
 
 ## Real Client Readiness
 

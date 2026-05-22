@@ -2357,6 +2357,33 @@ h3 {
   line-height: 1.55;
 }
 
+.delivery-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.delivery-summary-grid > div {
+  min-width: 0;
+  padding: 12px;
+  border: 2px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+}
+
+.delivery-summary-grid strong,
+.delivery-summary-grid small {
+  display: block;
+}
+
+.delivery-summary-grid small {
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
 .copy-detail-list {
   display: grid;
   gap: 8px;
@@ -2749,6 +2776,33 @@ h3 {
   margin-bottom: 26px;
 }
 
+.client-delivery-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 26px;
+}
+
+.client-delivery-summary > div {
+  min-width: 0;
+  padding: 14px;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 250, 240, 0.78);
+  box-shadow: 4px 4px 0 rgba(17, 16, 14, 0.08);
+}
+
+.client-delivery-summary strong,
+.client-delivery-summary small {
+  display: block;
+}
+
+.client-delivery-summary small {
+  margin-top: 6px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
 .gate-title {
   font-size: 2rem;
 }
@@ -3040,6 +3094,8 @@ h3 {
   .contact-grid,
   .about-split,
   .about-tools-section,
+  .client-delivery-summary,
+  .delivery-summary-grid,
   .album-hero-collage,
   .form-two-col {
     grid-template-columns: 1fr;
