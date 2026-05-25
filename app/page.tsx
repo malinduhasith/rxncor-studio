@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { submitContactAction, submitShootRequestAction } from "./actions";
 import { AlbumCard } from "@/components/AlbumCard";
-import { Notice } from "@/components/Notice";
+import { NoticeToaster } from "@/components/Notice";
 import { PhotoTile } from "@/components/PhotoTile";
 import { siteConfig } from "@/config/site";
 import { contactNotices, shootRequestNotices } from "@/lib/notices";
@@ -64,6 +64,10 @@ export default async function Home({ searchParams }: HomePageProps) {
 
   return (
     <main>
+      <NoticeToaster
+        cleanupQueryKeys={["contact", "shoot"]}
+        notices={[contactNotice, shootNotice]}
+      />
       <section className="shell hero">
         <div className="hero-copy">
           <p className="eyebrow">Melbourne photography and client delivery</p>
@@ -159,7 +163,6 @@ export default async function Home({ searchParams }: HomePageProps) {
         <div className="contact-grid">
           <form action={submitShootRequestAction} className="form-panel contact-form">
             <h3>Shoot request</h3>
-            <Notice notice={shootNotice} />
             <label className="field">
               Name
               <input name="name" autoComplete="name" required />
@@ -211,7 +214,6 @@ export default async function Home({ searchParams }: HomePageProps) {
           <div className="contact-side" id="contact">
           <form action={submitContactAction} className="form-panel contact-form">
             <h3>Gallery support</h3>
-            <Notice notice={contactNotice} />
             <label className="field">
               Name
               <input name="name" autoComplete="name" required />

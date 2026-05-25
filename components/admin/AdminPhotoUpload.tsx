@@ -932,7 +932,15 @@ export function AdminPhotoUpload({
       }
 
       await sendUploadNotification(result);
-      window.location.assign("/admin?view=uploads&notice=photos-uploaded#uploads");
+      window.sessionStorage.setItem(
+        "rxncor_restore_scroll_v1",
+        JSON.stringify({
+          at: Date.now(),
+          pathname: window.location.pathname,
+          y: window.scrollY
+        })
+      );
+      window.location.assign("/admin?view=uploads&notice=photos-uploaded");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload failed.";
       await notifyPhotoBatchUpload({

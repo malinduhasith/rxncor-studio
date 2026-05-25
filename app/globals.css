@@ -376,6 +376,18 @@ form[data-pending="true"] button[type="submit"]::after {
   }
 }
 
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .hero {
   position: relative;
   min-height: calc(100svh - 86px);
@@ -1353,6 +1365,58 @@ h3 {
   border-color: #c87a62;
   background: #fff3ee;
   color: #7f2f20;
+}
+
+.toast-viewport {
+  position: fixed;
+  top: clamp(76px, 9vh, 104px);
+  right: 18px;
+  z-index: 10002;
+  display: grid;
+  width: min(460px, calc(100vw - 32px));
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast-item {
+  position: relative;
+  pointer-events: auto;
+  animation: toast-enter 180ms ease-out both;
+}
+
+.toast-alert.alert {
+  min-height: 76px;
+  padding: 14px 48px 14px 14px;
+  border-radius: 8px;
+  box-shadow: 6px 6px 0 rgba(17, 16, 14, 0.2);
+}
+
+.toast-alert.alert strong {
+  font-size: 1rem;
+}
+
+.toast-alert.alert span span {
+  font-size: 0.95rem;
+}
+
+.toast-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  background: rgba(255, 250, 240, 0.78);
+  color: inherit;
+  cursor: pointer;
+}
+
+.toast-close:hover {
+  background: var(--ink);
+  color: var(--paper);
 }
 
 .admin-topbar {
@@ -3474,6 +3538,18 @@ h3 {
 
   .cookie-actions .button {
     width: 100%;
+  }
+
+  .toast-viewport {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+
+  .toast-alert.alert {
+    min-height: 64px;
+    padding: 12px 44px 12px 12px;
   }
 
   h1 {

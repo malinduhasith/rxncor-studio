@@ -165,7 +165,15 @@ export function AdminZipUpload({
         throw error;
       }
 
-      window.location.assign("/admin?view=uploads&notice=zip-uploaded#uploads");
+      window.sessionStorage.setItem(
+        "rxncor_restore_scroll_v1",
+        JSON.stringify({
+          at: Date.now(),
+          pathname: window.location.pathname,
+          y: window.scrollY
+        })
+      );
+      window.location.assign("/admin?view=uploads&notice=zip-uploaded");
     } catch (error) {
       await logZipFailure(
         albumId,

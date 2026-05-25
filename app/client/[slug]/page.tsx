@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { unlockGalleryAction } from "./actions";
-import { Notice } from "@/components/Notice";
+import { NoticeToaster } from "@/components/Notice";
 import { siteConfig } from "@/config/site";
 import { featuredAlbums } from "@/lib/sample-data";
 import { GalleryLightbox, type GalleryDisplayPhoto } from "@/components/gallery/GalleryLightbox";
@@ -185,6 +185,7 @@ export default async function ClientGalleryPage({
 
   return (
     <main className="shell section gallery-page">
+      <NoticeToaster cleanupQueryKeys={["notice"]} notices={[galleryNotice]} />
       <div className="gallery-bar">
         <div>
           <p className="eyebrow">{galleryLabel}</p>
@@ -291,7 +292,6 @@ export default async function ClientGalleryPage({
               </div>
             ) : null}
           </div>
-          <Notice notice={galleryNotice} />
           <form action={unlockGalleryAction}>
             <input name="album_id" type="hidden" value={album.id} />
             <input name="slug" type="hidden" value={album.slug} />

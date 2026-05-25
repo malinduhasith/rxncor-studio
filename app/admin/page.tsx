@@ -48,7 +48,7 @@ import { ClientPasswordResetForm } from "@/components/admin/ClientPasswordResetF
 import { ConfirmSubmitButton } from "@/components/admin/ConfirmSubmitButton";
 import { CopyLinkButton } from "@/components/admin/CopyLinkButton";
 import { CopyTextButton } from "@/components/admin/CopyTextButton";
-import { Notice, NoticeStack } from "@/components/Notice";
+import { Notice, NoticeStack, NoticeToaster } from "@/components/Notice";
 import { siteConfig } from "@/config/site";
 import {
   aboutBlockKindCopy,
@@ -1456,7 +1456,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               )}
             </div>
           </div>
-          <NoticeStack notices={[noticeContent, ...dataLoadNotices]} />
+          <NoticeToaster cleanupQueryKeys={["notice"]} notices={[noticeContent]} />
+          <NoticeStack notices={dataLoadNotices} />
 
           {activeView === "overview" ? (
             <>

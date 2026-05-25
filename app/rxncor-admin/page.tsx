@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { LogIn } from "lucide-react";
 import { signInAction } from "./actions";
-import { Notice } from "@/components/Notice";
+import { NoticeToaster } from "@/components/Notice";
 import { adminLoginNotices } from "@/lib/notices";
 
 export const metadata: Metadata = {
@@ -24,13 +24,13 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
 
   return (
     <main className="shell section">
+      <NoticeToaster cleanupQueryKeys={["error"]} notices={[notice]} />
       <div className="form-panel">
         <p className="eyebrow">Private Admin Login</p>
         <h1 className="panel-title">Studio access</h1>
         <p className="form-note">
           This private page is for the rxncor.studio admin dashboard.
         </p>
-        <Notice notice={notice} />
         <form action={signInAction}>
           <label className="field">
             Email

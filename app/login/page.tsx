@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { LogIn } from "lucide-react";
 import { clientLoginAction } from "./actions";
-import { Notice } from "@/components/Notice";
+import { NoticeToaster } from "@/components/Notice";
 import { clientLoginNotices } from "@/lib/notices";
 
 export const metadata: Metadata = {
@@ -21,13 +21,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <main className="shell section">
+      <NoticeToaster cleanupQueryKeys={["error"]} notices={[notice]} />
       <div className="form-panel">
         <p className="eyebrow">Client Login</p>
         <h1 className="panel-title">Your galleries</h1>
         <p className="form-note">
           Sign in with the client email and password provided by rxncor.studio.
         </p>
-        <Notice notice={notice} />
         <form action={clientLoginAction}>
           <label className="field">
             Email

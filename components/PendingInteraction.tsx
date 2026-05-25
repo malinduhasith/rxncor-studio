@@ -7,6 +7,7 @@ import { LoadingMessage } from "@/components/LoadingMessage";
 import { LOADING_LINES } from "@/lib/loading-copy";
 
 const MAX_PENDING_MS = 12_000;
+const SCROLL_RESTORE_KEY = "rxncor_restore_scroll_v1";
 
 function cleanLabel(value: string | null | undefined, fallback: string) {
   const label = value?.replace(/\s+/g, " ").trim();
@@ -41,6 +42,52 @@ function isTrackableLink(anchor: HTMLAnchorElement) {
   }
 
   return nextUrl.pathname !== currentUrl.pathname || nextUrl.search !== currentUrl.search;
+}
+
+function saveScrollRestorePoint() {
+  try {
+    window.sessionStorage.setItem(
+      SCROLL_RESTORE_KEY,
+      JSON.stringify({
+        at: Date.now(),
+        pathname: window.location.pathname,
+        y: window.scrollY
+      })
+    );
+  } catch {
+    // Session storage may be unavailable in strict browser modes.
+  }
+}
+
+function restoreScrollIfNeeded() {
+  try {
+    const raw = window.sessionStorage.getItem(SCROLL_RESTORE_KEY);
+
+    if (!raw) {
+      return;
+    }
+
+    const parsed = JSON.parse(raw) as {
+      at?: number;
+      pathname?: string;
+      y?: number;
+    };
+    window.sessionStorage.removeItem(SCROLL_RESTORE_KEY);
+
+    if (
+      parsed.pathname !== window.location.pathname ||
+      typeof parsed.y !== "number" ||
+      Date.now() - Number(parsed.at ?? 0) > 30_000
+    ) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: parsed.y, left: 0, behavior: "auto" });
+    });
+  } catch {
+    window.sessionStorage.removeItem(SCROLL_RESTORE_KEY);
+  }
 }
 
 export function PendingInteraction() {
@@ -84,7 +131,10 @@ export function PendingInteraction() {
   }, [clearPending]);
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(clearPending);
+    const frame = window.requestAnimationFrame(() => {
+      clearPending();
+      restoreScrollIfNeeded();
+    });
 
     return () => window.cancelAnimationFrame(frame);
   }, [pathname, search, clearPending]);
@@ -125,6 +175,7 @@ export function PendingInteraction() {
         return;
       }
 
+      saveScrollRestorePoint();
       form.dataset.pending = "true";
       const submitter =
         event.submitter instanceof HTMLElement ? event.submitter : null;
