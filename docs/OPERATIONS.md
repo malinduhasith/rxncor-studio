@@ -36,6 +36,8 @@ Run the latest migration in Supabase SQL Editor:
 
 [supabase/migrations/20260522_admin_audit_and_exports.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260522_admin_audit_and_exports.sql)
 
+[supabase/migrations/20260523_email_monitoring.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260523_email_monitoring.sql)
+
 These add:
 
 - client passwords
@@ -50,6 +52,7 @@ These add:
 - EXIF/photo card metadata fields
 - upload monitoring events and tracked storage estimates
 - admin audit logs and admin export endpoints
+- email send, failure, and skipped-event monitoring
 
 ## Full Client Test
 
@@ -65,6 +68,20 @@ These add:
 10. Download one photo and the ZIP.
 11. Check admin download logs.
 12. Submit the homepage contact form and mark the inquiry replied in admin.
+13. Check Admin -> Monitoring for upload events, email events, and audit trail entries.
+
+## Launch Check
+
+Before sharing the site publicly:
+
+1. Confirm Vercel production env values match `.env.example`.
+2. Confirm Resend domain verification still says verified.
+3. Confirm R2 upload diagnostics pass from Admin -> Uploads.
+4. Open `/sitemap.xml` and `/robots.txt`.
+5. Open `/privacy`, `/terms`, and the cookie settings footer link.
+6. Test public pages in a private browser window.
+7. Test one client gallery in a private browser window.
+8. Confirm private routes are not linked from public navigation.
 
 ## Backup Habit
 

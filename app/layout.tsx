@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { CookieConsent, CookieSettingsButton } from "@/components/CookieConsent";
 import { PendingInteraction } from "@/components/PendingInteraction";
 import { SiteNav } from "@/components/SiteNav";
 import { siteConfig } from "@/config/site";
@@ -61,6 +62,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <PendingInteraction />
         </Suspense>
+        <CookieConsent />
         <SiteNav />
         {children}
         <footer className="footer">
@@ -72,6 +74,7 @@ export default function RootLayout({
               <Link href={siteConfig.routes.about}>About</Link>
               <Link href="/privacy">Privacy</Link>
               <Link href="/terms">Terms</Link>
+              <CookieSettingsButton />
             </div>
           </div>
         </footer>

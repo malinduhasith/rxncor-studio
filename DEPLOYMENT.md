@@ -155,5 +155,9 @@ After deploying, check:
 - `https://rxncor.studio/albums`
 - `https://rxncor.studio/login` for clients
 - `https://rxncor.studio/rxncor-admin` for the private admin login
+- `https://rxncor.studio/sitemap.xml`
+- `https://rxncor.studio/robots.txt`
+- the footer cookie settings button
+- the cookie notice in a fresh private browser session
 
 Use [docs/OPERATIONS.md](/Users/crazy_taxi/Documents/VsCode/docs/OPERATIONS.md) before sending real client galleries.

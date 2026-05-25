@@ -13,9 +13,7 @@ export default function PrivacyPage() {
       <article className="prose">
         <p className="eyebrow">Privacy</p>
         <h1>Privacy policy</h1>
-        <p>
-          Last updated: 22 May 2026.
-        </p>
+        <p>Last updated: 25 May 2026.</p>
         <p>
           {siteConfig.name} collects only the information needed to respond to
           enquiries, manage bookings, protect private galleries, and deliver photo
@@ -83,8 +81,16 @@ export default function PrivacyPage() {
 
         <h2>Cookies and sessions</h2>
         <p>
-          This site uses essential cookies for admin login, client login, gallery
-          unlock sessions, and basic security. The site does not currently use
+          This site uses essential cookies and similar browser storage for admin
+          login, client login, gallery unlock sessions, cookie preference storage,
+          rate limiting, and basic security. These are required for private
+          gallery delivery and cannot be switched off inside the site.
+        </p>
+        <p>
+          Optional analytics or performance cookies are not loaded unless you
+          allow optional cookies. If you reject optional cookies, the public
+          website remains available and private galleries continue to work using
+          only essential session cookies. The site does not currently use
           advertising cookies or third-party ad tracking.
         </p>
 

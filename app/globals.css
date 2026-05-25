@@ -175,6 +175,12 @@ textarea {
   color: var(--ink);
 }
 
+.button.ghost {
+  background: transparent;
+  color: var(--ink);
+  box-shadow: none;
+}
+
 .button:hover {
   box-shadow: 2px 2px 0 rgba(17, 16, 14, 0.2);
   transform: translate(2px, 2px);
@@ -1185,6 +1191,99 @@ h3 {
 
 .footer-links {
   justify-content: flex-end;
+}
+
+.footer-link-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.footer-link-button:hover {
+  color: var(--ink);
+}
+
+.cookie-consent {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 9998;
+  width: min(520px, calc(100vw - 28px));
+}
+
+.cookie-card {
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  padding: 22px;
+  background: var(--paper);
+  box-shadow: 7px 7px 0 rgba(17, 16, 14, 0.2);
+}
+
+.cookie-card h2 {
+  margin: 0 0 10px;
+  font-family: var(--display-font);
+  font-size: clamp(2.2rem, 6vw, 3.4rem);
+  line-height: 0.9;
+}
+
+.cookie-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.cookie-settings {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.cookie-option {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  padding: 12px;
+  background: var(--surface);
+}
+
+.cookie-option strong,
+.cookie-option small {
+  display: block;
+}
+
+.cookie-option small {
+  margin-top: 4px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.cookie-option input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--gold);
+}
+
+.cookie-option.locked {
+  background: rgba(217, 158, 38, 0.12);
+}
+
+.cookie-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.cookie-actions .button {
+  min-height: 40px;
 }
 
 .form-panel,
@@ -3356,6 +3455,25 @@ h3 {
   .block-form-head {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .cookie-consent {
+    right: 12px;
+    bottom: 12px;
+    width: calc(100vw - 24px);
+  }
+
+  .cookie-card {
+    padding: 16px;
+  }
+
+  .cookie-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .cookie-actions .button {
+    width: 100%;
   }
 
   h1 {

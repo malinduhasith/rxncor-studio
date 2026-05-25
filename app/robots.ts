@@ -17,6 +17,7 @@ export default function robots(): MetadataRoute.Robots {
         ]
       }
     ],
+    sitemap: new URL("/sitemap.xml", siteConfig.url).toString(),
     host: siteConfig.domain
   };
 }

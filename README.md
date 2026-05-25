@@ -45,9 +45,9 @@ For day-to-day checks before sending real client galleries, use
 
 Create a Supabase project, then run [supabase/schema.sql](/Users/crazy_taxi/Documents/VsCode/supabase/schema.sql) in the SQL editor.
 
-For existing projects, also run the latest migration:
-
-[supabase/migrations/20260518_access_control_upgrade.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260518_access_control_upgrade.sql)
+For existing projects, run each migration in [supabase/migrations](/Users/crazy_taxi/Documents/VsCode/supabase/migrations)
+that has not already been applied, or re-run the full schema in a fresh Supabase
+project.
 
 Tables included:
 
@@ -56,6 +56,11 @@ Tables included:
 - `album_clients`
 - `photos`
 - `download_logs`
+- `upload_events`
+- `email_events`
+- `admin_audit_logs`
+- `shoot_requests`
+- `contact_inquiries`
 
 ## R2 object layout
 

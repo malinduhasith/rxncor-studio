@@ -13,9 +13,7 @@ export default function TermsPage() {
       <article className="prose">
         <p className="eyebrow">Terms</p>
         <h1>Gallery terms</h1>
-        <p>
-          Last updated: 22 May 2026.
-        </p>
+        <p>Last updated: 25 May 2026.</p>
         <p>
           These terms keep bookings, private galleries, downloads, and client
           delivery simple and clear. If a separate written agreement, quote, or
