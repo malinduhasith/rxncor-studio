@@ -112,12 +112,15 @@ create table if not exists public.site_contact_settings (
   location text not null default 'Melbourne, Australia',
   instagram_handle text not null default '@MR.Rxncor',
   instagram_url text not null default 'https://www.instagram.com/mr.rxncor',
+  facebook_handle text,
+  facebook_url text,
   threads_handle text,
   threads_url text,
   linkedin_handle text,
   linkedin_url text,
   youtube_handle text,
   youtube_url text,
+  custom_links jsonb not null default '[]'::jsonb,
   updated_at timestamptz not null default now(),
   constraint site_contact_settings_singleton check (id = 'main')
 );

@@ -185,7 +185,7 @@ export const adminNotices: Record<string, NoticeContent> = {
   "site-contact-setup-error": {
     tone: "warning",
     title: "Contact settings setup needed",
-    message: "Run the site contact settings Supabase migration before saving these details."
+    message: "Run the latest site contact settings Supabase migrations before saving these details."
   },
   "shoot-request-conflict": {
     tone: "warning",

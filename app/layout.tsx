@@ -76,13 +76,16 @@ export default async function RootLayout({
             <div className="footer-links">
               <Link href={siteConfig.routes.about}>About</Link>
               <Link href="/#contact">Contact</Link>
-              <a
-                href={siteContactSettings.instagramUrl}
-                rel="noreferrer"
-                target="_blank"
-              >
-                Instagram
-              </a>
+              {siteContactSettings.socialLinks.slice(0, 4).map((social) => (
+                <a
+                  href={social.href}
+                  key={`${social.label}-${social.href}`}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  {social.label}
+                </a>
+              ))}
               <Link href="/privacy">Privacy</Link>
               <Link href="/terms">Terms</Link>
               <CookieSettingsButton />

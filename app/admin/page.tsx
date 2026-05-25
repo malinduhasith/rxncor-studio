@@ -1219,7 +1219,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           tone: "warning",
           title: "Contact settings are in fallback mode",
           message:
-            "Run the site contact settings Supabase migration before saving public contact and social links.",
+            "Run the latest site contact Supabase migrations before saving public contact and social links.",
         }
       : null,
   ].filter((item): item is NoticeContent => Boolean(item));
@@ -1394,6 +1394,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       attention: recentEmailFailures > 0,
     },
   ];
+  const customSocialLinkRows = Array.from(
+    {
+      length: Math.min(10, Math.max(4, siteContactSettings.customLinks.length + 1)),
+    },
+    (_, index) => siteContactSettings.customLinks[index] ?? null,
+  );
 
   return (
     <main className="shell section admin-workspace">
@@ -2249,7 +2255,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     tone: "warning",
                     title: "Contact settings are in fallback mode",
                     message:
-                      "Run supabase/migrations/20260525_site_contact_settings.sql in Supabase SQL Editor, then refresh this page to save edits.",
+                      "Run the latest site contact Supabase migrations, then refresh this page to save edits.",
                   }}
                 />
               ) : null}
@@ -2325,6 +2331,25 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       </label>
                     </div>
                     <div className="social-edit-card">
+                      <span className="label">Facebook</span>
+                      <label className="field">
+                        Handle
+                        <input
+                          name="facebook_handle"
+                          defaultValue={siteContactSettings.facebookHandle ?? ""}
+                          placeholder="rxncor.studio"
+                        />
+                      </label>
+                      <label className="field">
+                        URL
+                        <input
+                          name="facebook_url"
+                          defaultValue={siteContactSettings.facebookUrl ?? ""}
+                          placeholder="https://facebook.com/..."
+                        />
+                      </label>
+                    </div>
+                    <div className="social-edit-card">
                       <span className="label">Threads</span>
                       <label className="field">
                         Handle
@@ -2383,6 +2408,63 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     </div>
                   </div>
 
+                  <div className="custom-links-editor">
+                    <div className="panel-title-row">
+                      <div>
+                        <p className="eyebrow">Other links</p>
+                        <h3>Extra public links</h3>
+                        <p className="muted">
+                          Add any other profile, store, portfolio, or booking
+                          link. Blank rows stay hidden.
+                        </p>
+                      </div>
+                      <span className="pill">
+                        {siteContactSettings.customLinks.length} custom
+                      </span>
+                    </div>
+                    <div className="custom-link-rows">
+                      {customSocialLinkRows.map((link, index) => (
+                        <div className="custom-link-row" key={index}>
+                          <span className="label">
+                            Link {String(index + 1).padStart(2, "0")}
+                          </span>
+                          <label className="field">
+                            Label
+                            <input
+                              name="custom_link_label"
+                              defaultValue={link?.label ?? ""}
+                              placeholder="TikTok, Behance, Booking..."
+                            />
+                          </label>
+                          <label className="field">
+                            Handle
+                            <input
+                              name="custom_link_handle"
+                              defaultValue={link?.handle ?? ""}
+                              placeholder="@rxncor.studio"
+                            />
+                          </label>
+                          <label className="field wide-field">
+                            URL
+                            <input
+                              name="custom_link_url"
+                              defaultValue={link?.href ?? ""}
+                              placeholder="https://..."
+                            />
+                          </label>
+                          <label className="field wide-field">
+                            Short note
+                            <input
+                              name="custom_link_detail"
+                              defaultValue={link?.detail ?? ""}
+                              placeholder="What this link is useful for"
+                            />
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   <button className="button" type="submit">
                     <Save size={18} />
                     Save contact details
@@ -2403,7 +2485,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <a
                         className="pill"
                         href={social.href}
-                        key={social.label}
+                        key={`${social.label}-${social.href}`}
                         rel="noreferrer"
                         target="_blank"
                       >

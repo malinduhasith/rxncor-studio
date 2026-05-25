@@ -15,6 +15,8 @@ const instagramUrl = publicEnv(
   "NEXT_PUBLIC_INSTAGRAM_URL",
   "https://instagram.com/rxncor.studio"
 );
+const facebookHandle = optionalPublicEnv("NEXT_PUBLIC_FACEBOOK_HANDLE");
+const facebookUrl = optionalPublicEnv("NEXT_PUBLIC_FACEBOOK_URL");
 const contactPhone = optionalPublicEnv("NEXT_PUBLIC_CONTACT_PHONE");
 const location = publicEnv("NEXT_PUBLIC_LOCATION", "Melbourne, Australia");
 const socialLinks = [
@@ -22,8 +24,16 @@ const socialLinks = [
     label: "Instagram",
     handle: instagramHandle,
     href: instagramUrl,
-    detail: "Recent work, behind-the-scenes frames, and updates."
-  },
+        detail: "Recent work, behind-the-scenes frames, and updates."
+      },
+  facebookUrl
+    ? {
+        label: "Facebook",
+        handle: facebookHandle || "rxncor.studio",
+        href: facebookUrl,
+        detail: "Public updates, albums, and booking information."
+      }
+    : null,
   optionalPublicEnv("NEXT_PUBLIC_THREADS_URL")
     ? {
         label: "Threads",
@@ -61,6 +71,8 @@ export const siteConfig = {
   location,
   instagramHandle,
   instagramUrl,
+  facebookHandle,
+  facebookUrl,
   socialLinks,
   r2PublicBaseUrl: publicEnv(
     "NEXT_PUBLIC_R2_PUBLIC_BASE_URL",

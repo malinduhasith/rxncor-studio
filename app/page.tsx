@@ -177,7 +177,7 @@ export default async function Home({ searchParams }: HomePageProps) {
               <a
                 className="social-card"
                 href={social.href}
-                key={social.label}
+                key={`${social.label}-${social.href}`}
                 rel="noreferrer"
                 target="_blank"
               >

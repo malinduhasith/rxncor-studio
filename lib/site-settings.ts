@@ -15,12 +15,15 @@ export type SiteContactSettings = {
   location: string;
   instagramHandle: string;
   instagramUrl: string;
+  facebookHandle: string | null;
+  facebookUrl: string | null;
   threadsHandle: string | null;
   threadsUrl: string | null;
   linkedinHandle: string | null;
   linkedinUrl: string | null;
   youtubeHandle: string | null;
   youtubeUrl: string | null;
+  customLinks: SiteSocialLink[];
   socialLinks: SiteSocialLink[];
   source: "database" | "fallback";
   setupMissing: boolean;
@@ -33,18 +36,56 @@ type SiteContactSettingsRow = {
   location: string | null;
   instagram_handle: string | null;
   instagram_url: string | null;
+  facebook_handle: string | null;
+  facebook_url: string | null;
   threads_handle: string | null;
   threads_url: string | null;
   linkedin_handle: string | null;
   linkedin_url: string | null;
   youtube_handle: string | null;
   youtube_url: string | null;
+  custom_links: unknown;
 };
 
 function clean(value: string | null | undefined) {
   const next = value?.trim();
 
   return next ? next : null;
+}
+
+function validUrl(value: string | null | undefined) {
+  const next = clean(value);
+
+  return next && /^https?:\/\//i.test(next) ? next : null;
+}
+
+function normaliseCustomLinks(value: unknown): SiteSocialLink[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+
+      const record = item as Record<string, unknown>;
+      const label = clean(String(record.label ?? ""));
+      const href = validUrl(String(record.href ?? record.url ?? ""));
+
+      if (!label || !href) {
+        return null;
+      }
+
+      return {
+        label,
+        handle: clean(String(record.handle ?? "")) ?? label,
+        href,
+        detail: clean(String(record.detail ?? "")) ?? "External link."
+      };
+    })
+    .filter((link): link is SiteSocialLink => Boolean(link));
 }
 
 function socialLinksFromSettings(
@@ -57,6 +98,14 @@ function socialLinksFromSettings(
           handle: clean(settings.instagramHandle) ?? "@rxncor.studio",
           href: settings.instagramUrl,
           detail: "Recent work, behind-the-scenes frames, and updates."
+        }
+      : null,
+    clean(settings.facebookUrl)
+      ? {
+          label: "Facebook",
+          handle: clean(settings.facebookHandle) ?? "rxncor.studio",
+          href: settings.facebookUrl,
+          detail: "Public updates, albums, and booking information."
         }
       : null,
     clean(settings.threadsUrl)
@@ -83,7 +132,9 @@ function socialLinksFromSettings(
           detail: "Video work and longer-form visual stories."
         }
       : null
-  ].filter((link): link is SiteSocialLink => Boolean(link));
+  ]
+    .filter((link): link is SiteSocialLink => Boolean(link))
+    .concat(settings.customLinks);
 }
 
 export const fallbackSiteContactSettings: SiteContactSettings = {
@@ -93,12 +144,15 @@ export const fallbackSiteContactSettings: SiteContactSettings = {
   location: siteConfig.location,
   instagramHandle: siteConfig.instagramHandle,
   instagramUrl: siteConfig.instagramUrl,
+  facebookHandle: siteConfig.facebookHandle || null,
+  facebookUrl: siteConfig.facebookUrl || null,
   threadsHandle: null,
   threadsUrl: null,
   linkedinHandle: null,
   linkedinUrl: null,
   youtubeHandle: null,
   youtubeUrl: null,
+  customLinks: [],
   socialLinks: siteConfig.socialLinks,
   source: "fallback",
   setupMissing: false
@@ -123,12 +177,15 @@ function normaliseSettings(
     instagramHandle:
       clean(row.instagram_handle) ?? fallbackSiteContactSettings.instagramHandle,
     instagramUrl: clean(row.instagram_url) ?? fallbackSiteContactSettings.instagramUrl,
+    facebookHandle: clean(row.facebook_handle),
+    facebookUrl: clean(row.facebook_url),
     threadsHandle: clean(row.threads_handle),
     threadsUrl: clean(row.threads_url),
     linkedinHandle: clean(row.linkedin_handle),
     linkedinUrl: clean(row.linkedin_url),
     youtubeHandle: clean(row.youtube_handle),
-    youtubeUrl: clean(row.youtube_url)
+    youtubeUrl: clean(row.youtube_url),
+    customLinks: normaliseCustomLinks(row.custom_links)
   };
 
   return {
@@ -145,7 +202,7 @@ export async function getSiteContactSettings(): Promise<SiteContactSettings> {
     const { data, error } = await supabase
       .from("site_contact_settings")
       .select(
-        "id, contact_email, contact_phone, location, instagram_handle, instagram_url, threads_handle, threads_url, linkedin_handle, linkedin_url, youtube_handle, youtube_url"
+        "id, contact_email, contact_phone, location, instagram_handle, instagram_url, facebook_handle, facebook_url, threads_handle, threads_url, linkedin_handle, linkedin_url, youtube_handle, youtube_url, custom_links"
       )
       .eq("id", "main")
       .maybeSingle();

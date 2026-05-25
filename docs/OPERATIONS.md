@@ -40,6 +40,8 @@ Run the latest migration in Supabase SQL Editor:
 
 [supabase/migrations/20260525_site_contact_settings.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260525_site_contact_settings.sql)
 
+[supabase/migrations/20260526_social_contact_links.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260526_social_contact_links.sql)
+
 These add:
 
 - client passwords
@@ -56,6 +58,7 @@ These add:
 - admin audit logs and admin export endpoints
 - email send, failure, and skipped-event monitoring
 - editable public contact and social settings
+- Facebook and custom public contact links
 
 ## Full Client Test
 

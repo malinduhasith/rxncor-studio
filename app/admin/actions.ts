@@ -172,18 +172,54 @@ const optionalUrlSchema = z
     message: "Use a full https:// URL."
   });
 
+const customSocialLinkSchema = z
+  .object({
+    label: z.string().trim().max(80).optional().or(z.literal("")),
+    handle: z.string().trim().max(120).optional().or(z.literal("")),
+    url: optionalUrlSchema,
+    detail: z.string().trim().max(180).optional().or(z.literal(""))
+  })
+  .superRefine((value, context) => {
+    const hasAnyValue = Boolean(
+      value.label || value.handle || value.url || value.detail
+    );
+
+    if (!hasAnyValue) {
+      return;
+    }
+
+    if (!value.label) {
+      context.addIssue({
+        code: "custom",
+        message: "Add a label for custom links.",
+        path: ["label"]
+      });
+    }
+
+    if (!value.url) {
+      context.addIssue({
+        code: "custom",
+        message: "Add a URL for custom links.",
+        path: ["url"]
+      });
+    }
+  });
+
 const siteContactSettingsSchema = z.object({
   contact_email: z.string().trim().email().max(180),
   contact_phone: z.string().trim().max(60).optional().or(z.literal("")),
   location: z.string().trim().min(1).max(120),
   instagram_handle: z.string().trim().max(100).optional().or(z.literal("")),
   instagram_url: optionalUrlSchema,
+  facebook_handle: z.string().trim().max(100).optional().or(z.literal("")),
+  facebook_url: optionalUrlSchema,
   threads_handle: z.string().trim().max(100).optional().or(z.literal("")),
   threads_url: optionalUrlSchema,
   linkedin_handle: z.string().trim().max(120).optional().or(z.literal("")),
   linkedin_url: optionalUrlSchema,
   youtube_handle: z.string().trim().max(120).optional().or(z.literal("")),
-  youtube_url: optionalUrlSchema
+  youtube_url: optionalUrlSchema,
+  custom_links: z.array(customSocialLinkSchema).max(10)
 });
 
 function emptyToNull(value: string | undefined) {
@@ -209,6 +245,39 @@ function formUuidList(formData: FormData, name: string) {
         .filter((value) => uuidSchema.safeParse(value).success)
     )
   ];
+}
+
+function customSocialLinksFromForm(formData: FormData) {
+  const labels = formData.getAll("custom_link_label");
+  const handles = formData.getAll("custom_link_handle");
+  const urls = formData.getAll("custom_link_url");
+  const details = formData.getAll("custom_link_detail");
+  const count = Math.max(labels.length, handles.length, urls.length, details.length);
+
+  return Array.from({ length: count }, (_, index) => ({
+    label: String(labels[index] ?? ""),
+    handle: String(handles[index] ?? ""),
+    url: String(urls[index] ?? ""),
+    detail: String(details[index] ?? "")
+  }));
+}
+
+function normaliseCustomSocialLinks(
+  links: z.infer<typeof customSocialLinkSchema>[]
+) {
+  return links
+    .filter(
+      (link): link is z.infer<typeof customSocialLinkSchema> & {
+        label: string;
+        url: string;
+      } => Boolean(link.label && link.url)
+    )
+    .map((link) => ({
+      label: link.label,
+      handle: link.handle || link.label,
+      href: link.url,
+      detail: link.detail || "External link."
+    }));
 }
 
 function validDateRange(start: string, end: string) {
@@ -1543,12 +1612,15 @@ export async function updateSiteContactSettingsAction(formData: FormData) {
     location: formData.get("location"),
     instagram_handle: formData.get("instagram_handle"),
     instagram_url: formData.get("instagram_url"),
+    facebook_handle: formData.get("facebook_handle"),
+    facebook_url: formData.get("facebook_url"),
     threads_handle: formData.get("threads_handle"),
     threads_url: formData.get("threads_url"),
     linkedin_handle: formData.get("linkedin_handle"),
     linkedin_url: formData.get("linkedin_url"),
     youtube_handle: formData.get("youtube_handle"),
-    youtube_url: formData.get("youtube_url")
+    youtube_url: formData.get("youtube_url"),
+    custom_links: customSocialLinksFromForm(formData)
   });
 
   if (!payload.success) {
@@ -1563,12 +1635,15 @@ export async function updateSiteContactSettingsAction(formData: FormData) {
     location: data.location,
     instagram_handle: emptyToNull(data.instagram_handle),
     instagram_url: emptyToNull(data.instagram_url),
+    facebook_handle: emptyToNull(data.facebook_handle),
+    facebook_url: emptyToNull(data.facebook_url),
     threads_handle: emptyToNull(data.threads_handle),
     threads_url: emptyToNull(data.threads_url),
     linkedin_handle: emptyToNull(data.linkedin_handle),
     linkedin_url: emptyToNull(data.linkedin_url),
     youtube_handle: emptyToNull(data.youtube_handle),
     youtube_url: emptyToNull(data.youtube_url),
+    custom_links: normaliseCustomSocialLinks(data.custom_links),
     updated_at: new Date().toISOString()
   });
 

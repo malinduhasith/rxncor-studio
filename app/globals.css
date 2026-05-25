@@ -2164,6 +2164,7 @@ h3 {
 .about-create-form button,
 .about-block-edit-form button,
 .site-contact-form .social-edit-grid,
+.site-contact-form .custom-links-editor,
 .site-contact-form button {
   grid-column: 1 / -1;
 }
@@ -2180,6 +2181,39 @@ h3 {
   border: 2px solid var(--line);
   border-radius: 6px;
   background: var(--paper);
+}
+
+.custom-links-editor {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  background: rgba(236, 228, 214, 0.72);
+}
+
+.custom-link-rows {
+  display: grid;
+  gap: 10px;
+}
+
+.custom-link-row {
+  display: grid;
+  grid-template-columns: 0.45fr 1fr 1fr;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+}
+
+.custom-link-row .label {
+  align-self: center;
+}
+
+.custom-link-row .wide-field {
+  grid-column: span 1;
 }
 
 .contact-preview-card {
@@ -3599,8 +3633,13 @@ h3 {
   .about-create-form,
   .about-block-edit-form,
   .site-contact-form,
-  .social-edit-grid {
+  .social-edit-grid,
+  .custom-link-row {
     grid-template-columns: 1fr;
+  }
+
+  .custom-link-row .wide-field {
+    grid-column: auto;
   }
 
   .request-meta {
