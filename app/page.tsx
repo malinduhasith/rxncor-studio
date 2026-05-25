@@ -7,6 +7,7 @@ import { siteConfig } from "@/config/site";
 import { contactNotices, shootRequestNotices } from "@/lib/notices";
 import { getPublicAlbumCards, getPublicPortfolioPhotos } from "@/lib/public-gallery";
 import { featuredAlbums, portfolioItems } from "@/lib/sample-data";
+import { getSiteContactSettings } from "@/lib/site-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -25,9 +26,10 @@ export default async function Home({ searchParams }: HomePageProps) {
   const { contact, shoot } = await searchParams;
   const contactNotice = contact ? contactNotices[contact] : undefined;
   const shootNotice = shoot ? shootRequestNotices[shoot] : undefined;
-  const [realPortfolioPhotos, realAlbums] = await Promise.all([
+  const [realPortfolioPhotos, realAlbums, siteContactSettings] = await Promise.all([
     getPublicPortfolioPhotos(3),
-    getPublicAlbumCards(3)
+    getPublicAlbumCards(3),
+    getSiteContactSettings()
   ]);
   const heroImage = realPortfolioPhotos[0]?.imageUrl ?? realAlbums[0]?.coverUrl ?? null;
   const portfolioTiles = realPortfolioPhotos.length
@@ -148,8 +150,67 @@ export default async function Home({ searchParams }: HomePageProps) {
         </div>
       </section>
 
-      <section className="shell section" id="book">
+      <section className="shell section contact-showcase" id="contact">
         <div className="section-head numbered" data-index="04">
+          <div>
+            <p className="eyebrow">Contact / Socials</p>
+            <h2>Start with a message, follow the work.</h2>
+          </div>
+          <p>
+            For bookings, gallery support, or creative work, use email or the
+            request form. Instagram is the quickest place to see current frames.
+          </p>
+        </div>
+        <div className="contact-showcase-grid">
+          <div className="contact-primary-card">
+            <span className="label">Direct email</span>
+            <a href={`mailto:${siteContactSettings.contactEmail}`}>
+              {siteContactSettings.contactEmail}
+            </a>
+            <p>
+              Best for booking details, private gallery questions, collaboration
+              ideas, and anything that needs a clear reply.
+            </p>
+          </div>
+          <div className="contact-social-grid" aria-label="Social links">
+            {siteContactSettings.socialLinks.map((social, index) => (
+              <a
+                className="social-card"
+                href={social.href}
+                key={social.label}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{social.label}</strong>
+                <small>{social.handle}</small>
+                <p>{social.detail}</p>
+              </a>
+            ))}
+          </div>
+          <div className="contact-info-strip">
+            <div>
+              <span className="label">Based in</span>
+              <strong>{siteContactSettings.location}</strong>
+            </div>
+            {siteContactSettings.contactPhone ? (
+              <div>
+                <span className="label">Phone</span>
+                <a href={`tel:${siteContactSettings.contactPhone}`}>
+                  {siteContactSettings.contactPhone}
+                </a>
+              </div>
+            ) : null}
+            <div>
+              <span className="label">Response path</span>
+              <strong>Bookings, gallery support, and socials</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="shell section" id="book">
+        <div className="section-head numbered" data-index="05">
           <div>
             <p className="eyebrow">Book</p>
             <h2>Request a shoot</h2>
@@ -211,55 +272,59 @@ export default async function Home({ searchParams }: HomePageProps) {
               Request shoot
             </button>
           </form>
-          <div className="contact-side" id="contact">
-          <form action={submitContactAction} className="form-panel contact-form">
-            <h3>Gallery support</h3>
-            <label className="field">
-              Name
-              <input name="name" autoComplete="name" required />
-            </label>
-            <label className="field">
-              Email
-              <input name="email" type="email" autoComplete="email" required />
-            </label>
-            <label className="field">
-              Phone
-              <input name="phone" autoComplete="tel" placeholder="+61" />
-            </label>
-            <label className="field">
-              Message
-              <textarea
-                name="message"
-                placeholder="Album link, client name, or gallery access issue."
-                required
-              />
-            </label>
-            <button className="button" type="submit">
-              Send support message
-            </button>
-          </form>
-          <div className="feature-list contact-details">
-            <div className="feature">
-              <h3>Email</h3>
-              <p>
-                <a href={`mailto:${siteConfig.contactEmail}`}>{siteConfig.contactEmail}</a>
-              </p>
+          <div className="contact-side">
+            <form action={submitContactAction} className="form-panel contact-form">
+              <h3>Gallery support</h3>
+              <label className="field">
+                Name
+                <input name="name" autoComplete="name" required />
+              </label>
+              <label className="field">
+                Email
+                <input name="email" type="email" autoComplete="email" required />
+              </label>
+              <label className="field">
+                Phone
+                <input name="phone" autoComplete="tel" placeholder="+61" />
+              </label>
+              <label className="field">
+                Message
+                <textarea
+                  name="message"
+                  placeholder="Album link, client name, or gallery access issue."
+                  required
+                />
+              </label>
+              <button className="button" type="submit">
+                Send support message
+              </button>
+            </form>
+            <div className="feature-list contact-details">
+              <div className="feature">
+                <h3>Email</h3>
+                <p>
+                  <a href={`mailto:${siteContactSettings.contactEmail}`}>
+                    {siteContactSettings.contactEmail}
+                  </a>
+                </p>
+              </div>
+              <div className="feature">
+                <h3>Instagram</h3>
+                <p>
+                  <a href={siteContactSettings.instagramUrl}>
+                    {siteContactSettings.instagramHandle}
+                  </a>
+                </p>
+              </div>
+              <div className="feature">
+                <h3>Delivery</h3>
+                <p>Private galleries with single photo and ZIP downloads.</p>
+              </div>
+              <div className="feature">
+                <h3>Storage</h3>
+                <p>Photos live in Cloudflare R2, not inside the website project.</p>
+              </div>
             </div>
-            <div className="feature">
-              <h3>Instagram</h3>
-              <p>
-                <a href={siteConfig.instagramUrl}>{siteConfig.instagramHandle}</a>
-              </p>
-            </div>
-            <div className="feature">
-              <h3>Delivery</h3>
-              <p>Private galleries with single photo and ZIP downloads.</p>
-            </div>
-            <div className="feature">
-              <h3>Storage</h3>
-              <p>Photos live in Cloudflare R2, not inside the website project.</p>
-            </div>
-          </div>
           </div>
         </div>
       </section>

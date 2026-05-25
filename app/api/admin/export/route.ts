@@ -12,6 +12,7 @@ const exportTables = [
   "shoot_requests",
   "email_events",
   "admin_audit_logs",
+  "site_contact_settings",
 ] as const;
 
 type ExportTable = (typeof exportTables)[number];

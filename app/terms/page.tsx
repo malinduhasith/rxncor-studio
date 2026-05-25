@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { siteConfig } from "@/config/site";
+import { getSiteContactSettings } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
   title: "Terms",
   description: "Basic terms for bookings, private galleries, downloads, and client delivery on rxncor.studio."
 };
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const siteContactSettings = await getSiteContactSettings();
+
   return (
     <main className="shell section">
       <article className="prose">
@@ -91,7 +94,9 @@ export default function TermsPage() {
         <h2>Support</h2>
         <p>
           For gallery access or booking support, email{" "}
-          <a href={`mailto:${siteConfig.contactEmail}`}>{siteConfig.contactEmail}</a>.
+          <a href={`mailto:${siteContactSettings.contactEmail}`}>
+            {siteContactSettings.contactEmail}
+          </a>.
         </p>
         <Link className="button secondary" href="/">
           Back home

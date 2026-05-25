@@ -5,6 +5,7 @@ import { CookieConsent, CookieSettingsButton } from "@/components/CookieConsent"
 import { PendingInteraction } from "@/components/PendingInteraction";
 import { SiteNav } from "@/components/SiteNav";
 import { siteConfig } from "@/config/site";
+import { getSiteContactSettings } from "@/lib/site-settings";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -51,11 +52,13 @@ export const metadata: Metadata = {
   }
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const siteContactSettings = await getSiteContactSettings();
+
   return (
     <html lang="en">
       <body>
@@ -72,6 +75,14 @@ export default function RootLayout({
             </p>
             <div className="footer-links">
               <Link href={siteConfig.routes.about}>About</Link>
+              <Link href="/#contact">Contact</Link>
+              <a
+                href={siteContactSettings.instagramUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                Instagram
+              </a>
               <Link href="/privacy">Privacy</Link>
               <Link href="/terms">Terms</Link>
               <CookieSettingsButton />

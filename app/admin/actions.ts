@@ -162,6 +162,30 @@ const aboutBlockIdSchema = z.object({
   block_id: z.string().uuid()
 });
 
+const optionalUrlSchema = z
+  .string()
+  .trim()
+  .max(300)
+  .optional()
+  .or(z.literal(""))
+  .refine((value) => !value || /^https?:\/\//i.test(value), {
+    message: "Use a full https:// URL."
+  });
+
+const siteContactSettingsSchema = z.object({
+  contact_email: z.string().trim().email().max(180),
+  contact_phone: z.string().trim().max(60).optional().or(z.literal("")),
+  location: z.string().trim().min(1).max(120),
+  instagram_handle: z.string().trim().max(100).optional().or(z.literal("")),
+  instagram_url: optionalUrlSchema,
+  threads_handle: z.string().trim().max(100).optional().or(z.literal("")),
+  threads_url: optionalUrlSchema,
+  linkedin_handle: z.string().trim().max(120).optional().or(z.literal("")),
+  linkedin_url: optionalUrlSchema,
+  youtube_handle: z.string().trim().max(120).optional().or(z.literal("")),
+  youtube_url: optionalUrlSchema
+});
+
 function emptyToNull(value: string | undefined) {
   return value ? value : null;
 }
@@ -1509,6 +1533,62 @@ export async function updateAboutSettingsAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/about");
   redirect("/admin?view=about&notice=about-updated#about-builder");
+}
+
+export async function updateSiteContactSettingsAction(formData: FormData) {
+  const supabase = await requireAdmin();
+  const payload = siteContactSettingsSchema.safeParse({
+    contact_email: formData.get("contact_email"),
+    contact_phone: formData.get("contact_phone"),
+    location: formData.get("location"),
+    instagram_handle: formData.get("instagram_handle"),
+    instagram_url: formData.get("instagram_url"),
+    threads_handle: formData.get("threads_handle"),
+    threads_url: formData.get("threads_url"),
+    linkedin_handle: formData.get("linkedin_handle"),
+    linkedin_url: formData.get("linkedin_url"),
+    youtube_handle: formData.get("youtube_handle"),
+    youtube_url: formData.get("youtube_url")
+  });
+
+  if (!payload.success) {
+    redirect("/admin?view=contact&notice=site-contact-error#site-contact-settings");
+  }
+
+  const { data } = payload;
+  const { error } = await supabase.from("site_contact_settings").upsert({
+    id: "main",
+    contact_email: data.contact_email.toLowerCase(),
+    contact_phone: emptyToNull(data.contact_phone),
+    location: data.location,
+    instagram_handle: emptyToNull(data.instagram_handle),
+    instagram_url: emptyToNull(data.instagram_url),
+    threads_handle: emptyToNull(data.threads_handle),
+    threads_url: emptyToNull(data.threads_url),
+    linkedin_handle: emptyToNull(data.linkedin_handle),
+    linkedin_url: emptyToNull(data.linkedin_url),
+    youtube_handle: emptyToNull(data.youtube_handle),
+    youtube_url: emptyToNull(data.youtube_url),
+    updated_at: new Date().toISOString()
+  });
+
+  if (error) {
+    redirect("/admin?view=contact&notice=site-contact-setup-error#site-contact-settings");
+  }
+
+  await logAdminAudit(supabase, {
+    action: "site.contact.update",
+    entityType: "site_contact_settings",
+    entityId: "main",
+    summary: "Updated public contact and social links"
+  });
+
+  revalidatePath("/", "layout");
+  revalidatePath("/");
+  revalidatePath("/privacy");
+  revalidatePath("/terms");
+  revalidatePath("/admin");
+  redirect("/admin?view=contact&notice=site-contact-updated#site-contact-settings");
 }
 
 export async function createAboutBlockAction(formData: FormData) {

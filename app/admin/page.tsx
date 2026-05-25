@@ -15,6 +15,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   createAboutBlockAction,
@@ -38,6 +39,7 @@ import {
   updateClientAction,
   updatePhotoMetadataAction,
   updateInquiryStatusAction,
+  updateSiteContactSettingsAction,
   updateShootRequestAction,
 } from "./actions";
 import { AdminFileActionButton } from "@/components/admin/AdminFileActionButton";
@@ -67,6 +69,7 @@ import {
   type PhotoDisplaySource,
 } from "@/lib/photo-display";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
+import { getSiteContactSettings } from "@/lib/site-settings";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -227,6 +230,7 @@ type AdminPageProps = {
 const adminViews = [
   "overview",
   "about",
+  "contact",
   "albums",
   "clients",
   "new-album",
@@ -256,6 +260,12 @@ const adminViewCopy: Record<
     title: "About page builder",
     detail:
       "Edit the About page hero, metadata, cards, banners, spoken notes, timeline, and tools.",
+  },
+  contact: {
+    label: "Contact",
+    title: "Contact and socials",
+    detail:
+      "Edit the public email, location, optional phone number, and social links shown on the site.",
   },
   albums: {
     label: "Albums",
@@ -1076,7 +1086,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const noticeContent = notice ? adminNotices[notice] : undefined;
   const inquiriesUnavailable = Boolean(inquiriesResult.error);
   const shootRequestsUnavailable = Boolean(shootRequestsResult.error);
-  const aboutContent = await getAboutPageContent({ includeInactive: true });
+  const [aboutContent, siteContactSettings] = await Promise.all([
+    getAboutPageContent({ includeInactive: true }),
+    getSiteContactSettings(),
+  ]);
   const dataLoadNotices: NoticeContent[] = [
     clientsResult.error
       ? {
@@ -1199,6 +1212,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           title: "About builder is in fallback mode",
           message:
             "Run the About Builder Supabase migration before saving custom About page blocks.",
+        }
+      : null,
+    siteContactSettings.setupMissing
+      ? {
+          tone: "warning",
+          title: "Contact settings are in fallback mode",
+          message:
+            "Run the site contact settings Supabase migration before saving public contact and social links.",
         }
       : null,
   ].filter((item): item is NoticeContent => Boolean(item));
@@ -1425,10 +1446,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </div>
             <div className="inline-actions">
               {activeView === "about" ? (
-                <a className="button small" href="/about">
+                <Link className="button small" href="/about">
                   <ExternalLink size={16} />
                   View About page
-                </a>
+                </Link>
+              ) : activeView === "contact" ? (
+                <Link className="button small" href="/#contact">
+                  <ExternalLink size={16} />
+                  View contact section
+                </Link>
               ) : (
                 <>
                   <a
@@ -1637,6 +1663,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   <strong>About builder</strong>
                   <span>
                     Edit page copy, banners, spoken notes, timeline, and tools.
+                  </span>
+                </a>
+                <a className="admin-quick-card" href={adminHref("contact")}>
+                  <strong>Contact and socials</strong>
+                  <span>
+                    Update public email, location, phone, and social links.
                   </span>
                 </a>
                 <a
@@ -2191,6 +2223,204 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     </details>
                   );
                 })}
+              </div>
+            </section>
+          ) : null}
+
+          {activeView === "contact" ? (
+            <section
+              id="site-contact-settings"
+              className="admin-section active-admin-page"
+            >
+              <div className="section-head compact">
+                <div>
+                  <p className="eyebrow">Contact / Socials</p>
+                  <h2>Edit public contact details</h2>
+                </div>
+                <p>
+                  These details feed the homepage contact section, footer,
+                  privacy page, terms page, and expired-gallery support links.
+                </p>
+              </div>
+
+              {siteContactSettings.setupMissing ? (
+                <Notice
+                  notice={{
+                    tone: "warning",
+                    title: "Contact settings are in fallback mode",
+                    message:
+                      "Run supabase/migrations/20260525_site_contact_settings.sql in Supabase SQL Editor, then refresh this page to save edits.",
+                  }}
+                />
+              ) : null}
+
+              <div className="site-contact-grid">
+                <form
+                  action={updateSiteContactSettingsAction}
+                  className="manager-panel site-contact-form"
+                >
+                  <div className="panel-title-row">
+                    <div>
+                      <p className="eyebrow">Public details</p>
+                      <h3>Email, location, and social links</h3>
+                      <p className="muted">
+                        Leave optional social URL fields empty to hide those
+                        cards from the public contact section.
+                      </p>
+                    </div>
+                    <Link className="button secondary small" href="/#contact">
+                      <ExternalLink size={16} />
+                      Preview
+                    </Link>
+                  </div>
+
+                  <div className="form-two-col">
+                    <label className="field">
+                      Public email
+                      <input
+                        name="contact_email"
+                        type="email"
+                        defaultValue={siteContactSettings.contactEmail}
+                        required
+                      />
+                    </label>
+                    <label className="field">
+                      Phone optional
+                      <input
+                        name="contact_phone"
+                        defaultValue={siteContactSettings.contactPhone ?? ""}
+                        placeholder="+61 ..."
+                      />
+                    </label>
+                  </div>
+
+                  <label className="field">
+                    Location
+                    <input
+                      name="location"
+                      defaultValue={siteContactSettings.location}
+                      placeholder="Melbourne, Australia"
+                      required
+                    />
+                  </label>
+
+                  <div className="social-edit-grid">
+                    <div className="social-edit-card">
+                      <span className="label">Instagram</span>
+                      <label className="field">
+                        Handle
+                        <input
+                          name="instagram_handle"
+                          defaultValue={siteContactSettings.instagramHandle}
+                          placeholder="@rxncor.studio"
+                        />
+                      </label>
+                      <label className="field">
+                        URL
+                        <input
+                          name="instagram_url"
+                          defaultValue={siteContactSettings.instagramUrl}
+                          placeholder="https://instagram.com/rxncor.studio"
+                        />
+                      </label>
+                    </div>
+                    <div className="social-edit-card">
+                      <span className="label">Threads</span>
+                      <label className="field">
+                        Handle
+                        <input
+                          name="threads_handle"
+                          defaultValue={siteContactSettings.threadsHandle ?? ""}
+                          placeholder="@rxncor.studio"
+                        />
+                      </label>
+                      <label className="field">
+                        URL
+                        <input
+                          name="threads_url"
+                          defaultValue={siteContactSettings.threadsUrl ?? ""}
+                          placeholder="https://threads.net/@rxncor.studio"
+                        />
+                      </label>
+                    </div>
+                    <div className="social-edit-card">
+                      <span className="label">LinkedIn</span>
+                      <label className="field">
+                        Handle
+                        <input
+                          name="linkedin_handle"
+                          defaultValue={siteContactSettings.linkedinHandle ?? ""}
+                          placeholder="Malindu Herath"
+                        />
+                      </label>
+                      <label className="field">
+                        URL
+                        <input
+                          name="linkedin_url"
+                          defaultValue={siteContactSettings.linkedinUrl ?? ""}
+                          placeholder="https://linkedin.com/in/..."
+                        />
+                      </label>
+                    </div>
+                    <div className="social-edit-card">
+                      <span className="label">YouTube</span>
+                      <label className="field">
+                        Handle
+                        <input
+                          name="youtube_handle"
+                          defaultValue={siteContactSettings.youtubeHandle ?? ""}
+                          placeholder="rxncor.studio"
+                        />
+                      </label>
+                      <label className="field">
+                        URL
+                        <input
+                          name="youtube_url"
+                          defaultValue={siteContactSettings.youtubeUrl ?? ""}
+                          placeholder="https://youtube.com/@..."
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <button className="button" type="submit">
+                    <Save size={18} />
+                    Save contact details
+                  </button>
+                </form>
+
+                <aside className="manager-panel contact-preview-card">
+                  <p className="eyebrow">Live preview</p>
+                  <h3>{siteContactSettings.contactEmail}</h3>
+                  <p>
+                    {siteContactSettings.location}
+                    {siteContactSettings.contactPhone
+                      ? ` · ${siteContactSettings.contactPhone}`
+                      : ""}
+                  </p>
+                  <div className="contact-preview-socials">
+                    {siteContactSettings.socialLinks.map((social) => (
+                      <a
+                        className="pill"
+                        href={social.href}
+                        key={social.label}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        {social.label}: {social.handle}
+                      </a>
+                    ))}
+                    {!siteContactSettings.socialLinks.length ? (
+                      <span className="pill">No social links shown</span>
+                    ) : null}
+                  </div>
+                  <small className="muted">
+                    Source:{" "}
+                    {siteContactSettings.source === "database"
+                      ? "Supabase"
+                      : "environment fallback"}
+                  </small>
+                </aside>
               </div>
             </section>
           ) : null}
@@ -3999,8 +4229,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   <h3>Supabase export</h3>
                   <p>
                     Export clients, albums, album_clients, photos, downloads,
-                    uploads, email events, requests, inquiries, and audit rows
-                    weekly.
+                    uploads, email events, requests, inquiries, site contact
+                    settings, and audit rows weekly.
                   </p>
                   <div className="inline-actions">
                     <a

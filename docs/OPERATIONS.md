@@ -38,6 +38,8 @@ Run the latest migration in Supabase SQL Editor:
 
 [supabase/migrations/20260523_email_monitoring.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260523_email_monitoring.sql)
 
+[supabase/migrations/20260525_site_contact_settings.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260525_site_contact_settings.sql)
+
 These add:
 
 - client passwords
@@ -53,6 +55,7 @@ These add:
 - upload monitoring events and tracked storage estimates
 - admin audit logs and admin export endpoints
 - email send, failure, and skipped-event monitoring
+- editable public contact and social settings
 
 ## Full Client Test
 
@@ -88,7 +91,7 @@ Before sharing the site publicly:
 Do this weekly while the site is active:
 
 1. Use Admin -> Backups -> Download full JSON for a quick app-side export.
-2. Supabase Dashboard -> Table Editor -> export `clients`, `albums`, `album_clients`, `photos`, `download_logs`, `upload_events`, `shoot_requests`, `contact_inquiries`, and `admin_audit_logs`.
+2. Supabase Dashboard -> Table Editor -> export `clients`, `albums`, `album_clients`, `photos`, `download_logs`, `upload_events`, `shoot_requests`, `contact_inquiries`, `admin_audit_logs`, and `site_contact_settings`.
 3. Keep a local copy of delivered ZIP files.
 4. Do not rely on the website project as your photo backup. R2 is delivery storage.
 5. Before deleting an album, confirm you have the Lightroom/Capture One exports and ZIP elsewhere.

@@ -172,6 +172,21 @@ export const adminNotices: Record<string, NoticeContent> = {
     title: "Shoot request update failed",
     message: "The request could not be updated."
   },
+  "site-contact-updated": {
+    tone: "success",
+    title: "Contact details updated",
+    message: "The public contact section and footer links now use the saved details."
+  },
+  "site-contact-error": {
+    tone: "error",
+    title: "Contact details failed",
+    message: "Check the email, location, and social URLs. Social URLs need to start with https://."
+  },
+  "site-contact-setup-error": {
+    tone: "warning",
+    title: "Contact settings setup needed",
+    message: "Run the site contact settings Supabase migration before saving these details."
+  },
   "shoot-request-conflict": {
     tone: "warning",
     title: "Booking overlap blocked",

@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { siteConfig } from "@/config/site";
+import { getSiteContactSettings } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
   title: "Privacy",
   description: "How rxncor.studio handles enquiries, client data, private galleries, and download records."
 };
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const siteContactSettings = await getSiteContactSettings();
+
   return (
     <main className="shell section">
       <article className="prose">
@@ -127,7 +130,9 @@ export default function PrivacyPage() {
         <p>
           For privacy questions, access requests, correction requests, or removal
           requests, email{" "}
-          <a href={`mailto:${siteConfig.contactEmail}`}>{siteConfig.contactEmail}</a>.
+          <a href={`mailto:${siteContactSettings.contactEmail}`}>
+            {siteContactSettings.contactEmail}
+          </a>.
         </p>
         <Link className="button secondary" href="/">
           Back home

@@ -105,6 +105,23 @@ create table if not exists public.email_events (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.site_contact_settings (
+  id text primary key default 'main',
+  contact_email text not null default 'hello@rxncor.studio',
+  contact_phone text,
+  location text not null default 'Melbourne, Australia',
+  instagram_handle text not null default '@MR.Rxncor',
+  instagram_url text not null default 'https://www.instagram.com/mr.rxncor',
+  threads_handle text,
+  threads_url text,
+  linkedin_handle text,
+  linkedin_url text,
+  youtube_handle text,
+  youtube_url text,
+  updated_at timestamptz not null default now(),
+  constraint site_contact_settings_singleton check (id = 'main')
+);
+
 create table if not exists public.download_logs (
   id uuid primary key default gen_random_uuid(),
   album_id uuid not null references public.albums(id) on delete cascade,
@@ -194,6 +211,7 @@ alter table public.download_logs enable row level security;
 alter table public.upload_events enable row level security;
 alter table public.admin_audit_logs enable row level security;
 alter table public.email_events enable row level security;
+alter table public.site_contact_settings enable row level security;
 alter table public.contact_inquiries enable row level security;
 alter table public.shoot_requests enable row level security;
 
@@ -268,6 +286,21 @@ begin
   ) then
     create policy "Admins can manage email events"
       on public.email_events for all
+      using (auth.role() = 'authenticated')
+      with check (auth.role() = 'authenticated');
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'site_contact_settings'
+      and policyname = 'Admins can manage site contact settings'
+  ) then
+    create policy "Admins can manage site contact settings"
+      on public.site_contact_settings for all
       using (auth.role() = 'authenticated')
       with check (auth.role() = 'authenticated');
   end if;

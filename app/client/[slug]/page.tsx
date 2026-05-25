@@ -15,6 +15,7 @@ import {
 import { galleryNotices } from "@/lib/notices";
 import { photoDisplayLabel, type PhotoDisplaySource } from "@/lib/photo-display";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
+import { getSiteContactSettings } from "@/lib/site-settings";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -77,6 +78,8 @@ export default async function ClientGalleryPage({
     notFound();
   }
 
+  const siteContactSettings = await getSiteContactSettings();
+
   if (album?.expires_at && new Date(album.expires_at) < new Date()) {
     return (
       <main className="shell section">
@@ -88,7 +91,7 @@ export default async function ClientGalleryPage({
             rxncor.studio if you need the gallery reopened or the ZIP resent.
           </p>
           <div className="inline-actions">
-            <a className="button" href={`mailto:${siteConfig.contactEmail}`}>
+            <a className="button" href={`mailto:${siteContactSettings.contactEmail}`}>
               Contact
             </a>
             <Link className="button secondary" href={siteConfig.routes.login}>
