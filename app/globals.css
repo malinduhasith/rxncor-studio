@@ -84,6 +84,8 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 112px;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 #about,
@@ -105,6 +107,7 @@ body {
   background-size: 42px 42px, 42px 42px, auto;
   font-family: Arial, Helvetica, sans-serif;
   overflow-x: hidden;
+  max-width: 100%;
 }
 
 a {
@@ -3983,7 +3986,7 @@ h3 {
 
 @media (max-width: 560px) {
   .shell {
-    width: min(100% - 28px, 1160px);
+    width: min(1160px, calc(100% - 28px));
   }
 
   html {
@@ -4415,7 +4418,7 @@ h3 {
 
 @media (max-width: 380px) {
   .shell {
-    width: min(100% - 22px, 1160px);
+    width: min(1160px, calc(100% - 22px));
   }
 
   .nav-links {
@@ -4460,7 +4463,7 @@ h3 {
   }
 
   .shell {
-    width: min(100% - 24px, 1160px);
+    width: min(1160px, calc(100% - 24px));
   }
 
   .site-header {
@@ -5094,7 +5097,7 @@ h3 {
 
 @media (max-width: 460px) {
   .shell {
-    width: min(100% - 20px, 1160px);
+    width: min(1160px, calc(100% - 20px));
   }
 
   .brand-logo {
@@ -5154,5 +5157,173 @@ h3 {
 
   .icon-button {
     width: 100%;
+  }
+}
+
+/* Final mobile containment pass: keep the editorial layout dramatic without
+   letting any section become wider than the phone viewport. */
+@media (max-width: 760px) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  .shell {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+  }
+
+  .site-header {
+    overflow: visible;
+  }
+
+  .site-header .nav {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    align-items: center;
+    justify-content: stretch;
+    gap: 10px;
+    margin-inline: auto;
+    overflow: visible;
+  }
+
+  .brand {
+    min-width: 0;
+    max-width: min(220px, calc(100vw - 136px));
+    justify-self: start;
+  }
+
+  .brand-logo {
+    width: clamp(112px, 36vw, 148px);
+    max-width: 100%;
+  }
+
+  .mobile-menu-button {
+    display: inline-flex;
+    justify-self: end;
+    max-width: 96px;
+    min-width: 0;
+    padding-inline: 10px;
+    gap: 7px;
+    white-space: nowrap;
+  }
+
+  .mobile-menu-button span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .nav-links {
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+  }
+
+  .hero-copy,
+  .hero-title,
+  .lede,
+  .hero-actions,
+  .section-head,
+  .section-head > *,
+  .contact-showcase-grid,
+  .contact-primary-card,
+  .social-card,
+  .cookie-card {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .hero-title {
+    font-size: clamp(3rem, 15vw, 4.15rem);
+  }
+
+  .lede {
+    width: 100%;
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+
+  .hero-actions {
+    width: 100%;
+  }
+
+  .hero-actions .button {
+    white-space: normal;
+    text-align: center;
+  }
+
+  .cookie-consent {
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: calc(100vw - 24px);
+  }
+
+  .cookie-card h2 {
+    max-width: 100%;
+    font-size: clamp(1.85rem, 8vw, 2.25rem);
+    overflow-wrap: break-word;
+  }
+}
+
+@media (max-width: 460px) {
+  .shell,
+  .site-header .nav {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+  }
+
+  .brand {
+    max-width: calc(100vw - 126px);
+  }
+
+  .brand-logo {
+    width: clamp(112px, 37vw, 140px);
+  }
+
+  .mobile-menu-button {
+    max-width: 90px;
+    min-height: 40px;
+    padding-inline: 8px;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+  }
+
+  .mobile-menu-button i,
+  .mobile-menu-button i::before {
+    width: 14px;
+  }
+
+  .hero-title {
+    font-size: clamp(3.05rem, 14.2vw, 3.9rem);
+  }
+
+  .eyebrow {
+    overflow-wrap: break-word;
+  }
+}
+
+@media (max-width: 380px) {
+  .shell,
+  .site-header .nav {
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+  }
+
+  .brand {
+    max-width: calc(100vw - 116px);
+  }
+
+  .brand-logo {
+    width: 106px;
+  }
+
+  .mobile-menu-button {
+    max-width: 82px;
+    padding-inline: 7px;
   }
 }
