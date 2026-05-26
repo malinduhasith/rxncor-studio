@@ -5519,3 +5519,181 @@ h3 {
     font-size: clamp(2rem, 9.3vw, 2.45rem);
   }
 }
+
+/* Secondary view type balance: admin, about, client portal, gallery, and
+   legal/contact pages use their own editorial classes, so keep those calm too. */
+@media (min-width: 761px) and (max-width: 1040px) {
+  .page-title,
+  .gallery-title,
+  .admin-title,
+  .about-hero h1 {
+    font-size: clamp(3.4rem, 7vw, 4.7rem);
+    line-height: 0.9;
+  }
+
+  .about-copy-panel h2,
+  .about-split h2,
+  .about-tools-section h2,
+  .about-closing p,
+  .workflow-panel h2,
+  .section-head.compact h2,
+  .manager-panel > h2,
+  .contact-preview-card h3,
+  .about-editor-overview-copy h3 {
+    font-size: clamp(2.25rem, 4.8vw, 3.25rem);
+    line-height: 0.98;
+  }
+
+  .album-meta h3,
+  .tile-album {
+    font-size: clamp(1.25rem, 2.6vw, 1.75rem);
+  }
+}
+
+@media (max-width: 760px) {
+  .gallery-title,
+  .about-hero h1,
+  .prose h1,
+  .form-panel > .panel-title,
+  .error-panel > .panel-title {
+    font-size: clamp(2.15rem, 8.8vw, 2.9rem);
+    line-height: 0.98;
+  }
+
+  .about-copy-panel h2,
+  .about-split h2,
+  .about-tools-section h2,
+  .about-closing p,
+  .about-section-summary strong,
+  .about-editor-overview-copy h3,
+  .contact-preview-card h3,
+  .portal-password-panel h2,
+  .gate-title,
+  .prose h2 {
+    font-size: clamp(1.55rem, 6.6vw, 2.08rem);
+    line-height: 1.02;
+  }
+
+  .admin-title {
+    font-size: clamp(2.05rem, 8.8vw, 2.85rem);
+    line-height: 0.98;
+  }
+
+  .admin-page-header h2,
+  .workflow-panel h2,
+  .section-head.compact h2,
+  .manager-panel > h2,
+  .admin-section > .section-title {
+    font-size: clamp(1.55rem, 6.8vw, 2.08rem);
+    line-height: 1.04;
+  }
+
+  .panel-title-row h3,
+  .manager-panel > h3,
+  .request-card h3,
+  .client-card h3,
+  .contact-form h3,
+  .feature h3,
+  .social-card strong {
+    font-size: clamp(1rem, 4.4vw, 1.22rem);
+    line-height: 1.08;
+  }
+
+  .about-meta-panel strong,
+  .about-statement strong,
+  .about-timeline-item h3,
+  .admin-quick-card strong,
+  .stat strong {
+    font-size: clamp(1.05rem, 4.9vw, 1.35rem);
+    line-height: 1.08;
+  }
+
+  .about-statement span,
+  .about-timeline-item span {
+    font-size: clamp(1.35rem, 6vw, 1.75rem);
+  }
+
+  .contact-primary-card a {
+    font-size: clamp(1.48rem, 7.8vw, 2.05rem);
+    line-height: 1;
+  }
+
+  .album-meta h3,
+  .tile-album {
+    font-size: clamp(0.95rem, 4.5vw, 1.16rem);
+    line-height: 1.08;
+  }
+
+  .tile-caption small,
+  .tile-caption em,
+  .album-card-top,
+  .pill,
+  .album-badges span,
+  .upload-summary span,
+  .admin-nav-copy > span {
+    font-size: 0.68rem;
+    line-height: 1.18;
+  }
+
+  .form-note,
+  .muted,
+  .feature p,
+  .about-copy-panel p:not(.eyebrow),
+  .about-split-panel p,
+  .about-timeline-item p,
+  .social-card p,
+  .contact-info-strip strong,
+  .contact-info-strip a,
+  .client-delivery-summary small,
+  .delivery-summary-grid small {
+    font-size: 0.9rem;
+    line-height: 1.48;
+  }
+
+  .table th,
+  .table td,
+  .album-list-row,
+  .copy-detail-row,
+  .share-box pre,
+  .upload-message,
+  .upload-status-panel {
+    font-size: 0.88rem;
+    line-height: 1.42;
+  }
+}
+
+@media (max-width: 460px) {
+  .gallery-title,
+  .about-hero h1,
+  .prose h1,
+  .form-panel > .panel-title,
+  .error-panel > .panel-title {
+    font-size: clamp(1.95rem, 8.4vw, 2.42rem);
+  }
+
+  .about-copy-panel h2,
+  .about-split h2,
+  .about-tools-section h2,
+  .about-closing p,
+  .about-section-summary strong,
+  .about-editor-overview-copy h3,
+  .contact-preview-card h3,
+  .portal-password-panel h2,
+  .gate-title,
+  .prose h2,
+  .admin-page-header h2,
+  .workflow-panel h2,
+  .section-head.compact h2,
+  .manager-panel > h2,
+  .admin-section > .section-title {
+    font-size: clamp(1.42rem, 6.2vw, 1.82rem);
+  }
+
+  .admin-title {
+    font-size: clamp(1.9rem, 8.2vw, 2.42rem);
+  }
+
+  .contact-primary-card a {
+    font-size: clamp(1.32rem, 7.2vw, 1.78rem);
+  }
+}
