@@ -65,10 +65,10 @@ const themeScript = `(() => {
     const saved = localStorage.getItem(key);
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     const theme = saved === "dark" || saved === "light" ? saved : prefersDark ? "dark" : "light";
-    document.documentElement.dataset.theme = theme;
+    document.documentElement.setAttribute("data-theme", theme);
     document.documentElement.style.colorScheme = theme;
   } catch {
-    document.documentElement.dataset.theme = "light";
+    document.documentElement.setAttribute("data-theme", "light");
     document.documentElement.style.colorScheme = "light";
   }
 })();`;
