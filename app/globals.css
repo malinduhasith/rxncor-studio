@@ -3468,6 +3468,12 @@ h3 {
   padding-bottom: 28px;
 }
 
+.booking-page .page-title {
+  max-width: 920px;
+  font-size: clamp(3rem, 7.8vw, 5.8rem);
+  line-height: 0.92;
+}
+
 .contact-form {
   max-width: none;
 }

@@ -210,45 +210,44 @@ export default async function Home({ searchParams }: HomePageProps) {
       </section>
 
       <section className="shell section" id="booking">
-        <div className="section-head numbered" data-index="05">
+        <div className="section-head numbered compact" data-index="05">
           <div>
-            <p className="eyebrow">Booking desk</p>
-            <h2>A dedicated page for shoots, quotes, and future payments.</h2>
+            <p className="eyebrow">Book a shoot</p>
+            <h2>Tell me what you need photographed.</h2>
           </div>
           <p>
-            Booking now has its own space, so invoices, deposits, payment
-            gateways, and client preparation can grow without cluttering the
-            homepage.
+            Send your preferred date, location, shoot type, and a few notes.
+            I will check availability and reply with the next steps before
+            anything is confirmed.
           </p>
         </div>
         <div className="contact-grid">
           <div className="form-panel contact-form">
-            <h3>Plan the shoot</h3>
+            <h3>Start a request</h3>
             <p className="form-note">
-              Use the booking page for dates, locations, shoot type, timing,
-              notes, and availability checks. Later, this is where quotes,
-              invoices, deposits, and payments can live.
+              The booking page keeps everything in one place: date, time,
+              location, shoot type, notes, and your contact details.
             </p>
             <div className="feature-list contact-details">
               <div className="feature">
-                <h3>Request</h3>
-                <p>Share the date, location, shoot type, and rough plan.</p>
+                <h3>Your details</h3>
+                <p>Name, email, phone, and the best way to reply.</p>
               </div>
               <div className="feature">
-                <h3>Review</h3>
-                <p>I check timing and confirm before anything is locked in.</p>
+                <h3>Date and place</h3>
+                <p>Preferred start, finish, suburb, venue, or flexible window.</p>
               </div>
               <div className="feature">
-                <h3>Prepare</h3>
-                <p>Accepted shoots can become private client galleries.</p>
+                <h3>Confirmation</h3>
+                <p>I check the calendar and reply before the shoot is locked in.</p>
               </div>
               <div className="feature">
-                <h3>Later</h3>
-                <p>Room for invoices, deposits, and payment gateways.</p>
+                <h3>Delivery</h3>
+                <p>After the shoot, your photos can be delivered in a private gallery.</p>
               </div>
             </div>
             <Link className="button" href={siteConfig.routes.book}>
-              Open booking page
+              Request a shoot
             </Link>
           </div>
           <div className="contact-side">

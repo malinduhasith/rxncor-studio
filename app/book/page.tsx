@@ -33,12 +33,13 @@ export default async function BookPage({ searchParams }: BookPageProps) {
       <section className="shell section editorial-page booking-page">
         <div className="section-head numbered" data-index="BOOK">
           <div>
-            <p className="eyebrow">Booking desk</p>
-            <h1 className="page-title">Request a shoot</h1>
+            <p className="eyebrow">Book a shoot</p>
+            <h1 className="page-title">Book a photography session</h1>
           </div>
           <p>
-            Send the details first. Availability, quotes, invoices, deposits,
-            and payment steps can be layered in here as the booking system grows.
+            Tell me what you need, when you need it, and where it is happening.
+            I will confirm availability and the next steps before anything is
+            locked in.
           </p>
         </div>
 
@@ -46,8 +47,8 @@ export default async function BookPage({ searchParams }: BookPageProps) {
           <form action={submitShootRequestAction} className="form-panel contact-form">
             <h2>Shoot request</h2>
             <p className="form-note">
-              Share the date, timing, location, and type of shoot. I will check
-              availability before anything is treated as confirmed.
+              Share the date, timing, location, and type of shoot. Add anything
+              useful: guest count, mood, must-have moments, or timing details.
             </p>
             <label className="field">
               Name
@@ -92,28 +93,28 @@ export default async function BookPage({ searchParams }: BookPageProps) {
           <aside className="contact-side" aria-label="Booking process">
             <div className="form-panel">
               <p className="eyebrow">How it works</p>
-              <h2>Availability first, admin work after.</h2>
+              <h2>What happens after you send it?</h2>
               <p className="form-note">
-                This page is intentionally separate from the homepage so the
-                booking flow can later support invoices, payments, and more
-                detailed client preparation.
+                I will review the request, check the calendar, and reply by
+                email. If a quote, invoice, or deposit is needed, that comes
+                before the booking is confirmed.
               </p>
               <div className="feature-list contact-details">
                 <div className="feature">
-                  <h3>01 Request</h3>
-                  <p>You send the shoot details and preferred timing.</p>
+                  <h3>01 Send request</h3>
+                  <p>Share the shoot type, date, time, location, and notes.</p>
                 </div>
                 <div className="feature">
-                  <h3>02 Check</h3>
-                  <p>I confirm availability and avoid accepted booking overlaps.</p>
+                  <h3>02 Availability</h3>
+                  <p>I check the calendar and ask any follow-up questions.</p>
                 </div>
                 <div className="feature">
-                  <h3>03 Confirm</h3>
-                  <p>Accepted shoots can generate a client password and album link.</p>
+                  <h3>03 Confirmation</h3>
+                  <p>You get a clear reply before the session is locked in.</p>
                 </div>
                 <div className="feature">
-                  <h3>04 Deliver</h3>
-                  <p>Final images are delivered through a private gallery.</p>
+                  <h3>04 Gallery</h3>
+                  <p>After the shoot, final images can be delivered privately.</p>
                 </div>
               </div>
             </div>
