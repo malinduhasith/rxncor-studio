@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { CookieConsent, CookieSettingsButton } from "@/components/CookieConsent";
+import { MobileViewportGuard } from "@/components/MobileViewportGuard";
 import { PendingInteraction } from "@/components/PendingInteraction";
 import { SiteNav } from "@/components/SiteNav";
 import { siteConfig } from "@/config/site";
@@ -82,6 +83,7 @@ export default async function RootLayout({
         />
       </head>
       <body>
+        <MobileViewportGuard />
         <Suspense fallback={null}>
           <PendingInteraction />
         </Suspense>

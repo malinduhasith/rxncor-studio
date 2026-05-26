@@ -110,6 +110,13 @@ body {
   max-width: 100%;
 }
 
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -5167,12 +5174,30 @@ h3 {
   body {
     width: 100%;
     max-width: 100%;
-    overflow-x: clip;
+    min-width: 0;
+    overflow-x: hidden !important;
+    overscroll-behavior-x: none;
+    position: relative;
+  }
+
+  body {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  main,
+  .site-header,
+  .footer,
+  .section,
+  .section.alt {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   .shell {
-    width: calc(100vw - 24px);
-    max-width: calc(100vw - 24px);
+    width: 100%;
+    max-width: 100%;
+    padding-inline: 12px;
   }
 
   .site-header {
@@ -5180,8 +5205,8 @@ h3 {
   }
 
   .site-header .nav {
-    width: calc(100vw - 24px);
-    max-width: calc(100vw - 24px);
+    width: 100%;
+    max-width: 100%;
     display: grid;
     grid-template-columns: minmax(0, 1fr) max-content;
     align-items: center;
@@ -5193,7 +5218,7 @@ h3 {
 
   .brand {
     min-width: 0;
-    max-width: min(220px, calc(100vw - 136px));
+    max-width: min(220px, calc(100% - 104px));
     justify-self: start;
   }
 
@@ -5260,7 +5285,7 @@ h3 {
     right: 12px;
     left: 12px;
     width: auto;
-    max-width: calc(100vw - 24px);
+    max-width: none;
   }
 
   .cookie-card h2 {
@@ -5273,12 +5298,12 @@ h3 {
 @media (max-width: 460px) {
   .shell,
   .site-header .nav {
-    width: calc(100vw - 24px);
-    max-width: calc(100vw - 24px);
+    width: 100%;
+    max-width: 100%;
   }
 
   .brand {
-    max-width: calc(100vw - 126px);
+    max-width: calc(100% - 98px);
   }
 
   .brand-logo {
@@ -5310,12 +5335,12 @@ h3 {
 @media (max-width: 380px) {
   .shell,
   .site-header .nav {
-    width: calc(100vw - 20px);
-    max-width: calc(100vw - 20px);
+    width: 100%;
+    max-width: 100%;
   }
 
   .brand {
-    max-width: calc(100vw - 116px);
+    max-width: calc(100% - 90px);
   }
 
   .brand-logo {
