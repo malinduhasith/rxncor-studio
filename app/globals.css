@@ -5223,7 +5223,7 @@ h3 {
   }
 
   .brand-logo {
-    width: clamp(112px, 36vw, 148px);
+    width: clamp(104px, 31vw, 136px);
     max-width: 100%;
   }
 
@@ -5263,11 +5263,14 @@ h3 {
   }
 
   .hero-title {
-    font-size: clamp(3rem, 15vw, 4.15rem);
+    font-size: clamp(2.65rem, 13.4vw, 3.65rem);
+    line-height: 0.9;
   }
 
   .lede {
     width: 100%;
+    font-size: 0.94rem;
+    line-height: 1.48;
     overflow-wrap: break-word;
     word-break: normal;
   }
@@ -5277,6 +5280,9 @@ h3 {
   }
 
   .hero-actions .button {
+    min-height: 50px;
+    padding-inline: 10px;
+    font-size: 0.98rem;
     white-space: normal;
     text-align: center;
   }
@@ -5293,6 +5299,10 @@ h3 {
     font-size: clamp(1.85rem, 8vw, 2.25rem);
     overflow-wrap: break-word;
   }
+
+  .pending-card h2 {
+    font-size: clamp(2.85rem, 14.5vw, 4.25rem);
+  }
 }
 
 @media (max-width: 460px) {
@@ -5307,14 +5317,14 @@ h3 {
   }
 
   .brand-logo {
-    width: clamp(112px, 37vw, 140px);
+    width: clamp(104px, 33vw, 126px);
   }
 
   .mobile-menu-button {
-    max-width: 90px;
-    min-height: 40px;
-    padding-inline: 8px;
-    font-size: 0.62rem;
+    max-width: 84px;
+    min-height: 38px;
+    padding-inline: 7px;
+    font-size: 0.58rem;
     letter-spacing: 0.08em;
   }
 
@@ -5324,10 +5334,32 @@ h3 {
   }
 
   .hero-title {
-    font-size: clamp(3.05rem, 14.2vw, 3.9rem);
+    font-size: clamp(2.65rem, 13.2vw, 3.42rem);
+  }
+
+  .hero {
+    gap: 18px;
+    padding-top: 22px;
+  }
+
+  .lede {
+    font-size: 0.9rem;
+    line-height: 1.46;
+    padding-left: 10px;
+  }
+
+  .hero-actions {
+    gap: 9px;
+  }
+
+  .hero-actions .button {
+    min-height: 48px;
+    font-size: 0.94rem;
   }
 
   .eyebrow {
+    font-size: 0.54rem;
+    line-height: 1.35;
     overflow-wrap: break-word;
   }
 }
@@ -5344,11 +5376,15 @@ h3 {
   }
 
   .brand-logo {
-    width: 106px;
+    width: 98px;
   }
 
   .mobile-menu-button {
-    max-width: 82px;
-    padding-inline: 7px;
+    max-width: 78px;
+    padding-inline: 6px;
+  }
+
+  .hero-title {
+    font-size: clamp(2.4rem, 12.7vw, 3.05rem);
   }
 }
