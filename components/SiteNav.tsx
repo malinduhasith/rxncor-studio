@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { MouseEvent } from "react";
+import { useEffect, useState } from "react";
 import { siteConfig } from "@/config/site";
 
 const navItems = [
@@ -22,8 +23,22 @@ function isActive(pathname: string, href: string, alsoActive: string[] = []) {
 
 export function SiteNav() {
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   function handleNavClick(event: MouseEvent<HTMLAnchorElement>, href: string) {
+    setMenuOpen(false);
+
     if (!href.startsWith("/#") || pathname !== "/") {
       return;
     }
@@ -40,14 +55,28 @@ export function SiteNav() {
   }
 
   return (
-    <header className="site-header">
+    <header className="site-header" data-menu-open={menuOpen ? "true" : "false"}>
       <nav className="shell nav" aria-label="Main navigation">
         <Link className="brand" data-pending-label="home" href="/">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="brand-logo" src="/sig.png" alt="" aria-hidden="true" />
           <span className="sr-only">{siteConfig.name}</span>
         </Link>
-        <div className="nav-links">
+        <button
+          aria-controls="site-navigation-links"
+          aria-expanded={menuOpen}
+          className="mobile-menu-button"
+          onClick={() => setMenuOpen((current) => !current)}
+          type="button"
+        >
+          <span>{menuOpen ? "Close" : "Menu"}</span>
+          <i aria-hidden="true" />
+        </button>
+        <div
+          className="nav-links"
+          data-open={menuOpen ? "true" : "false"}
+          id="site-navigation-links"
+        >
           {navItems.map((item) => {
             const active = isActive(pathname, item.href, item.alsoActive);
 

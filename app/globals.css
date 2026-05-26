@@ -11,6 +11,8 @@
   --olive: #556238;
   --blue: #1f5a78;
   --gold: #ca942c;
+  --display-font: Georgia, "Times New Roman", serif;
+  --font-display: Georgia, "Times New Roman", serif;
   --shadow: 8px 8px 0 rgba(17, 16, 14, 0.16);
   --soft-shadow: 0 20px 70px rgba(17, 16, 14, 0.12);
 }
@@ -77,6 +79,7 @@ textarea {
 }
 
 .nav {
+  position: relative;
   min-height: 82px;
   display: flex;
   align-items: center;
@@ -96,8 +99,47 @@ textarea {
 .brand-logo {
   width: 156px;
   height: auto;
+  max-height: 58px;
   display: block;
   filter: brightness(0);
+  object-fit: contain;
+}
+
+.mobile-menu-button {
+  display: none;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 2px solid var(--line);
+  border-radius: 4px;
+  padding: 0 14px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  box-shadow: 4px 4px 0 rgba(17, 16, 14, 0.16);
+}
+
+.mobile-menu-button i {
+  position: relative;
+  width: 18px;
+  height: 12px;
+  border-top: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+}
+
+.mobile-menu-button i::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 3px;
+  width: 18px;
+  height: 2px;
+  background: currentColor;
 }
 
 .sr-only {
@@ -437,6 +479,10 @@ h1 {
   line-height: 0.78;
   letter-spacing: 0;
   overflow-wrap: anywhere;
+}
+
+.hero-title span {
+  display: inline;
 }
 
 h2 {
@@ -4176,5 +4222,714 @@ h3 {
 
   .button {
     font-size: 0.92rem;
+  }
+}
+
+@media (max-width: 760px) {
+  html {
+    scroll-padding-top: 86px;
+  }
+
+  #about,
+  #book,
+  #contact,
+  #portfolio,
+  #albums,
+  .admin-section {
+    scroll-margin-top: 86px;
+  }
+
+  body {
+    background-size: 34px 34px, 34px 34px, auto;
+    overflow-x: clip;
+  }
+
+  .shell {
+    width: min(100% - 24px, 1160px);
+  }
+
+  .site-header {
+    z-index: 1000;
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .nav {
+    min-height: 68px;
+    display: flex;
+    gap: 12px;
+    padding: 9px 0;
+  }
+
+  .brand {
+    min-width: 0;
+    min-height: 44px;
+    justify-content: flex-start;
+  }
+
+  .brand-logo {
+    width: clamp(112px, 32vw, 148px);
+    max-height: 46px;
+  }
+
+  .mobile-menu-button {
+    display: inline-flex;
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  .site-header[data-menu-open="true"] .mobile-menu-button {
+    background: var(--gold);
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 rgba(17, 16, 14, 0.18);
+  }
+
+  .nav-links {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    left: 0;
+    z-index: 1001;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 10px;
+    border: 2px solid var(--line);
+    border-radius: 8px;
+    background: rgba(255, 250, 240, 0.98);
+    box-shadow: 7px 7px 0 rgba(17, 16, 14, 0.18);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-6px);
+    visibility: hidden;
+    transition:
+      opacity 160ms ease,
+      transform 160ms ease,
+      visibility 160ms ease;
+  }
+
+  .nav-links[data-open="true"] {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    visibility: visible;
+  }
+
+  .nav-links a:not(.button),
+  .nav-links .button {
+    min-height: 48px;
+    width: 100%;
+    justify-content: center;
+    border-color: var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    padding: 0 10px;
+    box-shadow: 3px 3px 0 rgba(17, 16, 14, 0.12);
+    text-align: center;
+  }
+
+  .nav-links a:hover:not(.button),
+  .nav-links a[aria-current="page"]:not(.button),
+  .nav-login[aria-current="page"] {
+    background: var(--gold);
+  }
+
+  .nav-login {
+    grid-column: 1 / -1;
+  }
+
+  .nav-links a[aria-current="page"]:not(.button)::before {
+    inset: auto 12px 6px;
+  }
+
+  .button,
+  .button.small,
+  .icon-button {
+    min-height: 48px;
+  }
+
+  .button {
+    min-width: 0;
+    padding-inline: 16px;
+  }
+
+  .section {
+    padding: 42px 0;
+  }
+
+  .section.alt {
+    border-width: 2px 0;
+  }
+
+  .section-head,
+  .section-head.compact,
+  .gallery-bar,
+  .admin-topbar,
+  .admin-page-header,
+  .panel-title-row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .section-head.numbered {
+    padding-top: 38px;
+  }
+
+  .section-head.numbered::before {
+    min-width: 46px;
+    font-size: 1.22rem;
+  }
+
+  h1,
+  .page-title,
+  .admin-title,
+  .panel-title,
+  .about-hero h1 {
+    max-width: 100%;
+    font-size: clamp(2.9rem, 15vw, 4.6rem);
+    line-height: 0.9;
+    overflow-wrap: anywhere;
+  }
+
+  .hero-copy,
+  .section-head,
+  .section-head > *,
+  .admin-page-header,
+  .admin-page-header > *,
+  .dashboard-panel,
+  .manager-panel,
+  .form-panel {
+    min-width: 0;
+  }
+
+  h2,
+  .section-title,
+  .prose h1,
+  .workflow-panel h2,
+  .section-head.compact h2 {
+    font-size: clamp(2.1rem, 10vw, 3.2rem);
+    line-height: 0.94;
+  }
+
+  .eyebrow,
+  .label,
+  .field {
+    letter-spacing: 0.1em;
+  }
+
+  .hero {
+    min-height: auto;
+    grid-template-columns: 1fr;
+    gap: 22px;
+    padding: 28px 0 36px;
+  }
+
+  .hero h1 {
+    font-size: clamp(3rem, 16vw, 4.25rem);
+  }
+
+  .hero-title span {
+    display: block;
+  }
+
+  .about-hero h1 {
+    font-size: clamp(2.8rem, 12vw, 3.65rem);
+    line-height: 0.92;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  .section-head p {
+    max-width: 100%;
+  }
+
+  .hero-media {
+    min-height: 0;
+    aspect-ratio: 4 / 5;
+    border-radius: 8px;
+  }
+
+  .hero-actions,
+  .gallery-inline-actions,
+  .inline-actions,
+  .danger-zone,
+  .table-actions,
+  .gallery-actions,
+  .footer-inner,
+  .footer-links,
+  .cookie-actions,
+  .copy-detail-row,
+  .password-reset-row,
+  .password-inline-form,
+  .status-form,
+  .block-form-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hero-actions .button,
+  .gallery-inline-actions .button,
+  .gallery-actions .button,
+  .inline-actions .button,
+  .danger-zone .button,
+  .table-actions .button,
+  .copy-detail-row .button,
+  .password-reset-row .button,
+  .password-inline-form .button,
+  .status-form .button,
+  .cookie-actions .button,
+  .about-template-card .button,
+  .upload-diagnostic .button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .grid,
+  .portfolio-gallery-grid,
+  .album-gallery-grid,
+  .feature-list,
+  .stat-grid,
+  .detail-grid,
+  .readiness-grid,
+  .admin-quick-grid,
+  .delivery-summary-grid,
+  .client-delivery-summary,
+  .contact-social-grid,
+  .contact-details,
+  .backup-list,
+  .about-editor-steps,
+  .about-section-add-form,
+  .photo-meta-form,
+  .lightbox-grid,
+  .access-options,
+  .request-date-fields,
+  .form-two-col,
+  .portal-password-panel,
+  .about-builder-grid,
+  .site-contact-grid,
+  .contact-grid,
+  .contact-showcase-grid,
+  .about-split,
+  .about-tools-section,
+  .about-visual-strip,
+  .about-block-grid,
+  .about-statement-grid,
+  .compact-form,
+  .filter-bar,
+  .client-edit-row,
+  .request-edit-form,
+  .about-settings-form,
+  .about-create-form,
+  .about-block-edit-form,
+  .site-contact-form,
+  .social-edit-grid,
+  .custom-link-row {
+    grid-template-columns: 1fr;
+  }
+
+  .portfolio-gallery-grid .photo-tile:nth-child(n),
+  .album-gallery-grid .album-card:nth-child(n),
+  .lightbox-grid .photo-tile:nth-child(n) {
+    grid-column: auto;
+    min-height: 0;
+  }
+
+  .photo-tile,
+  .photo-button,
+  .album-card {
+    min-height: 0;
+    aspect-ratio: 4 / 5;
+    border-radius: 8px;
+    box-shadow: 5px 5px 0 rgba(17, 16, 14, 0.14);
+  }
+
+  .album-card {
+    aspect-ratio: 1 / 1.18;
+  }
+
+  .tile-caption {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    gap: 8px;
+  }
+
+  .tile-album,
+  .album-meta h3 {
+    white-space: normal;
+  }
+
+  .tile-date-chip {
+    top: 10px;
+    right: 10px;
+    max-width: calc(100% - 20px);
+    padding: 5px 9px;
+    font-size: 0.68rem;
+  }
+
+  .album-meta {
+    padding: 16px;
+  }
+
+  .album-card-top {
+    inset: 10px 10px auto;
+    flex-wrap: wrap;
+  }
+
+  .gallery-page::before,
+  .hero::before,
+  .about-hero::before,
+  .contact-showcase::before {
+    display: none;
+  }
+
+  .album-hero-collage {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin: 20px 0 26px;
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  .collage-copy {
+    padding: 14px;
+  }
+
+  .collage-stack {
+    height: auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    gap: 8px;
+    overflow: visible;
+  }
+
+  .collage-stack img:nth-child(n) {
+    grid-column: auto;
+    grid-row: auto;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    transform: none;
+  }
+
+  .gallery-actions {
+    margin-bottom: 14px;
+  }
+
+  .gallery-delivery {
+    margin-top: 18px;
+    padding-top: 18px;
+  }
+
+  .gallery-load-sentinel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gallery-load-sentinel .button {
+    width: 100%;
+  }
+
+  .lightbox-modal {
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 10px;
+    padding:
+      max(10px, env(safe-area-inset-top))
+      10px
+      max(10px, env(safe-area-inset-bottom));
+  }
+
+  .lightbox-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    min-height: 0;
+    gap: 10px;
+  }
+
+  .lightbox-toolbar-actions {
+    display: grid;
+    grid-template-columns: 48px 48px 1fr 48px;
+    gap: 8px;
+  }
+
+  .lightbox-toolbar-actions .button {
+    min-width: 0;
+    padding: 0 10px;
+  }
+
+  .lightbox-image {
+    max-height: calc(100svh - 190px);
+  }
+
+  .form-panel,
+  .dashboard-panel,
+  .gallery-gate,
+  .workflow-panel,
+  .manager-panel,
+  .request-card,
+  .about-builder-section,
+  .about-builder-block,
+  .contact-primary-card,
+  .social-card,
+  .portal-password-panel,
+  .cookie-card {
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 4px 4px 0 rgba(17, 16, 14, 0.12);
+  }
+
+  .cookie-card {
+    max-height: min(48svh, 390px);
+    overflow: auto;
+  }
+
+  .cookie-card h2 {
+    margin-bottom: 10px;
+    font-size: clamp(1.7rem, 8vw, 2.1rem);
+    line-height: 0.98;
+    overflow-wrap: anywhere;
+  }
+
+  .cookie-card p {
+    font-size: 0.92rem;
+  }
+
+  .cookie-card .eyebrow {
+    margin-bottom: 10px;
+  }
+
+  .cookie-actions {
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .cookie-actions .button {
+    min-height: 44px;
+  }
+
+  .field {
+    margin-bottom: 14px;
+    font-size: 0.76rem;
+  }
+
+  .field input,
+  .field select,
+  .field textarea {
+    min-height: 50px;
+    font-size: 16px;
+  }
+
+  .checkbox-field {
+    align-items: flex-start;
+    line-height: 1.35;
+  }
+
+  .checkbox-field input {
+    flex: 0 0 22px;
+    width: 22px;
+    height: 22px;
+    margin-top: 1px;
+  }
+
+  .admin-workspace {
+    padding-top: 18px;
+  }
+
+  .admin-layout {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .admin-sidebar {
+    position: sticky;
+    top: calc(70px + env(safe-area-inset-top));
+    z-index: 18;
+    display: flex;
+    max-width: 100%;
+    overflow-x: auto;
+    gap: 8px;
+    border-radius: 8px;
+    padding: 8px;
+    background: rgba(255, 250, 240, 0.96);
+    scroll-padding-left: 8px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-sidebar-title {
+    display: none;
+  }
+
+  .admin-sidebar a {
+    flex: 0 0 auto;
+    min-width: max-content;
+    min-height: 44px;
+    align-items: center;
+    border: 2px solid var(--line);
+    border-left-width: 2px;
+    padding: 8px 12px;
+    scroll-snap-align: start;
+  }
+
+  .admin-nav-number,
+  .admin-nav-copy small {
+    display: none;
+  }
+
+  .admin-nav-copy {
+    display: block;
+  }
+
+  .admin-page-header {
+    margin-top: 10px;
+  }
+
+  .admin-page-header h2 {
+    font-size: clamp(2.2rem, 11vw, 3.5rem);
+  }
+
+  .manager-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .album-list {
+    max-height: none;
+  }
+
+  .table-wrap {
+    margin-inline: -4px;
+    border-radius: 6px;
+  }
+
+  .table th,
+  .table td {
+    padding: 11px 9px;
+    font-size: 0.9rem;
+  }
+
+  .file-table td:nth-child(3),
+  .file-table td:nth-child(5) {
+    min-width: 220px;
+  }
+
+  .upload-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .upload-summary span {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .upload-message,
+  .upload-failure-list small,
+  .code-line,
+  .share-box pre {
+    word-break: break-word;
+  }
+
+  .toast-viewport {
+    top: calc(env(safe-area-inset-top) + 10px);
+    right: 10px;
+    left: 10px;
+    width: auto;
+  }
+
+  .toast-alert.alert {
+    min-height: 0;
+    padding: 12px 44px 12px 12px;
+    border-radius: 8px;
+  }
+
+  .pending-indicator {
+    padding: 16px;
+  }
+
+  .pending-card {
+    width: min(100%, 620px);
+    padding: 24px 20px;
+    border-radius: 8px;
+  }
+
+  .pending-card h2 {
+    max-width: 10ch;
+    font-size: clamp(3.2rem, 17vw, 5rem);
+  }
+
+  .pending-indicator-label {
+    margin: 18px 0 16px;
+    font-size: 1rem;
+  }
+
+  .footer {
+    padding-bottom: calc(28px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 460px) {
+  .shell {
+    width: min(100% - 20px, 1160px);
+  }
+
+  .brand-logo {
+    width: clamp(102px, 34vw, 128px);
+  }
+
+  .mobile-menu-button {
+    min-height: 42px;
+    padding: 0 11px;
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
+  }
+
+  .nav-links {
+    gap: 7px;
+    padding: 8px;
+    font-size: 0.66rem;
+  }
+
+  .nav-links a:not(.button),
+  .nav-links .button {
+    min-height: 44px;
+    padding-inline: 7px;
+  }
+
+  .hero h1 {
+    font-size: clamp(3rem, 18vw, 4.3rem);
+  }
+
+  .lede {
+    font-size: 0.96rem;
+  }
+
+  .photo-tile,
+  .photo-button,
+  .album-card {
+    aspect-ratio: 3.6 / 5;
+  }
+
+  .tile-caption {
+    flex-direction: column;
+  }
+
+  .tile-action {
+    align-self: flex-start;
+  }
+
+  .lightbox-toolbar-actions {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .lightbox-toolbar-actions .button {
+    grid-column: 1 / -1;
+    order: -1;
+  }
+
+  .icon-button {
+    width: 100%;
   }
 }

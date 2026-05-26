@@ -27,6 +27,8 @@ export default async function Home({ searchParams }: HomePageProps) {
   const { contact, shoot } = await searchParams;
   const contactNotice = contact ? contactNotices[contact] : undefined;
   const shootNotice = shoot ? shootRequestNotices[shoot] : undefined;
+  const [brandRoot, ...brandParts] = siteConfig.name.split(".");
+  const brandSuffix = brandParts.join(".");
   const [realPortfolioPhotos, realAlbums, siteContactSettings] = await Promise.all([
     getPublicPortfolioPhotos(3),
     getPublicAlbumCards(3),
@@ -74,7 +76,10 @@ export default async function Home({ searchParams }: HomePageProps) {
       <section className="shell hero">
         <div className="hero-copy">
           <p className="eyebrow">Melbourne photography and client delivery</p>
-          <h1>{siteConfig.name}</h1>
+          <h1 className="hero-title">
+            <span>{brandRoot}{brandSuffix ? "." : ""}</span>
+            {brandSuffix ? <span>{brandSuffix}</span> : null}
+          </h1>
           <p className="lede">
             Public portfolio, curated featured albums, and private client galleries
             with password-protected delivery and download-ready photo sets.
