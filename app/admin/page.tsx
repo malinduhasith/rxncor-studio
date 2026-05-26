@@ -50,6 +50,7 @@ import { ClientPasswordResetForm } from "@/components/admin/ClientPasswordResetF
 import { ConfirmSubmitButton } from "@/components/admin/ConfirmSubmitButton";
 import { CopyLinkButton } from "@/components/admin/CopyLinkButton";
 import { CopyTextButton } from "@/components/admin/CopyTextButton";
+import { DateTimeRangeFields } from "@/components/DateTimeRangeFields";
 import { Notice, NoticeStack, NoticeToaster } from "@/components/Notice";
 import { siteConfig } from "@/config/site";
 import {
@@ -4122,28 +4123,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                             <option value="archived">Archived</option>
                           </select>
                         </label>
-                        <label className="field">
-                          Start
-                          <input
-                            name="preferred_start_at"
-                            type="datetime-local"
-                            defaultValue={dateTimeInputValue(
-                              request.preferred_start_at,
-                            )}
-                            required
-                          />
-                        </label>
-                        <label className="field">
-                          Finish
-                          <input
-                            name="preferred_end_at"
-                            type="datetime-local"
-                            defaultValue={dateTimeInputValue(
-                              request.preferred_end_at,
-                            )}
-                            required
-                          />
-                        </label>
+                        <DateTimeRangeFields
+                          className="request-date-fields"
+                          defaultEnd={dateTimeInputValue(request.preferred_end_at)}
+                          defaultStart={dateTimeInputValue(
+                            request.preferred_start_at,
+                          )}
+                          enforceFutureStart={false}
+                        />
                         <label className="field wide-field">
                           Request details
                           <textarea
@@ -4168,12 +4155,26 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                           Create or link client from this request
                         </label>
                         <label className="checkbox-field">
-                          <input name="create_album" type="checkbox" />
+                          <input
+                            name="create_album"
+                            type="checkbox"
+                            defaultChecked={request.status === "accepted"}
+                          />
                           Create draft private album for accepted work
+                          <span className="form-note">
+                            Accepted requests create client access automatically.
+                          </span>
                         </label>
                         <label className="checkbox-field">
-                          <input name="email_client_update" type="checkbox" />
+                          <input
+                            name="email_client_update"
+                            type="checkbox"
+                            defaultChecked={request.status === "accepted"}
+                          />
                           Email client this status update
+                          <span className="form-note">
+                            Accepted requests send login details automatically.
+                          </span>
                         </label>
                         <div className="inline-actions">
                           <button className="button" type="submit">

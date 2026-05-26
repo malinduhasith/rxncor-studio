@@ -66,6 +66,9 @@ type ShootStatusInput = {
   end: string;
   location?: string | null;
   albumUrl?: string | null;
+  clientLoginUrl?: string | null;
+  clientPassword?: string | null;
+  hasExistingClientPassword?: boolean;
   relatedId?: string | null;
 };
 
@@ -425,7 +428,32 @@ export async function sendShootStatusEmail(input: ShootStatusInput) {
     ["Location", input.location],
     ["Start", formatWhen(input.start)],
     ["Finish", formatWhen(input.end)],
+    ["Client login", input.status === "accepted" ? input.clientLoginUrl : null],
+    ["Gallery", input.albumUrl],
+    [
+      "Temporary password",
+      input.status === "accepted" ? input.clientPassword : null,
+    ],
   ];
+  const accessCopy =
+    input.status === "accepted" && input.clientPassword
+      ? "\n\nYou can change this password after signing in."
+      : input.status === "accepted" && input.hasExistingClientPassword
+        ? "\n\nUse your existing client password to open assigned galleries."
+        : "";
+  const htmlAccess =
+    input.status === "accepted" && (input.clientPassword || input.hasExistingClientPassword)
+      ? `<div style="margin-top:18px;border:1px solid #ddd6c8;padding:14px;background:#fffaf0;"><strong style="display:block;margin-bottom:8px;">Client access</strong><p style="margin:0;color:#625b51;">${
+          input.clientPassword
+            ? `Temporary password: <strong>${escapeHtml(input.clientPassword)}</strong><br />You can change this password after signing in.`
+            : "Use your existing client password to open assigned galleries."
+        }</p></div>`
+      : "";
+  const action = input.albumUrl
+    ? { href: input.albumUrl, label: "Open gallery" }
+    : input.clientLoginUrl
+      ? { href: input.clientLoginUrl, label: "Client login" }
+      : undefined;
 
   return sendEmail({
     to: input.email,
@@ -440,14 +468,12 @@ export async function sendShootStatusEmail(input: ShootStatusInput) {
         shoot_type: input.shootType,
       },
     },
-    text: `Hi ${input.name},\n\n${statusCopy[input.status]}\n\n${textRows(rows)}\n\n- Malindu`,
+    text: `Hi ${input.name},\n\n${statusCopy[input.status]}${accessCopy}\n\n${textRows(rows)}\n\n- Malindu`,
     html: emailShell(
       "Shoot request update",
       `Hi ${input.name}, ${statusCopy[input.status]}`,
-      `<table style="width:100%;border-collapse:collapse;border:1px solid #ddd6c8;">${htmlRows(rows)}</table>`,
-      input.albumUrl
-        ? { href: input.albumUrl, label: "Open gallery" }
-        : undefined,
+      `<table style="width:100%;border-collapse:collapse;border:1px solid #ddd6c8;">${htmlRows(rows)}</table>${htmlAccess}`,
+      action,
     ),
   });
 }

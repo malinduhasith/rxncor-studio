@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { MouseEvent } from "react";
 import { siteConfig } from "@/config/site";
 
 const navItems = [
@@ -22,6 +23,22 @@ function isActive(pathname: string, href: string, alsoActive: string[] = []) {
 export function SiteNav() {
   const pathname = usePathname();
 
+  function handleNavClick(event: MouseEvent<HTMLAnchorElement>, href: string) {
+    if (!href.startsWith("/#") || pathname !== "/") {
+      return;
+    }
+
+    const target = document.getElementById(href.slice(2));
+
+    if (!target) {
+      return;
+    }
+
+    event.preventDefault();
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.history.pushState(null, "", href);
+  }
+
   return (
     <header className="site-header">
       <nav className="shell nav" aria-label="Main navigation">
@@ -40,6 +57,7 @@ export function SiteNav() {
                 data-pending-label={item.label}
                 href={item.href}
                 key={item.href}
+                onClick={(event) => handleNavClick(event, item.href)}
               >
                 {item.label}
               </Link>

@@ -234,6 +234,29 @@ export const adminNotices: Record<string, NoticeContent> = {
   }
 };
 
+export const clientPortalNotices: Record<string, NoticeContent> = {
+  updated: {
+    tone: "success",
+    title: "Password updated",
+    message: "Use the new password the next time you sign in."
+  },
+  current: {
+    tone: "error",
+    title: "Current password did not match",
+    message: "Try again with the password you used to sign in."
+  },
+  invalid: {
+    tone: "error",
+    title: "Password was not changed",
+    message: "Use at least 6 characters and make sure both new passwords match."
+  },
+  error: {
+    tone: "error",
+    title: "Password update failed",
+    message: "Try again. If it keeps failing, ask for a reset."
+  }
+};
+
 export const clientLoginNotices: Record<string, NoticeContent> = {
   "duplicate-client": {
     tone: "error",

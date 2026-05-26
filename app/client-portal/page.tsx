@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AlbumCard } from "@/components/AlbumCard";
+import { NoticeToaster } from "@/components/Notice";
 import { siteConfig } from "@/config/site";
 import {
   clientSessionCookieName,
@@ -9,7 +10,8 @@ import {
 } from "@/lib/gallery-access";
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { clientSignOutAction } from "./actions";
+import { clientPortalNotices } from "@/lib/notices";
+import { changeClientPasswordAction, clientSignOutAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +31,12 @@ type PortalAlbum = {
   expires_at: string | null;
 };
 
+type ClientPortalPageProps = {
+  searchParams: Promise<{
+    password?: string;
+  }>;
+};
+
 function formatDate(date: string | null) {
   return date ?? "Client gallery";
 }
@@ -45,7 +53,11 @@ async function coverUrl(url: string | null) {
   }
 }
 
-export default async function ClientPortalPage() {
+export default async function ClientPortalPage({
+  searchParams
+}: ClientPortalPageProps) {
+  const { password } = await searchParams;
+  const passwordNotice = password ? clientPortalNotices[password] : undefined;
   const cookieStore = await cookies();
   const session = parseClientSessionCookie(
     cookieStore.get(clientSessionCookieName())?.value
@@ -107,6 +119,7 @@ export default async function ClientPortalPage() {
 
   return (
     <main className="shell section editorial-page">
+      <NoticeToaster cleanupQueryKeys={["password"]} notices={[passwordNotice]} />
       <div className="section-head numbered" data-index="01">
         <div>
           <p className="eyebrow">Client Portal</p>
@@ -134,6 +147,49 @@ export default async function ClientPortalPage() {
       {!displayAlbums.length ? (
         <p className="muted">No active albums are assigned to this client yet.</p>
       ) : null}
+      <section className="portal-password-panel">
+        <div>
+          <p className="eyebrow">Client password</p>
+          <h2>Set your own password</h2>
+          <p className="muted">
+            If you were given a temporary password, change it here after signing in.
+          </p>
+        </div>
+        <form action={changeClientPasswordAction} className="compact-form">
+          <label className="field">
+            Current password
+            <input
+              name="current_password"
+              autoComplete="current-password"
+              required
+              type="password"
+            />
+          </label>
+          <label className="field">
+            New password
+            <input
+              name="new_password"
+              autoComplete="new-password"
+              minLength={6}
+              required
+              type="password"
+            />
+          </label>
+          <label className="field">
+            Confirm new password
+            <input
+              name="confirm_password"
+              autoComplete="new-password"
+              minLength={6}
+              required
+              type="password"
+            />
+          </label>
+          <button className="button" type="submit">
+            Update password
+          </button>
+        </form>
+      </section>
     </main>
   );
 }

@@ -1,5 +1,6 @@
 "use server";
 
+import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -297,6 +298,13 @@ function slugify(value: string) {
   );
 }
 
+function generateTemporaryClientPassword() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  const bytes = randomBytes(10);
+
+  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
+}
+
 async function deleteR2Objects(keys: string[]) {
   await Promise.allSettled(keys.map((key) => deleteR2Object(key)));
 }
@@ -339,7 +347,7 @@ async function findOrCreateClientFromShoot(
   const email = shoot.email.toLowerCase();
   const { data: existingClients, error: existingError } = await supabase
     .from("clients")
-    .select("id")
+    .select("id, password_hash")
     .ilike("email", email)
     .limit(2);
 
@@ -348,7 +356,11 @@ async function findOrCreateClientFromShoot(
   }
 
   if (existingClients?.length) {
-    return { clientId: existingClients[0].id as string };
+    return {
+      clientId: existingClients[0].id as string,
+      passwordHash: existingClients[0].password_hash as string | null,
+      created: false
+    };
   }
 
   const { data: client, error } = await supabase
@@ -358,14 +370,84 @@ async function findOrCreateClientFromShoot(
       email,
       phone: emptyToNull(shoot.phone)
     })
-    .select("id")
+    .select("id, password_hash")
     .single();
 
   if (error || !client) {
     return { error };
   }
 
-  return { clientId: client.id as string };
+  return {
+    clientId: client.id as string,
+    passwordHash: client.password_hash as string | null,
+    created: true
+  };
+}
+
+async function ensureClientPassword(
+  supabase: AdminSupabaseClient,
+  clientId: string
+) {
+  const { data: client, error: clientError } = await supabase
+    .from("clients")
+    .select("password_hash")
+    .eq("id", clientId)
+    .maybeSingle();
+
+  if (clientError || !client) {
+    return { error: clientError ?? new Error("Client not found") };
+  }
+
+  if (client.password_hash) {
+    return { hasExistingPassword: true, generatedPassword: null };
+  }
+
+  const generatedPassword = generateTemporaryClientPassword();
+  const passwordHash = hashPassword(generatedPassword);
+  const { data: updatedClient, error } = await supabase
+    .from("clients")
+    .update({ password_hash: passwordHash })
+    .eq("id", clientId)
+    .select("password_hash")
+    .single();
+
+  if (
+    error ||
+    !updatedClient?.password_hash ||
+    !verifyPassword(generatedPassword, updatedClient.password_hash)
+  ) {
+    return { error };
+  }
+
+  return { hasExistingPassword: false, generatedPassword };
+}
+
+async function ensureAlbumClientAssignment(
+  supabase: AdminSupabaseClient,
+  albumId: string,
+  clientId: string
+) {
+  const { data: assignment, error: lookupError } = await supabase
+    .from("album_clients")
+    .select("album_id")
+    .eq("album_id", albumId)
+    .eq("client_id", clientId)
+    .maybeSingle();
+
+  if (lookupError) {
+    return lookupError;
+  }
+
+  if (assignment) {
+    return null;
+  }
+
+  const { error } = await supabase.from("album_clients").insert({
+    album_id: albumId,
+    client_id: clientId
+  });
+
+  return error;
 }
 
 async function uniqueAlbumSlug(supabase: AdminSupabaseClient, baseSlug: string) {
@@ -1404,8 +1486,15 @@ export async function updateShootRequestAction(formData: FormData) {
 
   let clientId = (existingShoot.client_id as string | null) ?? null;
   let albumId = (existingShoot.album_id as string | null) ?? null;
+  let generatedClientPassword: string | null = null;
+  let clientHadExistingPassword = false;
+  const acceptedRequest = payload.data.status === "accepted";
+  const shouldEnsureClient =
+    acceptedRequest || payload.data.create_client || payload.data.create_album;
+  const shouldEnsureAlbum = acceptedRequest || payload.data.create_album;
+  const shouldEmailClient = acceptedRequest || payload.data.email_client_update;
 
-  if ((payload.data.create_client || payload.data.create_album) && !clientId) {
+  if (shouldEnsureClient && !clientId) {
     const clientResult = await findOrCreateClientFromShoot(supabase, {
       name: payload.data.name,
       email: payload.data.email,
@@ -1419,7 +1508,18 @@ export async function updateShootRequestAction(formData: FormData) {
     clientId = clientResult.clientId;
   }
 
-  if (payload.data.create_album && clientId && !albumId) {
+  if (acceptedRequest && clientId) {
+    const passwordResult = await ensureClientPassword(supabase, clientId);
+
+    if (passwordResult.error) {
+      redirect("/admin?notice=client-password-error#shoot-requests");
+    }
+
+    generatedClientPassword = passwordResult.generatedPassword ?? null;
+    clientHadExistingPassword = Boolean(passwordResult.hasExistingPassword);
+  }
+
+  if (shouldEnsureAlbum && clientId && !albumId) {
     const albumResult = await createDraftAlbumFromShoot(supabase, {
       clientId,
       name: payload.data.name,
@@ -1432,6 +1532,18 @@ export async function updateShootRequestAction(formData: FormData) {
     }
 
     albumId = albumResult.albumId;
+  }
+
+  if (acceptedRequest && clientId && albumId) {
+    const assignmentError = await ensureAlbumClientAssignment(
+      supabase,
+      albumId,
+      clientId
+    );
+
+    if (assignmentError) {
+      redirect("/admin?notice=shoot-request-error#shoot-requests");
+    }
   }
 
   const { error } = await supabase
@@ -1461,7 +1573,7 @@ export async function updateShootRequestAction(formData: FormData) {
     );
   }
 
-  if (payload.data.email_client_update) {
+  if (shouldEmailClient) {
     let albumUrl: string | null = null;
 
     if (albumId) {
@@ -1485,6 +1597,9 @@ export async function updateShootRequestAction(formData: FormData) {
       end: payload.data.preferred_end_at,
       location: payload.data.location || null,
       albumUrl,
+      clientLoginUrl: `${siteConfig.url}${siteConfig.routes.login}`,
+      clientPassword: generatedClientPassword,
+      hasExistingClientPassword: clientHadExistingPassword,
       relatedId: payload.data.shoot_request_id
     });
 

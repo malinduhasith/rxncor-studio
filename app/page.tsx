@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { submitContactAction, submitShootRequestAction } from "./actions";
 import { AlbumCard } from "@/components/AlbumCard";
+import { DateTimeRangeFields } from "@/components/DateTimeRangeFields";
 import { NoticeToaster } from "@/components/Notice";
 import { PhotoTile } from "@/components/PhotoTile";
 import { siteConfig } from "@/config/site";
@@ -85,7 +86,7 @@ export default async function Home({ searchParams }: HomePageProps) {
             <Link className="button secondary" href={siteConfig.routes.albums}>
               Featured Albums
             </Link>
-            <Link className="button secondary" href="#book">
+            <Link className="button secondary" href="/#book">
               Request Shoot
             </Link>
           </div>
@@ -251,16 +252,7 @@ export default async function Home({ searchParams }: HomePageProps) {
               Location
               <input name="location" placeholder="Suburb, venue, or online planning note" />
             </label>
-            <div className="form-two-col">
-              <label className="field">
-                Start
-                <input name="preferred_start_at" type="datetime-local" required />
-              </label>
-              <label className="field">
-                Finish
-                <input name="preferred_end_at" type="datetime-local" required />
-              </label>
-            </div>
+            <DateTimeRangeFields enforceFutureStart />
             <label className="field">
               Details
               <textarea
