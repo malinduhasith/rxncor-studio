@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { submitContactAction, submitShootRequestAction } from "./actions";
+import { submitContactAction } from "./actions";
 import { AlbumCard } from "@/components/AlbumCard";
-import { DateTimeRangeFields } from "@/components/DateTimeRangeFields";
 import { NoticeToaster } from "@/components/Notice";
 import { PhotoTile } from "@/components/PhotoTile";
 import { siteConfig } from "@/config/site";
-import { contactNotices, shootRequestNotices } from "@/lib/notices";
+import { contactNotices } from "@/lib/notices";
 import { getPublicAlbumCards, getPublicPortfolioPhotos } from "@/lib/public-gallery";
 import { featuredAlbums, portfolioItems } from "@/lib/sample-data";
 import { getSiteContactSettings } from "@/lib/site-settings";
@@ -15,7 +14,6 @@ export const dynamic = "force-dynamic";
 type HomePageProps = {
   searchParams: Promise<{
     contact?: string;
-    shoot?: string;
   }>;
 };
 
@@ -24,9 +22,8 @@ function formatDate(date: string | null) {
 }
 
 export default async function Home({ searchParams }: HomePageProps) {
-  const { contact, shoot } = await searchParams;
+  const { contact } = await searchParams;
   const contactNotice = contact ? contactNotices[contact] : undefined;
-  const shootNotice = shoot ? shootRequestNotices[shoot] : undefined;
   const [brandRoot, ...brandParts] = siteConfig.name.split(".");
   const brandSuffix = brandParts.join(".");
   const [realPortfolioPhotos, realAlbums, siteContactSettings] = await Promise.all([
@@ -69,10 +66,7 @@ export default async function Home({ searchParams }: HomePageProps) {
 
   return (
     <main>
-      <NoticeToaster
-        cleanupQueryKeys={["contact", "shoot"]}
-        notices={[contactNotice, shootNotice]}
-      />
+      <NoticeToaster cleanupQueryKeys={["contact"]} notices={[contactNotice]} />
       <section className="shell hero">
         <div className="hero-copy">
           <p className="eyebrow">Melbourne photography and client delivery</p>
@@ -91,7 +85,7 @@ export default async function Home({ searchParams }: HomePageProps) {
             <Link className="button secondary" href={siteConfig.routes.albums}>
               Featured Albums
             </Link>
-            <Link className="button secondary" href="/#book">
+            <Link className="button secondary" href={siteConfig.routes.book}>
               Request Shoot
             </Link>
           </div>
@@ -215,60 +209,48 @@ export default async function Home({ searchParams }: HomePageProps) {
         </div>
       </section>
 
-      <section className="shell section" id="book">
+      <section className="shell section" id="booking">
         <div className="section-head numbered" data-index="05">
           <div>
-            <p className="eyebrow">Book</p>
-            <h2>Request a shoot</h2>
+            <p className="eyebrow">Booking desk</p>
+            <h2>A dedicated page for shoots, quotes, and future payments.</h2>
           </div>
           <p>
-            Send the date, time, location, and type of shoot you need. Accepted
-            bookings are checked against existing confirmed work before they can
-            be locked in.
+            Booking now has its own space, so invoices, deposits, payment
+            gateways, and client preparation can grow without cluttering the
+            homepage.
           </p>
         </div>
         <div className="contact-grid">
-          <form action={submitShootRequestAction} className="form-panel contact-form">
-            <h3>Shoot request</h3>
-            <label className="field">
-              Name
-              <input name="name" autoComplete="name" required />
-            </label>
-            <label className="field">
-              Email
-              <input name="email" type="email" autoComplete="email" required />
-            </label>
-            <label className="field">
-              Phone
-              <input name="phone" autoComplete="tel" placeholder="+61" />
-            </label>
-            <label className="field">
-              Shoot type
-              <select name="shoot_type" defaultValue="Portrait session" required>
-                <option>Portrait session</option>
-                <option>Family session</option>
-                <option>Birthday or celebration</option>
-                <option>Event coverage</option>
-                <option>Brand or product</option>
-                <option>Other</option>
-              </select>
-            </label>
-            <label className="field">
-              Location
-              <input name="location" placeholder="Suburb, venue, or online planning note" />
-            </label>
-            <DateTimeRangeFields enforceFutureStart />
-            <label className="field">
-              Details
-              <textarea
-                name="message"
-                placeholder="Tell me what this is for, rough guest count, style, and anything time-sensitive."
-              />
-            </label>
-            <button className="button" type="submit">
-              Request shoot
-            </button>
-          </form>
+          <div className="form-panel contact-form">
+            <h3>Plan the shoot</h3>
+            <p className="form-note">
+              Use the booking page for dates, locations, shoot type, timing,
+              notes, and availability checks. Later, this is where quotes,
+              invoices, deposits, and payments can live.
+            </p>
+            <div className="feature-list contact-details">
+              <div className="feature">
+                <h3>Request</h3>
+                <p>Share the date, location, shoot type, and rough plan.</p>
+              </div>
+              <div className="feature">
+                <h3>Review</h3>
+                <p>I check timing and confirm before anything is locked in.</p>
+              </div>
+              <div className="feature">
+                <h3>Prepare</h3>
+                <p>Accepted shoots can become private client galleries.</p>
+              </div>
+              <div className="feature">
+                <h3>Later</h3>
+                <p>Room for invoices, deposits, and payment gateways.</p>
+              </div>
+            </div>
+            <Link className="button" href={siteConfig.routes.book}>
+              Open booking page
+            </Link>
+          </div>
           <div className="contact-side">
             <form action={submitContactAction} className="form-panel contact-form">
               <h3>Gallery support</h3>

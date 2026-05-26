@@ -62,7 +62,7 @@ export async function submitShootRequestAction(formData: FormData) {
   });
 
   if (!payload.success || !isValidDateRange(payload.data.preferred_start_at, payload.data.preferred_end_at)) {
-    redirect("/?shoot=error#book");
+    redirect("/book?shoot=error#request");
   }
 
   const overlap = await hasAcceptedShootOverlap(
@@ -71,11 +71,11 @@ export async function submitShootRequestAction(formData: FormData) {
   );
 
   if (overlap.error) {
-    redirect("/?shoot=setup-error#book");
+    redirect("/book?shoot=setup-error#request");
   }
 
   if (overlap.hasOverlap) {
-    redirect("/?shoot=conflict#book");
+    redirect("/book?shoot=conflict#request");
   }
 
   const requestHeaders = await headers();
@@ -86,7 +86,7 @@ export async function submitShootRequestAction(formData: FormData) {
   });
 
   if (!rateLimit.allowed) {
-    redirect("/?shoot=rate-limited#book");
+    redirect("/book?shoot=rate-limited#request");
   }
 
   const supabase = createSupabaseAdminClient();
@@ -103,7 +103,7 @@ export async function submitShootRequestAction(formData: FormData) {
   });
 
   if (error) {
-    redirect("/?shoot=error#book");
+    redirect("/book?shoot=error#request");
   }
 
   await sendShootRequestEmails({
@@ -118,7 +118,7 @@ export async function submitShootRequestAction(formData: FormData) {
     ipAddress: ipAddress === "unknown" ? null : ipAddress
   });
 
-  redirect("/?shoot=sent#book");
+  redirect("/book?shoot=sent#request");
 }
 
 export async function submitContactAction(formData: FormData) {

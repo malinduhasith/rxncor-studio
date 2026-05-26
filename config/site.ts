@@ -84,6 +84,7 @@ export const siteConfig = {
     about: "/about",
     portfolio: "/portfolio",
     albums: "/albums",
+    book: "/book",
     admin: "/admin",
     adminLogin: "/rxncor-admin",
     login: "/login",

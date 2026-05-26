@@ -8,6 +8,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     siteConfig.routes.about,
     siteConfig.routes.portfolio,
     siteConfig.routes.albums,
+    siteConfig.routes.book,
     "/privacy",
     "/terms"
   ];

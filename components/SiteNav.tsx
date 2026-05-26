@@ -11,7 +11,7 @@ const navItems = [
   { href: siteConfig.routes.about, label: "About" },
   { href: siteConfig.routes.portfolio, label: "Portfolio" },
   { href: siteConfig.routes.albums, label: "Albums", alsoActive: ["/client"] },
-  { href: "/#book", label: "Book" }
+  { href: siteConfig.routes.book, label: "Book" }
 ];
 
 function isActive(pathname: string, href: string, alsoActive: string[] = []) {

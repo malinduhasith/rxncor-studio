@@ -197,7 +197,7 @@ export default async function AboutPage() {
           <Link className="button" href={siteConfig.routes.portfolio}>
             View portfolio
           </Link>
-          <Link className="button secondary" href="/#book">
+          <Link className="button secondary" href={siteConfig.routes.book}>
             Request a shoot
           </Link>
         </div>
