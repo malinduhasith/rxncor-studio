@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { MouseEvent } from "react";
 import { useEffect, useState } from "react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { siteConfig } from "@/config/site";
 
 const navItems = [
@@ -92,6 +93,7 @@ export function SiteNav() {
               </Link>
             );
           })}
+          <ThemeToggle />
           <Link
             aria-current={pathname === siteConfig.routes.login ? "page" : undefined}
             className="button secondary nav-login"

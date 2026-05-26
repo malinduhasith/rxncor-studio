@@ -52,6 +52,20 @@ export const metadata: Metadata = {
   }
 };
 
+const themeScript = `(() => {
+  try {
+    const key = "rxncor_theme_v1";
+    const saved = localStorage.getItem(key);
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const theme = saved === "dark" || saved === "light" ? saved : prefersDark ? "dark" : "light";
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+  } catch {
+    document.documentElement.dataset.theme = "light";
+    document.documentElement.style.colorScheme = "light";
+  }
+})();`;
+
 export default async function RootLayout({
   children
 }: Readonly<{
@@ -60,7 +74,13 @@ export default async function RootLayout({
   const siteContactSettings = await getSiteContactSettings();
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{ __html: themeScript }}
+          id="rxncor-theme"
+        />
+      </head>
       <body>
         <Suspense fallback={null}>
           <PendingInteraction />
