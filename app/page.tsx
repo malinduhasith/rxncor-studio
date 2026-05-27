@@ -8,7 +8,7 @@ import { getLinkPreviewMap } from "@/lib/link-preview";
 import { contactNotices } from "@/lib/notices";
 import { getPublicAlbumCards, getPublicPortfolioPhotos } from "@/lib/public-gallery";
 import { featuredAlbums, portfolioItems } from "@/lib/sample-data";
-import { getSiteContactSettings } from "@/lib/site-settings";
+import { getSiteContactSettings, type SiteSocialLink } from "@/lib/site-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +20,12 @@ type HomePageProps = {
 
 function formatDate(date: string | null) {
   return date ?? "Public";
+}
+
+function prefersSitePreview(social: SiteSocialLink) {
+  const label = social.label.toLowerCase();
+
+  return label.includes("instagram") || label.includes("facebook");
 }
 
 export default async function Home({ searchParams }: HomePageProps) {
@@ -36,6 +42,11 @@ export default async function Home({ searchParams }: HomePageProps) {
     siteContactSettings.socialLinks.map((social) => social.href)
   );
   const heroImage = realPortfolioPhotos[0]?.imageUrl ?? realAlbums[0]?.coverUrl ?? null;
+  const sitePreviewImages = [
+    ...realPortfolioPhotos.map((photo) => photo.imageUrl),
+    ...realAlbums.map((album) => album.coverUrl),
+    heroImage
+  ].filter((imageUrl): imageUrl is string => Boolean(imageUrl));
   const portfolioTiles = realPortfolioPhotos.length
     ? realPortfolioPhotos.map((photo) => (
         <PhotoTile
@@ -180,8 +191,21 @@ export default async function Home({ searchParams }: HomePageProps) {
             {siteContactSettings.socialLinks.map((social, index) => (
               (() => {
                 const preview = socialPreviewMap.get(social.href);
-                const previewTitle = preview?.title ?? social.label;
-                const previewDescription = preview?.description ?? social.detail;
+                const useSitePreview = prefersSitePreview(social);
+                const sitePreviewImage =
+                  sitePreviewImages[index % Math.max(sitePreviewImages.length, 1)];
+                const previewImageUrl = useSitePreview
+                  ? sitePreviewImage
+                  : preview?.imageUrl ?? sitePreviewImage;
+                const previewTitle = useSitePreview
+                  ? `${social.label} / ${social.handle}`
+                  : preview?.title ?? social.label;
+                const previewDescription = useSitePreview
+                  ? social.detail
+                  : preview?.description ?? social.detail;
+                const previewHost = useSitePreview
+                  ? "rxncor.studio live preview"
+                  : preview?.host ?? new URL(social.href).hostname;
 
                 return (
                   <a
@@ -195,10 +219,10 @@ export default async function Home({ searchParams }: HomePageProps) {
                     <strong>{social.label}</strong>
                     <small>{social.handle}</small>
                     <div className="social-card-preview" aria-hidden="true">
-                      {preview?.imageUrl ? (
+                      {previewImageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={preview.imageUrl}
+                          src={previewImageUrl}
                           alt=""
                           loading="lazy"
                           decoding="async"
@@ -206,12 +230,12 @@ export default async function Home({ searchParams }: HomePageProps) {
                       ) : (
                         <div className="social-card-preview-fallback">
                           <b>{social.label}</b>
-                          <em>{preview?.host ?? new URL(social.href).hostname}</em>
+                          <em>{previewHost}</em>
                         </div>
                       )}
                       <div>
                         <b>{previewTitle}</b>
-                        <small>{preview?.host}</small>
+                        <small>{previewHost}</small>
                       </div>
                     </div>
                     <p>{previewDescription}</p>
