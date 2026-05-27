@@ -4,6 +4,7 @@ import { AlbumCard } from "@/components/AlbumCard";
 import { NoticeToaster } from "@/components/Notice";
 import { PhotoTile } from "@/components/PhotoTile";
 import { siteConfig } from "@/config/site";
+import { getLinkPreviewMap } from "@/lib/link-preview";
 import { contactNotices } from "@/lib/notices";
 import { getPublicAlbumCards, getPublicPortfolioPhotos } from "@/lib/public-gallery";
 import { featuredAlbums, portfolioItems } from "@/lib/sample-data";
@@ -31,6 +32,9 @@ export default async function Home({ searchParams }: HomePageProps) {
     getPublicAlbumCards(3),
     getSiteContactSettings()
   ]);
+  const socialPreviewMap = await getLinkPreviewMap(
+    siteContactSettings.socialLinks.map((social) => social.href)
+  );
   const heroImage = realPortfolioPhotos[0]?.imageUrl ?? realAlbums[0]?.coverUrl ?? null;
   const portfolioTiles = realPortfolioPhotos.length
     ? realPortfolioPhotos.map((photo) => (
@@ -174,18 +178,46 @@ export default async function Home({ searchParams }: HomePageProps) {
           </div>
           <div className="contact-social-grid" aria-label="Social links">
             {siteContactSettings.socialLinks.map((social, index) => (
-              <a
-                className="social-card"
-                href={social.href}
-                key={`${social.label}-${social.href}`}
-                rel="noreferrer"
-                target="_blank"
-              >
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <strong>{social.label}</strong>
-                <small>{social.handle}</small>
-                <p>{social.detail}</p>
-              </a>
+              (() => {
+                const preview = socialPreviewMap.get(social.href);
+                const previewTitle = preview?.title ?? social.label;
+                const previewDescription = preview?.description ?? social.detail;
+
+                return (
+                  <a
+                    className="social-card"
+                    href={social.href}
+                    key={`${social.label}-${social.href}`}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    <strong>{social.label}</strong>
+                    <small>{social.handle}</small>
+                    <div className="social-card-preview" aria-hidden="true">
+                      {preview?.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={preview.imageUrl}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <div className="social-card-preview-fallback">
+                          <b>{social.label}</b>
+                          <em>{preview?.host ?? new URL(social.href).hostname}</em>
+                        </div>
+                      )}
+                      <div>
+                        <b>{previewTitle}</b>
+                        <small>{preview?.host}</small>
+                      </div>
+                    </div>
+                    <p>{previewDescription}</p>
+                  </a>
+                );
+              })()
             ))}
           </div>
           <div className="contact-info-strip">
