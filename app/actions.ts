@@ -130,7 +130,7 @@ export async function submitContactAction(formData: FormData) {
   });
 
   if (!payload.success) {
-    redirect("/?contact=error#contact");
+    redirect("/?contact=error#inquiries");
   }
 
   const requestHeaders = await headers();
@@ -141,7 +141,7 @@ export async function submitContactAction(formData: FormData) {
   });
 
   if (!rateLimit.allowed) {
-    redirect("/?contact=rate-limited#contact");
+    redirect("/?contact=rate-limited#inquiries");
   }
 
   const supabase = createSupabaseAdminClient();
@@ -154,7 +154,7 @@ export async function submitContactAction(formData: FormData) {
   });
 
   if (error) {
-    redirect("/?contact=error#contact");
+    redirect("/?contact=error#inquiries");
   }
 
   await sendContactEmails({
@@ -165,5 +165,5 @@ export async function submitContactAction(formData: FormData) {
     ipAddress: ipAddress === "unknown" ? null : ipAddress
   });
 
-  redirect("/?contact=sent#contact");
+  redirect("/?contact=sent#inquiries");
 }

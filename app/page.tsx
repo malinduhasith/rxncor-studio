@@ -209,50 +209,49 @@ export default async function Home({ searchParams }: HomePageProps) {
         </div>
       </section>
 
-      <section className="shell section" id="booking">
+      <section className="shell section" id="inquiries">
         <div className="section-head numbered compact" data-index="05">
           <div>
-            <p className="eyebrow">Book a shoot</p>
-            <h2>Tell me what you need photographed.</h2>
+            <p className="eyebrow">Questions / support</p>
+            <h2>Need help, access, or a quick answer?</h2>
           </div>
           <p>
-            Send your preferred date, location, shoot type, and a few notes.
-            I will check availability and reply with the next steps before
-            anything is confirmed.
+            For new shoot requests, use the booking page. For gallery access,
+            downloads, album links, or general questions, send a message here.
           </p>
         </div>
         <div className="contact-grid">
           <div className="form-panel contact-form">
-            <h3>Start a request</h3>
+            <h3>Choose the right path</h3>
             <p className="form-note">
-              The booking page keeps everything in one place: date, time,
-              location, shoot type, notes, and your contact details.
+              This section is for quick questions and gallery help. The full
+              booking flow has its own page so session details stay clear.
             </p>
             <div className="feature-list contact-details">
               <div className="feature">
-                <h3>Your details</h3>
-                <p>Name, email, phone, and the best way to reply.</p>
+                <h3>Book a shoot</h3>
+                <p>Use the booking page for dates, times, locations, and shoot details.</p>
               </div>
               <div className="feature">
-                <h3>Date and place</h3>
-                <p>Preferred start, finish, suburb, venue, or flexible window.</p>
+                <h3>Gallery access</h3>
+                <p>Ask about passwords, private links, downloads, or expired albums.</p>
               </div>
               <div className="feature">
-                <h3>Confirmation</h3>
-                <p>I check the calendar and reply before the shoot is locked in.</p>
+                <h3>Album help</h3>
+                <p>Send the album name or link if something is not opening correctly.</p>
               </div>
               <div className="feature">
-                <h3>Delivery</h3>
-                <p>After the shoot, your photos can be delivered in a private gallery.</p>
+                <h3>Direct reply</h3>
+                <p>I will reply by email, so include the best address to reach you.</p>
               </div>
             </div>
             <Link className="button" href={siteConfig.routes.book}>
-              Request a shoot
+              Go to booking page
             </Link>
           </div>
           <div className="contact-side">
             <form action={submitContactAction} className="form-panel contact-form">
-              <h3>Gallery support</h3>
+              <h3>Send a message</h3>
               <label className="field">
                 Name
                 <input name="name" autoComplete="name" required />
@@ -269,12 +268,12 @@ export default async function Home({ searchParams }: HomePageProps) {
                 Message
                 <textarea
                   name="message"
-                  placeholder="Album link, client name, or gallery access issue."
+                  placeholder="Album link, gallery question, booking follow-up, or anything I should know."
                   required
                 />
               </label>
               <button className="button" type="submit">
-                Send support message
+                Send message
               </button>
             </form>
             <div className="feature-list contact-details">
