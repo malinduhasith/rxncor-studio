@@ -100,6 +100,15 @@ export function GalleryLightbox({
     );
   }, [photos.length]);
 
+  function directPhotoDownloadHref(photoId: string) {
+    const params = new URLSearchParams({
+      album_id: albumId,
+      photo_id: photoId
+    });
+
+    return `/api/downloads?${params.toString()}`;
+  }
+
   useEffect(() => {
     const node = loadMoreRef.current;
 
@@ -245,32 +254,46 @@ export function GalleryLightbox({
         />
         <div className="lightbox-grid">
           {visiblePhotos.map((photo, index) => (
-            <button
-              className="photo-tile photo-button"
-              key={photo.id}
-              onClick={() => setSelectedIndex(index)}
-              type="button"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                className="photo-img"
-                src={photo.thumbnailDisplayUrl}
-                alt={photo.filename}
-                loading={index < 8 ? "eager" : "lazy"}
-                decoding="async"
-              />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="watermark watermark-logo" src="/sig.png" alt="" aria-hidden="true" />
-              {photo.detail ? <span className="tile-date-chip">{photo.detail}</span> : null}
-              <div className="tile-caption">
-                <span className="tile-info">
-                  <strong className="tile-album">{albumTitle}</strong>
-                  <small>{photo.eyebrow}</small>
-                  <em className="tile-frame">{photo.title}</em>
-                </span>
-                <span className="tile-action">Open</span>
-              </div>
-            </button>
+            <article className="photo-tile" key={photo.id}>
+              <button
+                className="photo-open-button"
+                onClick={() => setSelectedIndex(index)}
+                type="button"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  className="photo-img"
+                  src={photo.thumbnailDisplayUrl}
+                  alt={photo.filename}
+                  loading={index < 8 ? "eager" : "lazy"}
+                  decoding="async"
+                />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  className="watermark watermark-logo"
+                  src="/sig.png"
+                  alt=""
+                  aria-hidden="true"
+                />
+                <div className="tile-caption">
+                  <span className="tile-info">
+                    <strong className="tile-album">{albumTitle}</strong>
+                    <small>{photo.eyebrow}</small>
+                    <em className="tile-frame">{photo.title}</em>
+                  </span>
+                  <span className="tile-action">Open</span>
+                </div>
+              </button>
+              <a
+                aria-label={`Download ${photo.filename}`}
+                className="tile-download-button"
+                download={photo.filename}
+                href={directPhotoDownloadHref(photo.id)}
+              >
+                <Download size={15} aria-hidden="true" />
+                <span className="sr-only">Download {photo.filename}</span>
+              </a>
+            </article>
           ))}
           {hasMorePhotos ? (
             <div className="gallery-load-sentinel" ref={loadMoreRef}>

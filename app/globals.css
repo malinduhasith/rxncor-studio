@@ -1652,7 +1652,9 @@ h3 {
 .icon-button:focus-visible,
 .nav-links a:focus-visible,
 .theme-toggle:focus-visible,
-.photo-button:focus-visible {
+.photo-button:focus-visible,
+.photo-open-button:focus-visible,
+.tile-download-button:focus-visible {
   outline: 3px solid var(--gold);
   outline-offset: 2px;
 }
@@ -1856,6 +1858,59 @@ h3 {
   padding: 0;
   text-align: left;
   cursor: pointer;
+}
+
+.photo-open-button {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  overflow: hidden;
+  border-radius: inherit;
+  text-align: left;
+}
+
+.tile-download-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 4;
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.76);
+  border-radius: 999px;
+  background: rgba(17, 16, 14, 0.72);
+  color: #fff;
+  box-shadow: var(--card-shadow);
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.tile-download-button:hover {
+  border-color: var(--gold);
+  background: var(--gold);
+  color: var(--gold-ink);
+  transform: translate(-1px, -1px);
+}
+
+.tile-download-button:disabled {
+  cursor: wait;
+  opacity: 0.62;
 }
 
 .lightbox-modal {
@@ -5864,14 +5919,19 @@ h3 {
     display: none;
   }
 
-  .lightbox-grid .tile-date-chip {
+  .lightbox-grid .tile-download-button {
     top: 6px;
     right: 6px;
-    max-width: calc(100% - 12px);
+    width: 28px;
+    height: 28px;
     border-width: 1.5px;
-    padding: 4px 6px;
-    font-size: 0.48rem;
-    letter-spacing: 0.06em;
+    background: rgba(17, 16, 14, 0.74);
+    box-shadow: 3px 3px 0 rgba(17, 16, 14, 0.18);
+  }
+
+  .lightbox-grid .tile-download-button svg {
+    width: 13px;
+    height: 13px;
   }
 
   .gallery-delivery {

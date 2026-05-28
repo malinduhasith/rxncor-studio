@@ -18,14 +18,18 @@ const downloadSchema = z.object({
   client_email: z.string().email().optional()
 });
 
-export async function POST(request: Request) {
-  const parsed = downloadSchema.safeParse(await request.json().catch(() => null));
+const directDownloadSchema = z.object({
+  album_id: z.string().uuid(),
+  photo_id: z.string().uuid()
+});
 
-  if (!parsed.success) {
-    return noStoreJson({ error: "Invalid download request" }, { status: 400 });
-  }
+type DownloadPayload = {
+  album_id: string;
+  photo_id?: string;
+  r2_object_key?: string;
+};
 
-  const payload = parsed.data;
+async function prepareDownload(request: Request, payload: DownloadPayload) {
   const viewerSupabase = await createSupabaseServerClient();
   const ipAddress = clientIpFromHeaders(request.headers);
   const ipLimit = checkRateLimit(`download:ip:${ipAddress}`, {
@@ -77,11 +81,11 @@ export async function POST(request: Request) {
       .eq("album_id", payload.album_id)
       .maybeSingle();
 
-    if (photo?.r2_object_key === payload.r2_object_key) {
+    if (photo && (!payload.r2_object_key || photo.r2_object_key === payload.r2_object_key)) {
       verifiedObjectKey = photo.r2_object_key;
       downloadFilename = photo.filename;
     }
-  } else if (album.download_zip_url) {
+  } else if (album.download_zip_url && payload.r2_object_key) {
     const zipObjectKey = objectKeyFromPublicUrl(album.download_zip_url);
 
     if (zipObjectKey === payload.r2_object_key) {
@@ -114,5 +118,47 @@ export async function POST(request: Request) {
 
   const url = await createDownloadUrl(verifiedObjectKey, downloadFilename);
 
-  return noStoreJson({ url });
+  return { url, filename: downloadFilename };
+}
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const parsed = directDownloadSchema.safeParse({
+    album_id: url.searchParams.get("album_id"),
+    photo_id: url.searchParams.get("photo_id")
+  });
+
+  if (!parsed.success) {
+    return noStoreJson({ error: "Invalid download request" }, { status: 400 });
+  }
+
+  const prepared = await prepareDownload(request, parsed.data);
+
+  if (prepared instanceof Response) {
+    return prepared;
+  }
+
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: prepared.url,
+      "Cache-Control": "no-store"
+    }
+  });
+}
+
+export async function POST(request: Request) {
+  const parsed = downloadSchema.safeParse(await request.json().catch(() => null));
+
+  if (!parsed.success) {
+    return noStoreJson({ error: "Invalid download request" }, { status: 400 });
+  }
+
+  const prepared = await prepareDownload(request, parsed.data);
+
+  if (prepared instanceof Response) {
+    return prepared;
+  }
+
+  return noStoreJson(prepared);
 }
