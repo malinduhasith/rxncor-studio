@@ -4,11 +4,10 @@ import { AlbumCard } from "@/components/AlbumCard";
 import { NoticeToaster } from "@/components/Notice";
 import { PhotoTile } from "@/components/PhotoTile";
 import { siteConfig } from "@/config/site";
-import { getLinkPreviewMap } from "@/lib/link-preview";
 import { contactNotices } from "@/lib/notices";
 import { getPublicAlbumCards, getPublicPortfolioPhotos } from "@/lib/public-gallery";
 import { featuredAlbums, portfolioItems } from "@/lib/sample-data";
-import { getSiteContactSettings, type SiteSocialLink } from "@/lib/site-settings";
+import { getSiteContactSettings } from "@/lib/site-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -22,12 +21,6 @@ function formatDate(date: string | null) {
   return date ?? "Public";
 }
 
-function prefersSitePreview(social: SiteSocialLink) {
-  const label = social.label.toLowerCase();
-
-  return label.includes("instagram") || label.includes("facebook");
-}
-
 export default async function Home({ searchParams }: HomePageProps) {
   const { contact } = await searchParams;
   const contactNotice = contact ? contactNotices[contact] : undefined;
@@ -38,15 +31,7 @@ export default async function Home({ searchParams }: HomePageProps) {
     getPublicAlbumCards(3),
     getSiteContactSettings()
   ]);
-  const socialPreviewMap = await getLinkPreviewMap(
-    siteContactSettings.socialLinks.map((social) => social.href)
-  );
   const heroImage = realPortfolioPhotos[0]?.imageUrl ?? realAlbums[0]?.coverUrl ?? null;
-  const sitePreviewImages = [
-    ...realPortfolioPhotos.map((photo) => photo.imageUrl),
-    ...realAlbums.map((album) => album.coverUrl),
-    heroImage
-  ].filter((imageUrl): imageUrl is string => Boolean(imageUrl));
   const portfolioTiles = realPortfolioPhotos.length
     ? realPortfolioPhotos.map((photo) => (
         <PhotoTile
@@ -189,59 +174,18 @@ export default async function Home({ searchParams }: HomePageProps) {
           </div>
           <div className="contact-social-grid" aria-label="Social links">
             {siteContactSettings.socialLinks.map((social, index) => (
-              (() => {
-                const preview = socialPreviewMap.get(social.href);
-                const useSitePreview = prefersSitePreview(social);
-                const sitePreviewImage =
-                  sitePreviewImages[index % Math.max(sitePreviewImages.length, 1)];
-                const previewImageUrl = useSitePreview
-                  ? sitePreviewImage
-                  : preview?.imageUrl ?? sitePreviewImage;
-                const previewTitle = useSitePreview
-                  ? `${social.label} / ${social.handle}`
-                  : preview?.title ?? social.label;
-                const previewDescription = useSitePreview
-                  ? social.detail
-                  : preview?.description ?? social.detail;
-                const previewHost = useSitePreview
-                  ? "rxncor.studio live preview"
-                  : preview?.host ?? new URL(social.href).hostname;
-
-                return (
-                  <a
-                    className="social-card"
-                    href={social.href}
-                    key={`${social.label}-${social.href}`}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    <span>{String(index + 1).padStart(2, "0")}</span>
-                    <strong>{social.label}</strong>
-                    <small>{social.handle}</small>
-                    <div className="social-card-preview" aria-hidden="true">
-                      {previewImageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={previewImageUrl}
-                          alt=""
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : (
-                        <div className="social-card-preview-fallback">
-                          <b>{social.label}</b>
-                          <em>{previewHost}</em>
-                        </div>
-                      )}
-                      <div>
-                        <b>{previewTitle}</b>
-                        <small>{previewHost}</small>
-                      </div>
-                    </div>
-                    <p>{previewDescription}</p>
-                  </a>
-                );
-              })()
+              <a
+                className="social-card"
+                href={social.href}
+                key={`${social.label}-${social.href}`}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{social.label}</strong>
+                <small>{social.handle}</small>
+                <p>{social.detail}</p>
+              </a>
             ))}
           </div>
           <div className="contact-info-strip">

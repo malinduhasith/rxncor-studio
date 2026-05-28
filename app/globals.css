@@ -3379,9 +3379,9 @@ h3 {
 }
 
 .social-card {
-  min-height: 250px;
+  min-height: 154px;
   display: grid;
-  grid-template-rows: auto auto auto auto 1fr;
+  grid-template-rows: auto auto auto 1fr;
   gap: 6px;
   padding: 18px;
   transition:
@@ -3425,81 +3425,6 @@ h3 {
   color: var(--muted);
   font-size: 0.9rem;
   overflow-wrap: anywhere;
-}
-
-.social-card-preview {
-  position: relative;
-  min-height: 118px;
-  margin-top: 10px;
-  overflow: hidden;
-  border: 1px solid currentColor;
-  background:
-    linear-gradient(90deg, rgba(195, 66, 36, 0.28), transparent),
-    var(--surface-strong);
-}
-
-.social-card-preview img {
-  width: 100%;
-  height: 100%;
-  min-height: 118px;
-  display: block;
-  object-fit: cover;
-  filter: saturate(0.92) contrast(1.04);
-  transition: transform 180ms ease;
-}
-
-.social-card:hover .social-card-preview img {
-  transform: scale(1.04);
-}
-
-.social-card-preview > div:last-child {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  padding: 10px;
-  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.78));
-  color: #fffaf1;
-}
-
-.social-card-preview b,
-.social-card-preview em {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.social-card-preview > div:last-child b {
-  font-size: 0.92rem;
-}
-
-.social-card-preview > div:last-child small {
-  color: rgba(255, 250, 241, 0.72);
-  font-size: 0.74rem;
-}
-
-.social-card-preview-fallback {
-  min-height: 118px;
-  display: grid;
-  align-content: center;
-  gap: 4px;
-  padding: 14px;
-  background:
-    linear-gradient(90deg, var(--grid-x) 1px, transparent 1px),
-    linear-gradient(180deg, var(--grid-y) 1px, transparent 1px),
-    var(--paper);
-  background-size: 24px 24px, 24px 24px, auto;
-}
-
-.social-card-preview-fallback b {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.55rem;
-}
-
-.social-card-preview-fallback em {
-  color: var(--muted);
-  font-style: normal;
-  font-size: 0.82rem;
 }
 
 .social-card p {
