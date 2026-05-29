@@ -3305,6 +3305,23 @@ h3 {
   min-height: 300px;
 }
 
+.lightbox-virtual-grid {
+  display: block;
+  min-height: var(--virtual-gallery-height, 1px);
+  height: var(--virtual-gallery-height, 1px);
+  grid-auto-flow: initial;
+  contain: layout paint style;
+}
+
+.lightbox-virtual-grid .photo-tile,
+.lightbox-virtual-grid .photo-tile:nth-child(n) {
+  position: absolute;
+  grid-column: auto;
+  min-height: 0;
+  aspect-ratio: auto;
+  contain: layout paint;
+}
+
 .gallery-load-sentinel,
 .gallery-load-summary {
   grid-column: 1 / -1;

@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
 import { ChevronLeft, ChevronRight, Download, X } from "lucide-react";
 import { Notice } from "@/components/Notice";
 import type { NoticeTone } from "@/lib/notices";
@@ -25,6 +32,33 @@ type GalleryLightboxProps = {
 
 const INITIAL_VISIBLE_PHOTOS = 48;
 const VISIBLE_PHOTO_INCREMENT = 48;
+const MOBILE_GALLERY_QUERY = "(max-width: 760px)";
+const VIRTUALIZE_AFTER_PHOTOS = 72;
+const VIRTUAL_BUFFER_ROWS = 5;
+const MOBILE_VIRTUAL_COLUMNS = 3;
+const MOBILE_TILE_ASPECT_RATIO = 1.16;
+
+type VirtualGalleryWindow = {
+  startIndex: number;
+  endIndex: number;
+  columns: number;
+  gap: number;
+  itemWidth: number;
+  itemHeight: number;
+  rowStride: number;
+  totalHeight: number;
+};
+
+const defaultVirtualWindow: VirtualGalleryWindow = {
+  startIndex: 0,
+  endIndex: 0,
+  columns: MOBILE_VIRTUAL_COLUMNS,
+  gap: 7,
+  itemWidth: 120,
+  itemHeight: 140,
+  rowStride: 147,
+  totalHeight: 0
+};
 
 async function requestDownload(
   albumId: string,
@@ -87,18 +121,137 @@ export function GalleryLightbox({
   const [visibleCount, setVisibleCount] = useState(() =>
     Math.min(INITIAL_VISIBLE_PHOTOS, photos.length)
   );
+  const [isMobileGallery, setIsMobileGallery] = useState(false);
+  const [virtualWindow, setVirtualWindow] =
+    useState<VirtualGalleryWindow>(defaultVirtualWindow);
+  const gridRef = useRef<HTMLDivElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const selectedPhoto = selectedIndex === null ? null : photos[selectedIndex];
   const selectedPreviewUrl = selectedPhoto ? previewUrls[selectedPhoto.id] : null;
   const safeVisibleCount = Math.min(visibleCount, photos.length);
   const visiblePhotos = photos.slice(0, safeVisibleCount);
   const hasMorePhotos = safeVisibleCount < photos.length;
+  const shouldVirtualizeGallery =
+    isMobileGallery && photos.length > VIRTUALIZE_AFTER_PHOTOS;
+  const virtualPhotos = useMemo(
+    () =>
+      photos
+        .slice(virtualWindow.startIndex, virtualWindow.endIndex)
+        .map((photo, offset) => ({
+          index: virtualWindow.startIndex + offset,
+          photo
+        })),
+    [photos, virtualWindow.endIndex, virtualWindow.startIndex]
+  );
+  const renderedPhotos = shouldVirtualizeGallery
+    ? virtualPhotos
+    : visiblePhotos.map((photo, index) => ({ index, photo }));
 
   const loadMorePhotos = useCallback(() => {
     setVisibleCount((current) =>
       Math.min(current + VISIBLE_PHOTO_INCREMENT, photos.length)
     );
   }, [photos.length]);
+
+  const updateVirtualWindow = useCallback(() => {
+    const node = gridRef.current;
+
+    if (!node || !shouldVirtualizeGallery) {
+      return;
+    }
+
+    const styles = window.getComputedStyle(node);
+    const parsedGap = Number.parseFloat(styles.columnGap || styles.gap || "");
+    const gap = Number.isFinite(parsedGap) ? parsedGap : 7;
+    const columns = MOBILE_VIRTUAL_COLUMNS;
+    const itemWidth = Math.max(
+      1,
+      (node.clientWidth - gap * (columns - 1)) / columns
+    );
+    const itemHeight = itemWidth * MOBILE_TILE_ASPECT_RATIO;
+    const rowStride = itemHeight + gap;
+    const totalRows = Math.ceil(photos.length / columns);
+    const totalHeight = Math.max(0, totalRows * rowStride - gap);
+    const gridTop = node.getBoundingClientRect().top + window.scrollY;
+    const viewportTop = window.scrollY;
+    const viewportBottom = viewportTop + window.innerHeight;
+    const startRow = Math.max(
+      0,
+      Math.floor((viewportTop - gridTop) / rowStride) - VIRTUAL_BUFFER_ROWS
+    );
+    const endRow = Math.min(
+      totalRows,
+      Math.ceil((viewportBottom - gridTop) / rowStride) + VIRTUAL_BUFFER_ROWS
+    );
+
+    const nextWindow = {
+      startIndex: Math.min(photos.length, startRow * columns),
+      endIndex: Math.min(photos.length, endRow * columns),
+      columns,
+      gap,
+      itemWidth,
+      itemHeight,
+      rowStride,
+      totalHeight
+    };
+
+    setVirtualWindow((current) => {
+      const sameWindow =
+        current.startIndex === nextWindow.startIndex &&
+        current.endIndex === nextWindow.endIndex &&
+        Math.abs(current.itemWidth - nextWindow.itemWidth) < 0.5 &&
+        Math.abs(current.totalHeight - nextWindow.totalHeight) < 0.5;
+
+      return sameWindow ? current : nextWindow;
+    });
+  }, [photos.length, shouldVirtualizeGallery]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia(MOBILE_GALLERY_QUERY);
+    const syncMedia = () => setIsMobileGallery(mediaQuery.matches);
+
+    syncMedia();
+    mediaQuery.addEventListener("change", syncMedia);
+
+    return () => mediaQuery.removeEventListener("change", syncMedia);
+  }, []);
+
+  useEffect(() => {
+    if (!shouldVirtualizeGallery) {
+      return;
+    }
+
+    let frame = 0;
+    const requestUpdate = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(updateVirtualWindow);
+    };
+
+    requestUpdate();
+    window.addEventListener("scroll", requestUpdate, { passive: true });
+    window.addEventListener("resize", requestUpdate);
+
+    const node = gridRef.current;
+    const resizeObserver =
+      node && typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(requestUpdate)
+        : null;
+
+    if (node && resizeObserver) {
+      resizeObserver.observe(node);
+    }
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", requestUpdate);
+      window.removeEventListener("resize", requestUpdate);
+      resizeObserver?.disconnect();
+    };
+  }, [shouldVirtualizeGallery, updateVirtualWindow]);
 
   function directPhotoDownloadHref(photoId: string) {
     const params = new URLSearchParams({
@@ -107,6 +260,22 @@ export function GalleryLightbox({
     });
 
     return `/api/downloads?${params.toString()}`;
+  }
+
+  function virtualTileStyle(index: number): CSSProperties | undefined {
+    if (!shouldVirtualizeGallery) {
+      return undefined;
+    }
+
+    const row = Math.floor(index / virtualWindow.columns);
+    const column = index % virtualWindow.columns;
+
+    return {
+      height: virtualWindow.itemHeight,
+      left: column * (virtualWindow.itemWidth + virtualWindow.gap),
+      top: row * virtualWindow.rowStride,
+      width: virtualWindow.itemWidth
+    };
   }
 
   useEffect(() => {
@@ -252,9 +421,24 @@ export function GalleryLightbox({
               : undefined
           }
         />
-        <div className="lightbox-grid">
-          {visiblePhotos.map((photo, index) => (
-            <article className="photo-tile" key={photo.id}>
+        <div
+          className={
+            shouldVirtualizeGallery
+              ? "lightbox-grid lightbox-virtual-grid"
+              : "lightbox-grid"
+          }
+          data-virtualized={shouldVirtualizeGallery ? "true" : "false"}
+          ref={gridRef}
+          style={
+            shouldVirtualizeGallery
+              ? ({
+                  "--virtual-gallery-height": `${virtualWindow.totalHeight}px`
+                } as CSSProperties)
+              : undefined
+          }
+        >
+          {renderedPhotos.map(({ photo, index }) => (
+            <article className="photo-tile" key={photo.id} style={virtualTileStyle(index)}>
               <button
                 className="photo-open-button"
                 onClick={() => setSelectedIndex(index)}
@@ -265,7 +449,7 @@ export function GalleryLightbox({
                   className="photo-img"
                   src={photo.thumbnailDisplayUrl}
                   alt={photo.filename}
-                  loading={index < 8 ? "eager" : "lazy"}
+                  loading={shouldVirtualizeGallery ? "lazy" : index < 8 ? "eager" : "lazy"}
                   decoding="async"
                 />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -297,7 +481,7 @@ export function GalleryLightbox({
               </a>
             </article>
           ))}
-          {hasMorePhotos ? (
+          {!shouldVirtualizeGallery && hasMorePhotos ? (
             <div className="gallery-load-sentinel" ref={loadMoreRef}>
               <button className="button secondary" onClick={loadMorePhotos} type="button">
                 Load more photos
@@ -306,7 +490,7 @@ export function GalleryLightbox({
                 {safeVisibleCount}/{photos.length} shown
               </span>
             </div>
-          ) : photos.length > INITIAL_VISIBLE_PHOTOS ? (
+          ) : !shouldVirtualizeGallery && photos.length > INITIAL_VISIBLE_PHOTOS ? (
             <p className="gallery-load-summary">{photos.length} photos loaded</p>
           ) : null}
         </div>
