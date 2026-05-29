@@ -8,6 +8,7 @@ type AlbumCardProps = {
   count: number;
   colors?: string[];
   coverUrl?: string | null;
+  loading?: "eager" | "lazy";
 };
 
 export function AlbumCard({
@@ -16,7 +17,8 @@ export function AlbumCard({
   date,
   count,
   colors = ["#713d2f", "#d8b35f"],
-  coverUrl
+  coverUrl,
+  loading = "lazy"
 }: AlbumCardProps) {
   return (
     <Link
@@ -31,7 +33,7 @@ export function AlbumCard({
           className="photo-img"
           src={coverUrl}
           alt={title}
-          loading="lazy"
+          loading={loading}
           decoding="async"
         />
       ) : (

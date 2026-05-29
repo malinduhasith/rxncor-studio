@@ -33,7 +33,7 @@ export default async function AlbumsPage() {
         </p>
       </div>
       <div className="grid album-gallery-grid">
-        {publicAlbums.map((album) => (
+        {publicAlbums.map((album, index) => (
           <AlbumCard
             key={album.slug}
             title={album.title}
@@ -41,6 +41,7 @@ export default async function AlbumsPage() {
             date={formatDate(album.event_date)}
             count={album.count}
             coverUrl={album.coverUrl}
+            loading={index < 4 ? "eager" : "lazy"}
           />
         ))}
       </div>

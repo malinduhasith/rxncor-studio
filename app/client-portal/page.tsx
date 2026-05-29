@@ -133,7 +133,7 @@ export default async function ClientPortalPage({
         </form>
       </div>
       <div className="grid album-gallery-grid">
-        {displayAlbums.map((album) => (
+        {displayAlbums.map((album, index) => (
           <AlbumCard
             key={album.id}
             title={album.title}
@@ -141,6 +141,7 @@ export default async function ClientPortalPage({
             date={formatDate(album.event_date)}
             count={album.count}
             coverUrl={album.coverUrl}
+            loading={index < 4 ? "eager" : "lazy"}
           />
         ))}
       </div>

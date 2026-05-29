@@ -7,6 +7,7 @@ type PhotoTileProps = {
   eyebrow?: string;
   colors?: string[];
   imageUrl?: string | null;
+  loading?: "eager" | "lazy";
 };
 
 export function PhotoTile({
@@ -15,7 +16,8 @@ export function PhotoTile({
   detail,
   eyebrow = "Selected frame",
   colors = ["#713d2f", "#d8b35f"],
-  imageUrl
+  imageUrl,
+  loading = "lazy"
 }: PhotoTileProps) {
   return (
     <article className="photo-tile">
@@ -25,7 +27,7 @@ export function PhotoTile({
           className="photo-img"
           src={imageUrl}
           alt={title}
-          loading="lazy"
+          loading={loading}
           decoding="async"
         />
       ) : (

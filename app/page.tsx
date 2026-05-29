@@ -33,7 +33,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   ]);
   const heroImage = realPortfolioPhotos[0]?.imageUrl ?? realAlbums[0]?.coverUrl ?? null;
   const portfolioTiles = realPortfolioPhotos.length
-    ? realPortfolioPhotos.map((photo) => (
+    ? realPortfolioPhotos.map((photo, index) => (
         <PhotoTile
           key={photo.id}
           title={photo.title}
@@ -41,6 +41,7 @@ export default async function Home({ searchParams }: HomePageProps) {
           detail={photo.detail}
           eyebrow={photo.eyebrow}
           imageUrl={photo.imageUrl}
+          loading={index < 3 ? "eager" : "lazy"}
         />
       ))
     : portfolioItems.slice(0, 3).map((item) => (
@@ -52,7 +53,7 @@ export default async function Home({ searchParams }: HomePageProps) {
         />
       ));
   const albumTiles = realAlbums.length
-    ? realAlbums.map((album) => (
+    ? realAlbums.map((album, index) => (
         <AlbumCard
           key={album.slug}
           title={album.title}
@@ -60,6 +61,7 @@ export default async function Home({ searchParams }: HomePageProps) {
           date={formatDate(album.event_date)}
           count={album.count}
           coverUrl={album.coverUrl}
+          loading={index < 2 ? "eager" : "lazy"}
         />
       ))
     : featuredAlbums.map((album) => <AlbumCard key={album.slug} {...album} />);
@@ -132,7 +134,7 @@ export default async function Home({ searchParams }: HomePageProps) {
             See all
           </Link>
         </div>
-        <div className="grid">{portfolioTiles}</div>
+        <div className="grid portfolio-gallery-grid">{portfolioTiles}</div>
       </section>
 
       <section className="section alt">
@@ -146,7 +148,7 @@ export default async function Home({ searchParams }: HomePageProps) {
               Browse albums
             </Link>
           </div>
-          <div className="grid">{albumTiles}</div>
+          <div className="grid album-gallery-grid">{albumTiles}</div>
         </div>
       </section>
 

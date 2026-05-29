@@ -274,6 +274,8 @@ export function GalleryLightbox({
                   src="/sig.png"
                   alt=""
                   aria-hidden="true"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <div className="tile-caption">
                   <span className="tile-info">
@@ -369,6 +371,7 @@ export function GalleryLightbox({
             src="/sig.png"
             alt=""
             aria-hidden="true"
+            decoding="async"
           />
         </div>
       ) : null}

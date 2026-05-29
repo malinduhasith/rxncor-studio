@@ -4490,6 +4490,52 @@ h3 {
   }
 }
 
+/* First-visit cookie controls should not bury the mobile layout. */
+@media (max-width: 760px) {
+  .cookie-consent {
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+    width: auto;
+  }
+
+  .cookie-card {
+    max-height: min(36svh, 300px);
+    padding: 12px;
+    overflow: auto;
+  }
+
+  .cookie-card .eyebrow {
+    margin-bottom: 6px;
+  }
+
+  .cookie-card h2 {
+    margin-bottom: 6px;
+    font-size: clamp(1.2rem, 5.5vw, 1.55rem);
+    line-height: 1;
+  }
+
+  .cookie-card p {
+    font-size: 0.76rem;
+    line-height: 1.3;
+  }
+
+  .cookie-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .cookie-actions .button {
+    min-height: 34px;
+    width: 100%;
+    padding: 5px 6px;
+    font-size: clamp(0.58rem, 2.8vw, 0.72rem);
+    line-height: 1.05;
+  }
+}
+
 @media (max-width: 380px) {
   .shell {
     width: min(1160px, calc(100% - 22px));
@@ -5993,5 +6039,348 @@ h3 {
 
   .lightbox-grid .tile-caption .tile-frame {
     font-size: 0.52rem;
+  }
+}
+
+/* Mobile density pass: keep public pages quick to scan, like a contact sheet. */
+@media (max-width: 760px) {
+  .shell.section:not(.admin-workspace),
+  .section.alt {
+    padding-top: 24px;
+    padding-bottom: 28px;
+  }
+
+  .editorial-page > .section-head,
+  .section-head,
+  .section-head.compact {
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .editorial-page > .section-head {
+    padding-bottom: 16px;
+  }
+
+  .section-head.numbered {
+    padding-top: 28px;
+  }
+
+  .section-head.numbered::before {
+    min-width: 40px;
+    padding: 3px 7px;
+    font-size: 1rem;
+  }
+
+  .section-head p,
+  .form-note,
+  .muted {
+    font-size: 0.82rem;
+    line-height: 1.38;
+  }
+
+  .hero {
+    gap: 14px;
+    padding-top: 24px;
+    padding-bottom: 28px;
+  }
+
+  .hero-media {
+    min-height: 0;
+    max-height: 220px;
+    aspect-ratio: 16 / 10;
+  }
+
+  .hero-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .hero-actions .button {
+    min-height: 42px;
+    padding: 8px 6px;
+    font-size: clamp(0.66rem, 2.6vw, 0.82rem);
+    line-height: 1.08;
+  }
+
+  .portfolio-gallery-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .portfolio-gallery-grid .photo-tile:nth-child(n) {
+    grid-column: auto;
+    min-height: 0;
+    aspect-ratio: 1 / 1.12;
+  }
+
+  .portfolio-gallery-grid .tile-date-chip,
+  .portfolio-gallery-grid .tile-caption small {
+    display: none;
+  }
+
+  .portfolio-gallery-grid .tile-caption {
+    left: 7px;
+    right: 7px;
+    bottom: 7px;
+    gap: 2px;
+  }
+
+  .portfolio-gallery-grid .tile-album {
+    font-size: clamp(0.58rem, 2.7vw, 0.78rem);
+    line-height: 1;
+  }
+
+  .portfolio-gallery-grid .tile-frame {
+    font-size: 0.52rem;
+  }
+
+  .album-gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .album-gallery-grid .album-card:nth-child(n) {
+    grid-column: auto;
+    min-height: 0;
+    aspect-ratio: 1 / 1.05;
+  }
+
+  .album-gallery-grid .album-card-top {
+    inset: 7px 7px auto;
+    gap: 5px;
+  }
+
+  .album-gallery-grid .album-card-top span {
+    padding: 4px 6px;
+    font-size: 0.5rem;
+  }
+
+  .album-gallery-grid .album-meta {
+    padding: 10px;
+  }
+
+  .album-gallery-grid .album-meta .eyebrow {
+    display: none;
+  }
+
+  .album-gallery-grid .album-meta h3 {
+    font-size: clamp(0.82rem, 3.6vw, 1rem);
+    line-height: 1.02;
+  }
+
+  .album-gallery-grid .album-meta p {
+    font-size: 0.64rem;
+    line-height: 1.2;
+  }
+
+  .contact-showcase {
+    padding-top: 28px;
+  }
+
+  .contact-showcase-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .contact-primary-card {
+    grid-column: 1 / -1;
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .contact-primary-card a {
+    margin: 10px 0;
+    font-size: clamp(1.28rem, 6.6vw, 1.85rem);
+    line-height: 0.98;
+  }
+
+  .contact-primary-card p {
+    border-left-width: 5px;
+    padding-left: 10px;
+    font-size: 0.78rem;
+    line-height: 1.34;
+  }
+
+  .contact-social-grid {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .social-card {
+    min-height: 118px;
+    padding: 11px;
+    gap: 4px;
+  }
+
+  .social-card span {
+    padding: 2px 6px;
+    font-size: 0.88rem;
+  }
+
+  .social-card p {
+    display: none;
+  }
+
+  .contact-info-strip {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .contact-info-strip > div {
+    padding: 10px;
+  }
+
+  .contact-info-strip > div:last-child {
+    grid-column: 1 / -1;
+    border-top: 2px solid var(--line);
+  }
+
+  .contact-grid {
+    gap: 10px;
+  }
+
+  .contact-details,
+  .booking-page .feature-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .feature {
+    min-height: 0;
+    padding: 11px;
+  }
+
+  .feature h3 {
+    font-size: 0.94rem;
+  }
+
+  .feature p {
+    font-size: 0.76rem;
+    line-height: 1.34;
+  }
+
+  .about-hero {
+    padding-top: 30px;
+    padding-bottom: 20px;
+  }
+
+  .about-meta-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .about-meta-panel div {
+    padding: 10px;
+  }
+
+  .about-visual-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding-top: 14px;
+  }
+
+  .about-image-frame:nth-child(n) {
+    min-height: 0;
+    aspect-ratio: 1 / 1.18;
+    transform: none;
+  }
+
+  .about-image-frame figcaption {
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    padding: 4px 5px;
+    font-size: 0.48rem;
+    line-height: 1.05;
+  }
+
+  .about-block-grid,
+  .about-statement-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .about-copy-panel:nth-child(n) {
+    min-height: 0;
+    margin-top: 0;
+    padding: 12px;
+  }
+
+  .about-copy-panel:nth-child(3) {
+    grid-column: auto;
+  }
+
+  .about-copy-panel h2 {
+    font-size: clamp(1.1rem, 5vw, 1.45rem);
+  }
+
+  .about-copy-panel p:not(.eyebrow) {
+    font-size: 0.78rem;
+    line-height: 1.38;
+  }
+
+  .about-split {
+    gap: 12px;
+  }
+
+  .about-split h2 {
+    font-size: clamp(1.8rem, 8vw, 2.45rem);
+  }
+
+  .about-statement {
+    min-height: 118px;
+    padding: 10px;
+  }
+
+  .about-statement strong {
+    font-size: 0.92rem;
+  }
+
+  .about-tool-grid {
+    gap: 6px;
+  }
+
+  .about-tool-grid span {
+    min-height: 28px;
+    padding: 3px 9px;
+    font-size: 0.62rem;
+  }
+
+  .booking-page .contact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-page .page-title {
+    font-size: clamp(2.5rem, 12vw, 3.6rem);
+  }
+
+  .request-date-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .hero-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .portfolio-gallery-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .album-gallery-grid,
+  .contact-social-grid,
+  .contact-details,
+  .booking-page .feature-list,
+  .about-block-grid,
+  .about-statement-grid,
+  .about-meta-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .request-date-fields {
+    grid-template-columns: 1fr;
   }
 }

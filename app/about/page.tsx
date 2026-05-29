@@ -23,7 +23,12 @@ function AboutImage({
     return (
       <figure className="about-image-frame">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={image.imageUrl} alt={`${image.title} from ${image.meta}`} />
+        <img
+          src={image.imageUrl}
+          alt={`${image.title} from ${image.meta}`}
+          loading="lazy"
+          decoding="async"
+        />
         <figcaption>
           <span>{String(index + 1).padStart(2, "0")}</span>
           {image.title}

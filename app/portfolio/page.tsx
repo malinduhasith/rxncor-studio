@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default async function PortfolioPage() {
   const realPhotos = await getPublicPortfolioPhotos(12);
-  const portfolioTiles = realPhotos.map((photo) => (
+  const portfolioTiles = realPhotos.map((photo, index) => (
     <PhotoTile
       key={photo.id}
       title={photo.title}
@@ -19,6 +19,7 @@ export default async function PortfolioPage() {
       detail={photo.detail}
       eyebrow={photo.eyebrow}
       imageUrl={photo.imageUrl}
+      loading={index < 6 ? "eager" : "lazy"}
     />
   ));
 
