@@ -155,6 +155,7 @@ export function PendingInteraction() {
         return;
       }
 
+      saveScrollRestorePoint();
       anchor.dataset.pending = "true";
       startPending(
         `Opening ${cleanLabel(
