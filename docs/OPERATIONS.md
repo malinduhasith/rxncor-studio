@@ -42,6 +42,8 @@ Run the latest migration in Supabase SQL Editor:
 
 [supabase/migrations/20260526_social_contact_links.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260526_social_contact_links.sql)
 
+[supabase/migrations/20260702_about_photography_focus.sql](/Users/crazy_taxi/Documents/VsCode/supabase/migrations/20260702_about_photography_focus.sql)
+
 These add:
 
 - client passwords
@@ -59,6 +61,7 @@ These add:
 - email send, failure, and skipped-event monitoring
 - editable public contact and social settings
 - Facebook and custom public contact links
+- photography-only About page defaults and builder reset content
 
 ## Full Client Test
 

@@ -47,7 +47,7 @@ const socialLinks = [
         label: "LinkedIn",
         handle: optionalPublicEnv("NEXT_PUBLIC_LINKEDIN_HANDLE") || "Malindu Herath",
         href: optionalPublicEnv("NEXT_PUBLIC_LINKEDIN_URL"),
-        detail: "Creative, software, and systems background."
+        detail: "Photography work, current updates, and public profile."
       }
     : null,
   optionalPublicEnv("NEXT_PUBLIC_YOUTUBE_URL")

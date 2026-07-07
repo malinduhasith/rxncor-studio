@@ -121,7 +121,7 @@ function socialLinksFromSettings(
           label: "LinkedIn",
           handle: clean(settings.linkedinHandle) ?? "Malindu Herath",
           href: settings.linkedinUrl,
-          detail: "Creative, software, and systems background."
+          detail: "Photography work, current updates, and public profile."
         }
       : null,
     clean(settings.youtubeUrl)

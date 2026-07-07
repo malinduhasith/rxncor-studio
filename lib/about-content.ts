@@ -2,36 +2,36 @@ export const aboutProfile = {
   name: "Malindu Herath",
   hero: "Melbourne photographer. Portraits, events, and honest stories.",
   intro:
-    "I am Malindu, Sri Lankan-born and based in Melbourne. RXNCOR is where I am putting together portraits, events, street moments, video, design, and the simple systems needed to deliver work properly.",
+    "I am Malindu, Sri Lankan-born and based in Melbourne. RXNCOR is where I am shaping a photography practice around portraits, events, street moments, and honest client stories.",
   closing:
-    "I am interested in work that feels lived in: images with atmosphere, simple systems with purpose, and creative work that carries a bit of truth without trying too hard to explain itself.",
+    "I am interested in photographs that feel lived in: real light, real people, a little atmosphere, and a frame that carries something true without trying too hard.",
   metadata: [
     ["Based in", "Melbourne"],
     ["Origin", "Sri Lanka"],
-    ["Focus", "Photography / Design / Software"],
+    ["Focus", "Portraits / Events / Stories"],
     ["Brand", "RXNCOR.STUDIO"]
   ]
 };
 
 export const aboutBrandNote = {
   label: "Name",
-  title: "RXNCOR is a stylised spelling, not a mood to copy.",
+  title: "RXNCOR is the mark around the photography.",
   body:
-    "Rancor, or rancour in Australian English, can mean a bitter feeling that stays around for too long. RXNCOR replaces the A with X. I do not use the name to glorify resentment. I use it more as a visual mark for tension, memory, emotion, and the process of turning heavy feeling into something made."
+    "RXNCOR is the visual identity around the work: portraits, events, street frames, and private client galleries. The name is treated as a mark for the images, not a long explanation."
 };
 
 export const aboutPerspective = {
   label: "Perspective",
-  title: "Live and let live, with room for the absurd.",
+  title: "Real light, real people, and enough room for the moment.",
   body:
-    "The way I look at life is close to secular Buddhism: Buddhism as a way of life rather than a religion. Pay attention, cause less harm, stay kind where possible, and do not hold everything too tightly. I also like the absurd side of life. Not everything needs a clean explanation. Some things are strange, funny, painful, beautiful, and unfinished at the same time.",
+    "I like photographs that feel present rather than polished into something flat. The work looks for small gestures, imperfect timing, atmosphere, and the feeling around the person.",
   points: [
-    "Live and let live",
-    "Secular Buddhism",
-    "Pay attention",
-    "Cause less harm",
-    "Do not force perfection",
-    "Leave room for the absurd"
+    "Honest portraits",
+    "Documentary feeling",
+    "Available light",
+    "Emotion over perfection",
+    "Quiet details",
+    "Client stories"
   ]
 };
 
@@ -39,7 +39,7 @@ export const aboutSections = [
   {
     index: "01",
     label: "About",
-    title: "A quiet mix of looking and making.",
+    title: "Photography first. Everything else stays out of the way.",
     body:
       "I am still figuring out my visual language. I am drawn to images that feel alive, imperfect, atmospheric, and honest. Photography feels like observation first, then a small act of construction: noticing a moment and shaping how it is remembered."
   },
@@ -52,61 +52,61 @@ export const aboutSections = [
   },
   {
     index: "03",
-    label: "Systems practice",
-    title: "Small systems that help the work move.",
+    label: "Client delivery",
+    title: "A simple, private place for finished stories.",
     body:
-      "My software background is part of how I think, but I try not to make it the whole story. I have worked with automation, data, dashboards, APIs, internal business systems, and digital workflows. The useful part is the habit of breaking things down and making the process easier for the person using it."
+      "After the shoot, the work needs to feel just as careful as the day itself. Galleries are kept clean, private when needed, easy to view, and ready for clients to download without making the experience feel heavy."
   }
 ];
 
 export const aboutValues = [
   {
-    line: "Look first. Let the frame answer before I do.",
-    reference: "Street / documentary observation"
+    line: "Look for the quiet second before the pose.",
+    reference: "Portrait timing"
   },
   {
-    line: "Hold it lightly. Nothing needs to become a cage.",
-    reference: "Secular Buddhism / non-attachment"
+    line: "Let real light keep some of its rough edges.",
+    reference: "Available light"
   },
   {
-    line: "If life is strange, let the image admit it.",
-    reference: "Absurdism / Camus"
+    line: "The best frame usually feels a little lived in.",
+    reference: "Documentary feeling"
   },
   {
-    line: "Leave some air around the person. The quiet part matters.",
-    reference: "Portraiture / human presence"
+    line: "Leave some air around the person.",
+    reference: "Human presence"
   },
   {
-    line: "Build the boring parts well, so the work can move.",
-    reference: "Systems thinking / delivery"
+    line: "Deliver it simply. The gallery should not get in the way of the photograph.",
+    reference: "Client delivery / private galleries"
   },
   {
     line: "Do not polish the life out of it.",
-    reference: "Wabi-sabi / imperfect beauty"
+    reference: "Imperfect beauty"
   }
 ];
 
 export const aboutTimeline = [
   {
     place: "Sri Lanka",
-    detail: "Early creative and problem-solving foundation."
+    detail: "Early memories, faces, streets, colour, and the beginning of a visual eye."
   },
   {
-    place: "School media / IT / robotics",
-    detail: "Content creation, problem solving, and making things by experimenting."
+    place: "First cameras",
+    detail: "Learning by trying, missing frames, watching light, and slowly understanding timing."
   },
   {
-    place: "Software engineering",
-    detail: "BSc (Hons) in Software Engineering from University of Plymouth / NSBM."
+    place: "Portraits and people",
+    detail: "A growing interest in faces, mood, gestures, and the quiet parts between posed moments."
   },
   {
     place: "Melbourne",
     detail:
-      "Master of Information Technology at CQUniversity Australia, professional growth, and a deeper photography practice."
+      "A deeper photography practice shaped by events, street moments, client stories, and changing light."
   },
   {
     place: "RXNCOR.STUDIO",
-    detail: "An independent portfolio direction across photography, simple systems, and client delivery."
+    detail: "An independent photography portfolio focused on honest frames and private gallery delivery."
   }
 ];
 
@@ -114,26 +114,21 @@ export const aboutTools = [
   "Sony A7 IV",
   "Sony 35mm f/1.4 GM",
   "Sony 85mm f/1.4 GM II",
-  "Adobe creative tools",
-  "React / modern web stack",
-  "Automation and data systems"
+  "Portrait sessions",
+  "Event coverage",
+  "Street moments",
+  "Documentary frames",
+  "Client galleries"
 ];
 
-export const aboutTechStack = [
-  "React",
-  "JavaScript",
-  "C#",
-  "ASP.NET",
-  "Java",
-  "Python",
-  "SQL",
-  "Firebase",
-  "HTML",
-  "CSS",
-  "PHP",
-  "Power Apps",
-  "Power Automate",
-  "SharePoint",
-  "Power BI",
-  "API integrations"
+export const aboutPhotographyTags = [
+  "Portraits",
+  "Events",
+  "Street",
+  "Documentary",
+  "Cinematic light",
+  "Real moments",
+  "Private galleries",
+  "Melbourne",
+  "Sri Lanka"
 ];

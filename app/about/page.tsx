@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "About Malindu Herath",
   description:
-    "About Malindu Herath, a Melbourne-based Sri Lankan creative building rxncor.studio around photography, design, and software."
+    "About Malindu Herath, a Melbourne-based Sri Lankan photographer building rxncor.studio around portraits, events, street moments, and client galleries."
 };
 
 function AboutImage({
@@ -140,12 +140,12 @@ export default async function AboutPage() {
         <section className="shell section">
           <div className="section-head numbered" data-index="NOTES">
             <div>
-              <p className="eyebrow">Spoken references</p>
-              <h2>Short notes that can keep changing.</h2>
+              <p className="eyebrow">Frame notes</p>
+              <h2>Small thoughts around photographing people.</h2>
             </div>
             <p>
-              Small lines, references, and working thoughts. This whole section
-              can be edited from the admin builder.
+              Short lines about looking, timing, light, and delivery. This
+              section can be edited from the admin builder.
             </p>
           </div>
           <div className="about-statement-grid">
@@ -166,7 +166,7 @@ export default async function AboutPage() {
             <div className="section-head numbered" data-index="PATH">
               <div>
                 <p className="eyebrow">Background</p>
-                <h2>A work in progress through media, software, and Melbourne light.</h2>
+                <h2>A work in progress through people, light, and Melbourne stories.</h2>
               </div>
             </div>
             <div className="about-timeline">
@@ -186,7 +186,7 @@ export default async function AboutPage() {
         <section className="shell section about-tools-section">
           <div>
             <p className="eyebrow">Tools</p>
-            <h2>Camera, glass, code, and systems.</h2>
+            <h2>Camera, glass, shoots, and delivery.</h2>
           </div>
           <div className="about-tool-grid">
             {toolBlocks.map((block) => (

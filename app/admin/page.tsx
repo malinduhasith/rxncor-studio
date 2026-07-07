@@ -260,7 +260,7 @@ const adminViewCopy: Record<
     label: "About Builder",
     title: "About page builder",
     detail:
-      "Edit the About page hero, metadata, cards, banners, spoken notes, timeline, and tools.",
+      "Edit the About page hero, profile facts, cards, banners, frame notes, timeline, and gear.",
   },
   contact: {
     label: "Contact",
@@ -371,17 +371,17 @@ const aboutQuickTemplates: AboutTemplate[] = [
   },
   {
     title: "Timeline item",
-    description: "One step in your background or current direction.",
+    description: "One step in your photography path or current direction.",
     section: "timeline",
     kind: "timeline",
     label: "",
     blockTitle: "Melbourne",
-    body: "Add one stage of your creative or technical path.",
+    body: "Add one stage of your photography path.",
     reference: "",
   },
   {
     title: "Tool",
-    description: "Gear, software, or a working system.",
+    description: "Camera gear, lens, shoot type, or delivery detail.",
     section: "tools",
     kind: "tool",
     label: "",
@@ -1669,7 +1669,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <a className="admin-quick-card" href={adminHref("about")}>
                   <strong>About builder</strong>
                   <span>
-                    Edit page copy, banners, spoken notes, timeline, and tools.
+                    Edit page copy, banners, frame notes, timeline, and gear.
                   </span>
                 </a>
                 <a className="admin-quick-card" href={adminHref("contact")}>
@@ -1806,7 +1806,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     <input
                       name="hero_title"
                       defaultValue={aboutContent.settings.heroTitle}
-                      placeholder="A creative eye with a technical backbone."
+                      placeholder="Melbourne photographer. Portraits, events, and honest stories."
                       required
                     />
                     <small>This is the largest line on the page.</small>
@@ -1836,7 +1836,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         aboutContent.settings.metaItems,
                       )}
                       placeholder={
-                        "Based in: Melbourne\nOrigin: Sri Lanka\nFocus: Photography / design / systems"
+                        "Based in: Melbourne\nOrigin: Sri Lanka\nFocus: Portraits / events / stories"
                       }
                     />
                     <small>One fact per line. Use Label: Value.</small>

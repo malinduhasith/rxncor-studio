@@ -1,9 +1,9 @@
 import {
   aboutBrandNote,
+  aboutPhotographyTags,
   aboutPerspective,
   aboutProfile,
   aboutSections,
-  aboutTechStack,
   aboutTimeline,
   aboutTools,
   aboutValues
@@ -94,7 +94,7 @@ export const aboutBlockSectionCopy: Record<
   },
   tools: {
     label: "Tools",
-    detail: "Camera gear, software, and working tools."
+    detail: "Camera gear, lenses, shoot types, and delivery details."
   }
 };
 
@@ -139,14 +139,14 @@ export const defaultAboutBlocks: AboutPageBlock[] = [
     isActive: true
   },
   {
-    id: "default-banner-systems",
+    id: "default-banner-delivery",
     section: "banners",
     kind: "banner",
-    label: "Creative / Systems",
-    title: "Two interests that keep teaching each other.",
+    label: "Photography / Delivery",
+    title: "A photograph should feel easy to enter.",
     body:
-      "The camera side is about feeling, light, atmosphere, and timing. The software side is about structure, systems, repeatability, and making things easier to use. For now, RXNCOR is the place where I am learning how those two sides can support each other.",
-    reference: aboutTechStack.join("\n"),
+      "The work starts with noticing people, light, gesture, and atmosphere. After the shoot, delivery should stay quiet and simple: clean galleries, clear downloads, and enough room for the images to speak.",
+    reference: aboutPhotographyTags.join("\n"),
     sortOrder: 20,
     isActive: true
   },
