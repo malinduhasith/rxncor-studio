@@ -2787,6 +2787,83 @@
   }
 }
 
+/* The production CSS graph contains earlier finale rules in a separate chunk.
+   Scope these essentials to the homepage so they always win in both moods. */
+html body .rr-home .rr-contact {
+  color: #fff3d7;
+}
+
+html body .rr-home .rr-inquiry-console {
+  min-height: 920px;
+  border-left: 0;
+  background: #fff3d7;
+  color: #071528;
+}
+
+html body .rr-home .rr-inquiry-status {
+  position: relative;
+  inset: auto;
+  min-height: 84px;
+  padding: 19px clamp(24px, 4vw, 68px);
+  border-bottom: 1px solid rgba(7, 21, 40, 0.2);
+  background: transparent;
+  color: #071528;
+}
+
+html body .rr-home .rr-inquiry-console .rr-contact-form {
+  min-height: calc(920px - 84px);
+  padding: 34px clamp(24px, 4vw, 68px) 54px;
+  background: transparent;
+  color: #071528;
+  backdrop-filter: none;
+}
+
+html body .rr-home .rr-inquiry-console .rr-contact-form label,
+html body .rr-home .rr-inquiry-console .rr-contact-form label[data-active="true"] {
+  margin: 0;
+  padding: 22px 0 18px;
+  border-color: rgba(7, 21, 40, 0.32);
+  background: transparent;
+  color: #071528;
+}
+
+html body .rr-home .rr-inquiry-console .rr-contact-form label[data-active="true"] {
+  padding-left: 17px;
+  border-color: #ff5b2a;
+}
+
+html body .rr-home .rr-inquiry-console .rr-contact-form input,
+html body .rr-home .rr-inquiry-console .rr-contact-form textarea {
+  color: #071528;
+}
+
+html body .rr-home .rr-inquiry-console .rr-contact-form input::placeholder,
+html body .rr-home .rr-inquiry-console .rr-contact-form textarea::placeholder {
+  color: rgba(7, 21, 40, 0.34);
+}
+
+@media (max-width: 760px) {
+  html body .rr-home .rr-inquiry-console {
+    min-height: 0;
+  }
+
+  html body .rr-home .rr-inquiry-status {
+    min-height: 88px;
+    padding: 16px 20px;
+  }
+
+  html body .rr-home .rr-inquiry-console .rr-contact-form {
+    min-height: 0;
+    padding: 28px 20px 58px;
+  }
+
+  html body .rr-home .rr-inquiry-console .rr-contact-form label,
+  html body .rr-home .rr-inquiry-console .rr-contact-form label[data-active="true"] {
+    padding-top: 20px;
+    padding-bottom: 16px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rr-loader {
     display: none;
