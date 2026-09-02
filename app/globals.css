@@ -11563,6 +11563,11 @@ html[data-scrolled] .rx-site-header.site-header,
   box-shadow: 18px 26px 0 rgba(254, 130, 84, 0.34), 0 42px 90px rgba(7, 21, 40, 0.22);
 }
 
+.rr-morph-canvas[data-fallback="true"] {
+  background: radial-gradient(circle at 34% 28%, var(--rx-sky), var(--rx-cobalt) 48%, var(--rx-night));
+  box-shadow: inset 0 0 0 1px var(--rx-pencil);
+}
+
 .rr-services,
 .rr-contact,
 .rx-about-collage,
@@ -11691,6 +11696,11 @@ html[data-theme="dark"] .rx-client-gallery .gallery-delivery {
   content-visibility: visible;
   contain-intrinsic-size: auto;
   outline: 1px solid rgba(16, 38, 56, 0.12);
+}
+
+.rx-client-gallery .lightbox-grid .photo-tile:nth-child(n) {
+  grid-column: span 1;
+  min-height: 0;
 }
 
 /* Admin: denser controls, calmer hierarchy, and the public palette. */
