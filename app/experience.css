@@ -802,13 +802,39 @@
 }
 
 .rr-frame-card-copy {
+  position: relative;
+  isolation: isolate;
+  align-self: stretch;
+  height: 100%;
   display: grid;
-  gap: 12px;
+  grid-template-rows: auto minmax(120px, 1fr) auto auto;
+  gap: 16px;
+  overflow: hidden;
   padding: 22px 20px 20px;
   border: 1px solid currentColor;
-  background: color-mix(in srgb, var(--rr-paper) 88%, transparent);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--rr-ink) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(color-mix(in srgb, var(--rr-ink) 5%, transparent) 1px, transparent 1px),
+    color-mix(in srgb, var(--rr-paper) 91%, transparent);
+  background-size: 20px 20px;
   box-shadow: 8px 8px 0 color-mix(in srgb, var(--rr-ink) 10%, transparent);
   backdrop-filter: blur(10px);
+}
+
+.rr-frame-card-copy::before {
+  content: "OPTICAL / FIELD STUDY";
+  position: absolute;
+  top: 50%;
+  right: -44px;
+  z-index: -1;
+  color: color-mix(in srgb, var(--rr-ink) 13%, transparent);
+  font-family: var(--rr-mono);
+  font-size: 0.52rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  transform: rotate(90deg) translateX(50%);
+  transform-origin: right center;
+  white-space: nowrap;
 }
 
 .rr-frame-card-copy > span,
@@ -820,6 +846,76 @@
   line-height: 1.45;
   text-transform: uppercase;
 }
+
+.rr-frame-card-copy > span {
+  width: fit-content;
+  padding-bottom: 9px;
+  border-bottom: 2px solid var(--rr-orange);
+}
+
+.rr-frame-card-copy p {
+  padding-top: 14px;
+  border-top: 1px solid currentColor;
+}
+
+.rr-frame-card-gauge {
+  position: relative;
+  align-self: center;
+  justify-self: center;
+  width: min(13vw, 170px);
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, var(--rr-ink) 52%, transparent);
+  border-radius: 50%;
+  transform: rotate(calc(var(--horizontal-progress) * 150deg));
+}
+
+.rr-frame-card-gauge::before,
+.rr-frame-card-gauge::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+}
+
+.rr-frame-card-gauge::before {
+  inset: 14%;
+  border: 1px dashed color-mix(in srgb, var(--rr-orange) 72%, transparent);
+  animation: rr-frame-spin-flat 12s linear infinite reverse;
+}
+
+.rr-frame-card-gauge::after {
+  inset: 34%;
+  background: var(--rr-orange);
+  box-shadow: inset -9px -10px 16px color-mix(in srgb, var(--rr-ink) 27%, transparent);
+}
+
+.rr-frame-card-gauge > span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  font-family: var(--rr-mono);
+  font-size: 0.48rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+}
+
+.rr-frame-card-gauge > i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 3;
+  width: 7px;
+  aspect-ratio: 1;
+  border: 1px solid var(--rr-paper);
+  border-radius: 50%;
+  background: var(--rr-ink);
+}
+
+.rr-frame-card-gauge > i:nth-of-type(1) { top: -1px; left: 50%; transform: translate(-50%, -50%); }
+.rr-frame-card-gauge > i:nth-of-type(2) { top: 73%; left: 93%; transform: translate(-50%, -50%); }
+.rr-frame-card-gauge > i:nth-of-type(3) { top: 73%; left: 7%; transform: translate(-50%, -50%); }
 
 .rr-frame-card-copy h3 {
   font-family: var(--rr-display);
@@ -1761,8 +1857,20 @@
   }
 
   .rr-frame-card-copy {
+    height: auto;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
     padding: 16px 14px;
     box-shadow: 5px 5px 0 color-mix(in srgb, var(--rr-ink) 10%, transparent);
+  }
+
+  .rr-frame-card-copy > span,
+  .rr-frame-card-copy p {
+    grid-column: 1 / -1;
+  }
+
+  .rr-frame-card-gauge {
+    display: none;
   }
 
   .rr-frame-card-copy h3,
@@ -1881,6 +1989,10 @@
   .rr-frame-orbital-core,
   .rr-frame-orbital-ring,
   .rr-frame-orbital-point {
+    animation: none;
+  }
+
+  .rr-frame-card-gauge::before {
     animation: none;
   }
 
