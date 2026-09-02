@@ -23,7 +23,7 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
   const notice = error ? adminLoginNotices[error] : undefined;
 
   return (
-    <main className="shell section">
+    <main className="shell section admin-login-page">
       <NoticeToaster cleanupQueryKeys={["error"]} notices={[notice]} />
       <div className="form-panel">
         <p className="eyebrow">Private Admin Login</p>
