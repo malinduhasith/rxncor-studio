@@ -499,6 +499,7 @@
 .rr-intro {
   position: relative;
   min-height: 0;
+  overflow: hidden;
   padding: 88px 3.7vw 100px;
   background: var(--rr-paper);
 }
