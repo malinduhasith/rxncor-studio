@@ -3,6 +3,7 @@ import Link from "next/link";
 import { submitContactAction } from "./actions";
 import { FrameReel, type FrameReelItem } from "@/components/home/FrameReel";
 import { CompositionMark } from "@/components/home/CompositionMark";
+import { HeroVectorField } from "@/components/home/HeroVectorField";
 import { MelbourneClock } from "@/components/home/MelbourneClock";
 import { MorphCanvas } from "@/components/home/MorphCanvas";
 import { ProjectRail, type ProjectRailItem } from "@/components/home/ProjectRail";
@@ -106,6 +107,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       >
         <div className="rr-hero-sticky">
           <MorphCanvas />
+          <HeroVectorField />
           <CompositionMark className="rr-page-vector rr-hero-vector-aperture" variant="aperture" />
           <CompositionMark className="rr-page-vector rr-hero-vector-curve" variant="curve" />
           <div className="rr-cross rr-cross-nw" aria-hidden="true" />
