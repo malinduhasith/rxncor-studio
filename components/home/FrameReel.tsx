@@ -40,6 +40,33 @@ export function FrameReel({ frames }: FrameReelProps) {
           </div>
         </div>
 
+        <div className="rr-frame-manifesto">
+          <span>Melbourne / image studies</span>
+          <h3>
+            Light.<br />
+            Motion.<br />
+            Machine.
+          </h3>
+          <p>
+            A working archive of observed light, controlled motion and honest
+            moments—photographed with a technical eye and a quiet approach.
+          </p>
+          <div aria-hidden="true">
+            <i />
+            <span>Scroll / explore</span>
+          </div>
+        </div>
+
+        <div className="rr-frame-orbital" aria-hidden="true">
+          <div className="rr-frame-orbital-core" />
+          <i className="rr-frame-orbital-ring rr-frame-orbital-ring-a" />
+          <i className="rr-frame-orbital-ring rr-frame-orbital-ring-b" />
+          <i className="rr-frame-orbital-ring rr-frame-orbital-ring-c" />
+          <span className="rr-frame-orbital-point rr-frame-orbital-point-a" />
+          <span className="rr-frame-orbital-point rr-frame-orbital-point-b" />
+          <span className="rr-frame-orbital-point rr-frame-orbital-point-c" />
+        </div>
+
         <div className="rr-horizontal-viewport">
           <div className="rr-frame-track" data-horizontal-track>
             {frames.map((frame, index) => (
