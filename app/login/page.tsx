@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { LogIn } from "lucide-react";
+import Link from "next/link";
 import { clientLoginAction } from "./actions";
 import { NoticeToaster } from "@/components/Notice";
+import { siteConfig } from "@/config/site";
 import { clientLoginNotices } from "@/lib/notices";
 
 export const metadata: Metadata = {
@@ -20,34 +21,55 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const notice = error ? clientLoginNotices[error] : undefined;
 
   return (
-    <main className="shell section">
+    <main className="rx-access-page">
       <NoticeToaster cleanupQueryKeys={["error"]} notices={[notice]} />
-      <div className="form-panel">
-        <p className="eyebrow">Client Login</p>
-        <h1 className="panel-title">Your galleries</h1>
-        <p className="form-note">
-          Sign in with the client email and password provided by rxncor.studio.
-        </p>
-        <form action={clientLoginAction}>
+      <section className="rx-access-intro">
+        <div className="rx-grain" aria-hidden="true" />
+        <div className="rx-section-kicker">
+          <span>Private delivery</span>
+          <span>Client / Access</span>
+        </div>
+        <h1>YOUR<br />STORIES.</h1>
+        <div>
+          <p>
+            Sign in to open every active gallery assigned to you, preview the
+            final edit, and download delivered files.
+          </p>
+          <span>Protected by personal client access</span>
+        </div>
+      </section>
+
+      <section className="rx-access-form-panel">
+        <div className="rx-access-form-copy">
+          <span>RX / LOGIN / 01</span>
+          <h2>WELCOME<br />BACK.</h2>
+          <p>Use the email and client password supplied by RXNCOR Studio.</p>
+        </div>
+        <form action={clientLoginAction} className="rx-form rx-access-form">
           <label className="field">
-            Email
-            <input type="email" name="email" autoComplete="email" required />
+            <span>01 / Client email</span>
+            <input type="email" name="email" autoComplete="email" placeholder="you@email.com" required />
           </label>
           <label className="field">
-            Password
+            <span>02 / Password</span>
             <input
               type="password"
               name="password"
               autoComplete="current-password"
+              placeholder="Your password"
               required
             />
           </label>
-          <button className="button" type="submit">
-            <LogIn size={18} />
-            View albums
+          <button type="submit">
+            Open my galleries <span aria-hidden="true">↗</span>
           </button>
         </form>
-      </div>
+        <div className="rx-access-links">
+          <span>Need a gallery password instead?</span>
+          <Link href={siteConfig.routes.albums}>Browse public albums</Link>
+          <Link href="/#contact">Contact RXNCOR</Link>
+        </div>
+      </section>
     </main>
   );
 }

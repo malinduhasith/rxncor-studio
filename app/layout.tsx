@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { CookieConsent, CookieSettingsButton } from "@/components/CookieConsent";
+import { MotionController } from "@/components/home/MotionController";
 import { MobileViewportGuard } from "@/components/MobileViewportGuard";
 import { PendingInteraction } from "@/components/PendingInteraction";
 import { SiteNav } from "@/components/SiteNav";
@@ -12,7 +13,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: `${siteConfig.name} | Photography and Client Galleries`,
+    default: `${siteConfig.name} | Melbourne Photographer`,
     template: `%s | ${siteConfig.name}`
   },
   description: siteConfig.description,
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
     canonical: "/"
   },
   openGraph: {
-    title: `${siteConfig.name} | Photography and Client Galleries`,
+    title: `${siteConfig.name} | Melbourne Photographer`,
     description: siteConfig.description,
     url: siteConfig.url,
     siteName: siteConfig.name,
@@ -36,7 +37,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${siteConfig.name} | Photography and Client Galleries`,
+    title: `${siteConfig.name} | Melbourne Photographer`,
     description: siteConfig.description,
     images: ["/opengraph-image"]
   },
@@ -88,35 +89,66 @@ export default async function RootLayout({
           id="rxncor-theme"
         />
       </head>
-      <body>
+      <body className="rx-body">
         <MobileViewportGuard />
+        <MotionController />
         <Suspense fallback={null}>
           <PendingInteraction />
         </Suspense>
         <CookieConsent />
         <SiteNav />
         {children}
-        <footer className="footer">
-          <div className="shell footer-inner">
-            <p>
-              {siteConfig.name} · Portfolio, private galleries, and client delivery.
-            </p>
-            <div className="footer-links">
-              <Link href={siteConfig.routes.about}>About</Link>
-              <Link href="/#contact">Contact</Link>
-              {siteContactSettings.socialLinks.slice(0, 4).map((social) => (
-                <a
-                  href={social.href}
-                  key={`${social.label}-${social.href}`}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  {social.label}
+        <footer className="rx-footer" id="contact">
+          <div className="rx-footer-stairs" aria-hidden="true">
+            <i /><i /><i /><i /><i /><i /><i /><i />
+          </div>
+          <div className="rx-footer-main">
+            <div className="rx-section-kicker">
+              <span>Make something worth remembering</span>
+              <span>{siteContactSettings.location}</span>
+            </div>
+            <h2>LET&apos;S CREATE.</h2>
+            <div className="rx-footer-grid">
+              <div>
+                <span className="rx-footer-label">Start here</span>
+                <a className="rx-footer-email" href={`mailto:${siteContactSettings.contactEmail}`}>
+                  {siteContactSettings.contactEmail}
                 </a>
-              ))}
-              <Link href="/privacy">Privacy</Link>
-              <Link href="/terms">Terms</Link>
-              <CookieSettingsButton />
+                {siteContactSettings.contactPhone ? (
+                  <a href={`tel:${siteContactSettings.contactPhone}`}>
+                    {siteContactSettings.contactPhone}
+                  </a>
+                ) : null}
+              </div>
+              <div>
+                <span className="rx-footer-label">Navigate</span>
+                <Link href={siteConfig.routes.portfolio}>Portfolio</Link>
+                <Link href={siteConfig.routes.albums}>Albums</Link>
+                <Link href={siteConfig.routes.book}>Book a shoot</Link>
+                <Link href={siteConfig.routes.login}>Client access</Link>
+              </div>
+              <div>
+                <span className="rx-footer-label">Follow</span>
+                {siteContactSettings.socialLinks.slice(0, 5).map((social) => (
+                  <a
+                    href={social.href}
+                    key={`${social.label}-${social.href}`}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    {social.label} <span aria-hidden="true">↗</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+            <div className="rx-footer-bottom">
+              <span>© {new Date().getFullYear()} RXNCOR STUDIO</span>
+              <span>MELBOURNE / AUSTRALIA</span>
+              <div>
+                <Link href="/privacy">Privacy</Link>
+                <Link href="/terms">Terms</Link>
+                <CookieSettingsButton />
+              </div>
             </div>
           </div>
         </footer>

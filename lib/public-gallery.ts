@@ -72,17 +72,18 @@ export async function getPublicAlbumCards(limit?: number) {
   const albums = ((albumsData ?? []) as (PublicAlbumRow & {
     expires_at: string | null;
   })[]).filter(activeAlbumFilter);
-  const { data: photoRows } = albums.length
-    ? await supabase.from("photos").select("album_id").in(
-        "album_id",
-        albums.map((album) => album.id)
-      )
-    : { data: [] };
-  const photoCounts = new Map<string, number>();
+  const photoCounts = new Map(
+    await Promise.all(
+      albums.map(async (album) => {
+        const { count } = await supabase
+          .from("photos")
+          .select("id", { count: "exact", head: true })
+          .eq("album_id", album.id);
 
-  for (const row of (photoRows ?? []) as { album_id: string }[]) {
-    photoCounts.set(row.album_id, (photoCounts.get(row.album_id) ?? 0) + 1);
-  }
+        return [album.id, count ?? 0] as const;
+      })
+    )
+  );
 
   return Promise.all(
     albums.map(async (album) => ({

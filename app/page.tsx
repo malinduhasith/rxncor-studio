@@ -1,13 +1,13 @@
+import Image from "next/image";
 import Link from "next/link";
 import { submitContactAction } from "./actions";
-import { AlbumCard } from "@/components/AlbumCard";
+import { FrameReel, type FrameReelItem } from "@/components/home/FrameReel";
+import { MelbourneClock } from "@/components/home/MelbourneClock";
 import { NoticeToaster } from "@/components/Notice";
-import { PhotoTile } from "@/components/PhotoTile";
 import { siteConfig } from "@/config/site";
 import { contactNotices } from "@/lib/notices";
 import { getPublicAlbumCards, getPublicPortfolioPhotos } from "@/lib/public-gallery";
 import { featuredAlbums, portfolioItems } from "@/lib/sample-data";
-import { getSiteContactSettings } from "@/lib/site-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -17,295 +17,275 @@ type HomePageProps = {
   }>;
 };
 
-function formatDate(date: string | null) {
-  return date ?? "Public";
+const services = [
+  { name: "Portraits", detail: "People / identity / editorial", href: "/book" },
+  { name: "Events", detail: "Energy / atmosphere / celebration", href: "/book" },
+  { name: "Automotive", detail: "Machines / movement / detail", href: "/book" },
+  { name: "Lifestyle", detail: "Brands / spaces / everyday stories", href: "/book" },
+  { name: "Private delivery", detail: "Secure galleries / full-resolution files", href: "/login" }
+];
+
+function displayDate(value: string | null) {
+  if (!value) {
+    return "Selected work";
+  }
+
+  const date = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(date.valueOf())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en-AU", {
+    month: "short",
+    year: "numeric"
+  }).format(date);
 }
 
 export default async function Home({ searchParams }: HomePageProps) {
   const { contact } = await searchParams;
   const contactNotice = contact ? contactNotices[contact] : undefined;
-  const [brandRoot, ...brandParts] = siteConfig.name.split(".");
-  const brandSuffix = brandParts.join(".");
-  const [realPortfolioPhotos, realAlbums, siteContactSettings] = await Promise.all([
-    getPublicPortfolioPhotos(3),
-    getPublicAlbumCards(3),
-    getSiteContactSettings()
+  const [realPortfolioPhotos, realAlbums] = await Promise.all([
+    getPublicPortfolioPhotos(7).catch(() => []),
+    getPublicAlbumCards(4).catch(() => [])
   ]);
-  const heroImage = realPortfolioPhotos[0]?.imageUrl ?? realAlbums[0]?.coverUrl ?? null;
-  const portfolioTiles = realPortfolioPhotos.length
-    ? realPortfolioPhotos.map((photo, index) => (
-        <PhotoTile
-          key={photo.id}
-          title={photo.title}
-          meta={photo.meta}
-          detail={photo.detail}
-          eyebrow={photo.eyebrow}
-          imageUrl={photo.imageUrl}
-          loading={index < 3 ? "eager" : "lazy"}
-        />
-      ))
-    : portfolioItems.slice(0, 3).map((item) => (
-        <PhotoTile
-          key={item.title}
-          title={item.title}
-          meta={item.location}
-          colors={item.colors}
-        />
-      ));
-  const albumTiles = realAlbums.length
-    ? realAlbums.map((album, index) => (
-        <AlbumCard
-          key={album.slug}
-          title={album.title}
-          slug={album.slug}
-          date={formatDate(album.event_date)}
-          count={album.count}
-          coverUrl={album.coverUrl}
-          loading={index < 2 ? "eager" : "lazy"}
-        />
-      ))
-    : featuredAlbums.map((album) => <AlbumCard key={album.slug} {...album} />);
+
+  const frames: FrameReelItem[] = realPortfolioPhotos.length
+    ? realPortfolioPhotos.map((photo) => ({
+        id: photo.id,
+        title: photo.title,
+        meta: photo.meta,
+        detail: photo.detail,
+        imageUrl: photo.imageUrl
+      }))
+    : portfolioItems.map((item, index) => ({
+        id: `sample-${index}`,
+        title: item.title,
+        meta: item.location,
+        detail: "RXNCOR selected work",
+        imageUrl: null
+      }));
+
+  const work = realAlbums.length
+    ? realAlbums.map((album) => ({
+        id: album.id,
+        title: album.title,
+        slug: album.slug,
+        date: displayDate(album.event_date),
+        count: album.count,
+        coverUrl: album.coverUrl
+      }))
+    : featuredAlbums.map((album, index) => ({
+        id: `sample-album-${index}`,
+        title: album.title,
+        slug: album.slug,
+        date: displayDate(album.date),
+        count: album.count,
+        coverUrl: null
+      }));
+
+  const heroFrame = frames[0];
+  const collageFrames = [frames[1] ?? frames[0], frames[2] ?? frames[0], frames[3] ?? frames[0]];
 
   return (
-    <main>
+    <main className="rx-home">
       <NoticeToaster cleanupQueryKeys={["contact"]} notices={[contactNotice]} />
-      <section className="shell hero">
-        <div className="hero-copy">
-          <p className="eyebrow">Melbourne photography and client delivery</p>
-          <h1 className="hero-title">
-            <span>{brandRoot}{brandSuffix ? "." : ""}</span>
-            {brandSuffix ? <span>{brandSuffix}</span> : null}
-          </h1>
-          <p className="lede">
-            Public portfolio, curated featured albums, and private client galleries
-            with password-protected delivery and download-ready photo sets.
-          </p>
-          <div className="hero-actions">
-            <Link className="button" href={siteConfig.routes.portfolio}>
-              View Portfolio
-            </Link>
-            <Link className="button secondary" href={siteConfig.routes.albums}>
-              Featured Albums
-            </Link>
-            <Link className="button secondary" href={siteConfig.routes.book}>
-              Request Shoot
-            </Link>
-          </div>
-        </div>
-        <div className="hero-media" aria-label="Featured photography artwork">
-          {heroImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              className="photo-img"
-              src={heroImage}
-              alt="Featured photography"
-              loading="eager"
-              decoding="async"
-            />
-          ) : null}
-          <div className="hero-stamp" aria-hidden="true">
-            <span>RX</span>
-            <span>Archive ready</span>
-          </div>
-        </div>
-      </section>
 
-      <section className="section alt" id="about">
-        <div className="shell section-head numbered" data-index="01">
-          <div>
-            <p className="eyebrow">About</p>
-            <h2>Made for polished galleries, bookings, and clean client access.</h2>
-          </div>
-          <p>
-            Public pages, shoot requests, admin upload tools, private links,
-            client passwords, expiry dates, and direct downloads are wired together
-            so booking and delivery can stay in one place.
-          </p>
-        </div>
-      </section>
+      <section className="rx-hero" id="top">
+        <div className="rx-grain" aria-hidden="true" />
+        <div className="rx-crop rx-crop-nw" aria-hidden="true" />
+        <div className="rx-crop rx-crop-ne" aria-hidden="true" />
+        <div className="rx-crop rx-crop-sw" aria-hidden="true" />
+        <div className="rx-crop rx-crop-se" aria-hidden="true" />
 
-      <section className="shell section">
-        <div className="section-head numbered" data-index="02">
-          <div>
-            <p className="eyebrow">Portfolio</p>
-            <h2>Recent work</h2>
+        <div className="rx-hero-meta">
+          <span>Independent photo studio</span>
+          <MelbourneClock />
+        </div>
+
+        <h1 className="rx-hero-title" aria-label="Melbourne photographer">
+          <span>MELBOURNE</span>
+          <span>PHOTOGRAPHER</span>
+        </h1>
+
+        <div className="rx-hero-object">
+          <div className="rx-hero-ring" aria-hidden="true" />
+          <div className="rx-hero-image">
+            {heroFrame?.imageUrl ? (
+              <Image
+                alt={heroFrame.title}
+                fill
+                priority
+                sizes="(max-width: 800px) 72vw, 34vw"
+                src={heroFrame.imageUrl}
+                unoptimized
+              />
+            ) : (
+              <div className="rx-image-fallback" aria-hidden="true" />
+            )}
           </div>
-          <Link className="button secondary" href={siteConfig.routes.portfolio}>
-            See all
+          <Link className="rx-hero-play" href="/#frames">
+            <span aria-hidden="true">↓</span>
+            Explore frames
           </Link>
         </div>
-        <div className="grid portfolio-gallery-grid">{portfolioTiles}</div>
-      </section>
 
-      <section className="section alt">
-        <div className="shell">
-          <div className="section-head numbered" data-index="03">
-            <div>
-              <p className="eyebrow">Featured Albums</p>
-              <h2>Client-ready collections</h2>
-            </div>
-            <Link className="button secondary" href={siteConfig.routes.albums}>
-              Browse albums
-            </Link>
-          </div>
-          <div className="grid album-gallery-grid">{albumTiles}</div>
+        <div className="rx-hero-foot">
+          <p>
+            Honest people. Loud machines. Fast nights. Photographed with feeling in
+            Melbourne and wherever the story takes us.
+          </p>
+          <span>Scroll / 01</span>
         </div>
       </section>
 
-      <section className="shell section contact-showcase" id="contact">
-        <div className="section-head numbered" data-index="04">
-          <div>
-            <p className="eyebrow">Contact / Socials</p>
-            <h2>Start with a message, follow the work.</h2>
-          </div>
+      <section className="rx-manifesto" id="about">
+        <div className="rx-section-kicker" data-reveal>
+          <span>Approach / 01</span>
+          <span>Unstaged when it matters</span>
+        </div>
+        <div className="rx-manifesto-copy" data-reveal>
+          <h2>
+            <span>REAL MOMENTS</span>
+            <span>MADE LOUD.</span>
+          </h2>
           <p>
-            For bookings, gallery support, or creative work, use email or the
-            request form. Instagram is the quickest place to see current frames.
+            RXNCOR is a Melbourne photography studio led by Malindu. The work sits
+            between documentary instinct and graphic precision—natural enough to
+            feel true, considered enough to last.
           </p>
         </div>
-        <div className="contact-showcase-grid">
-          <div className="contact-primary-card">
-            <span className="label">Direct email</span>
-            <a href={`mailto:${siteContactSettings.contactEmail}`}>
-              {siteContactSettings.contactEmail}
-            </a>
-            <p>
-              Best for booking details, private gallery questions, collaboration
-              ideas, and anything that needs a clear reply.
-            </p>
-          </div>
-          <div className="contact-social-grid" aria-label="Social links">
-            {siteContactSettings.socialLinks.map((social, index) => (
-              <a
-                className="social-card"
-                href={social.href}
-                key={`${social.label}-${social.href}`}
-                rel="noreferrer"
-                target="_blank"
-              >
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <strong>{social.label}</strong>
-                <small>{social.handle}</small>
-                <p>{social.detail}</p>
-              </a>
-            ))}
-          </div>
-          <div className="contact-info-strip">
-            <div>
-              <span className="label">Based in</span>
-              <strong>{siteContactSettings.location}</strong>
-            </div>
-            {siteContactSettings.contactPhone ? (
-              <div>
-                <span className="label">Phone</span>
-                <a href={`tel:${siteContactSettings.contactPhone}`}>
-                  {siteContactSettings.contactPhone}
-                </a>
-              </div>
-            ) : null}
-            <div>
-              <span className="label">Response path</span>
-              <strong>Bookings, gallery support, and socials</strong>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <section className="shell section" id="inquiries">
-        <div className="section-head numbered compact" data-index="05">
-          <div>
-            <p className="eyebrow">Questions / support</p>
-            <h2>Need help, access, or a quick answer?</h2>
-          </div>
-          <p>
-            For new shoot requests, use the booking page. For gallery access,
-            downloads, album links, or general questions, send a message here.
-          </p>
-        </div>
-        <div className="contact-grid">
-          <div className="form-panel contact-form">
-            <h3>Choose the right path</h3>
-            <p className="form-note">
-              This section is for quick questions and gallery help. The full
-              booking flow has its own page so session details stay clear.
-            </p>
-            <div className="feature-list contact-details">
-              <div className="feature">
-                <h3>Book a shoot</h3>
-                <p>Use the booking page for dates, times, locations, and shoot details.</p>
-              </div>
-              <div className="feature">
-                <h3>Gallery access</h3>
-                <p>Ask about passwords, private links, downloads, or expired albums.</p>
-              </div>
-              <div className="feature">
-                <h3>Album help</h3>
-                <p>Send the album name or link if something is not opening correctly.</p>
-              </div>
-              <div className="feature">
-                <h3>Direct reply</h3>
-                <p>I will reply by email, so include the best address to reach you.</p>
-              </div>
-            </div>
-            <Link className="button" href={siteConfig.routes.book}>
-              Go to booking page
-            </Link>
-          </div>
-          <div className="contact-side">
-            <form action={submitContactAction} className="form-panel contact-form">
-              <h3>Send a message</h3>
-              <label className="field">
-                Name
-                <input name="name" autoComplete="name" required />
-              </label>
-              <label className="field">
-                Email
-                <input name="email" type="email" autoComplete="email" required />
-              </label>
-              <label className="field">
-                Phone
-                <input name="phone" autoComplete="tel" placeholder="+61" />
-              </label>
-              <label className="field">
-                Message
-                <textarea
-                  name="message"
-                  placeholder="Album link, gallery question, booking follow-up, or anything I should know."
-                  required
+        <div className="rx-collage" aria-label="Selected RXNCOR photography" data-reveal>
+          {collageFrames.map((frame, index) => (
+            <figure className={`rx-collage-frame rx-collage-${index + 1}`} key={`${frame.id}-${index}`}>
+              {frame.imageUrl ? (
+                <Image
+                  alt={frame.title}
+                  fill
+                  sizes="(max-width: 800px) 58vw, 32vw"
+                  src={frame.imageUrl}
+                  unoptimized
                 />
-              </label>
-              <button className="button" type="submit">
-                Send message
-              </button>
-            </form>
-            <div className="feature-list contact-details">
-              <div className="feature">
-                <h3>Email</h3>
-                <p>
-                  <a href={`mailto:${siteContactSettings.contactEmail}`}>
-                    {siteContactSettings.contactEmail}
-                  </a>
-                </p>
-              </div>
-              <div className="feature">
-                <h3>Instagram</h3>
-                <p>
-                  <a href={siteContactSettings.instagramUrl}>
-                    {siteContactSettings.instagramHandle}
-                  </a>
-                </p>
-              </div>
-              <div className="feature">
-                <h3>Delivery</h3>
-                <p>Private galleries with single photo and ZIP downloads.</p>
-              </div>
-              <div className="feature">
-                <h3>Storage</h3>
-                <p>Photos live in Cloudflare R2, not inside the website project.</p>
-              </div>
-            </div>
-          </div>
+              ) : (
+                <div className="rx-image-fallback" aria-hidden="true" />
+              )}
+              <figcaption>{String(index + 1).padStart(2, "0")} / {frame.meta}</figcaption>
+            </figure>
+          ))}
+          <span className="rx-collage-note">No stiff poses<br />No empty polish</span>
         </div>
+      </section>
+
+      <section className="rx-services">
+        <div className="rx-section-kicker" data-reveal>
+          <span>What I shoot / 02</span>
+          <span>Built around your story</span>
+        </div>
+        <h2 data-reveal>FOCUS</h2>
+        <div className="rx-service-list" data-reveal>
+          {services.map((service, index) => (
+            <Link href={service.href} key={service.name}>
+              <small>{String(index + 1).padStart(2, "0")}</small>
+              <strong>{service.name}</strong>
+              <span>{service.detail}</span>
+              <i aria-hidden="true">↗</i>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <FrameReel frames={frames.slice(0, 6)} />
+
+      <section className="rx-work" id="work">
+        <div className="rx-work-heading">
+          <div className="rx-section-kicker" data-reveal>
+            <span>Recent stories / 03</span>
+            <span>Public albums</span>
+          </div>
+          <h2 data-reveal>WORK</h2>
+        </div>
+
+        <div className="rx-project-list">
+          {work.map((album, index) => (
+            <article className="rx-project" key={album.id}>
+              <div className="rx-project-card">
+                <div className="rx-project-side">
+                  <span>{String(index + 1).padStart(2, "0")} / {String(work.length).padStart(2, "0")}</span>
+                  <Link href={`${siteConfig.routes.clientGallery}/${album.slug}`}>
+                    Open story <span aria-hidden="true">↗</span>
+                  </Link>
+                </div>
+                <Link
+                  aria-label={`View ${album.title}`}
+                  className="rx-project-image"
+                  href={`${siteConfig.routes.clientGallery}/${album.slug}`}
+                >
+                  {album.coverUrl ? (
+                    <Image
+                      alt={album.title}
+                      fill
+                      sizes="(max-width: 800px) 90vw, 50vw"
+                      src={album.coverUrl}
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="rx-image-fallback" aria-hidden="true" />
+                  )}
+                </Link>
+                <div className="rx-project-copy">
+                  <span>{album.date}</span>
+                  <h3>{album.title}</h3>
+                  <p>{album.count} photographs / Melbourne and beyond</p>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <Link className="rx-all-work" href={siteConfig.routes.albums}>
+          <span>View every public album</span>
+          <span aria-hidden="true">↗</span>
+        </Link>
+      </section>
+
+      <section className="rx-contact" id="inquiries">
+        <div className="rx-contact-intro" data-reveal>
+          <div className="rx-section-kicker">
+            <span>Start a conversation / 04</span>
+            <span>Usually replies within 48 hours</span>
+          </div>
+          <h2>GOT A STORY<br />IN MIND?</h2>
+          <p>
+            Tell me what you are making, celebrating, driving, launching, or trying
+            to remember. For a full quote and date request, use the booking page.
+          </p>
+          <Link className="rx-pill-link" href={siteConfig.routes.book}>
+            Book a shoot <span aria-hidden="true">↗</span>
+          </Link>
+        </div>
+
+        <form action={submitContactAction} className="rx-contact-form" data-reveal>
+          <label>
+            <span>01 / Your name</span>
+            <input name="name" autoComplete="name" placeholder="Name" required />
+          </label>
+          <label>
+            <span>02 / Email</span>
+            <input name="email" type="email" autoComplete="email" placeholder="you@email.com" required />
+          </label>
+          <label>
+            <span>03 / Phone, optional</span>
+            <input name="phone" autoComplete="tel" placeholder="+61" />
+          </label>
+          <label>
+            <span>04 / What are we making?</span>
+            <textarea name="message" placeholder="A few details about the idea, timing, or gallery question…" required />
+          </label>
+          <button type="submit">
+            Send inquiry <span aria-hidden="true">↗</span>
+          </button>
+        </form>
       </section>
     </main>
   );

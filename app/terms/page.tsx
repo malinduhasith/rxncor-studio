@@ -12,10 +12,16 @@ export default async function TermsPage() {
   const siteContactSettings = await getSiteContactSettings();
 
   return (
-    <main className="shell section">
-      <article className="prose">
-        <p className="eyebrow">Terms</p>
-        <h1>Gallery terms</h1>
+    <main className="rx-page rx-legal-page">
+      <section className="rx-legal-hero" data-tone="dark">
+        <div className="rx-section-kicker">
+          <span>Bookings and delivery</span>
+          <span>LEGAL / 02</span>
+        </div>
+        <h1>GALLERY<br />TERMS.</h1>
+        <p>The clear version of bookings, private links, downloads, and image use.</p>
+      </section>
+      <article className="prose rx-legal-copy">
         <p>Last updated: 25 May 2026.</p>
         <p>
           These terms keep bookings, private galleries, downloads, and client
@@ -98,8 +104,8 @@ export default async function TermsPage() {
             {siteContactSettings.contactEmail}
           </a>.
         </p>
-        <Link className="button secondary" href="/">
-          Back home
+        <Link className="rx-pill-link" href="/">
+          Back home <span aria-hidden="true">↗</span>
         </Link>
       </article>
     </main>

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 
@@ -9,6 +10,7 @@ type AlbumCardProps = {
   colors?: string[];
   coverUrl?: string | null;
   loading?: "eager" | "lazy";
+  index?: number;
 };
 
 export function AlbumCard({
@@ -18,43 +20,48 @@ export function AlbumCard({
   count,
   colors = ["#713d2f", "#d8b35f"],
   coverUrl,
-  loading = "lazy"
+  loading = "lazy",
+  index
 }: AlbumCardProps) {
   return (
     <Link
       aria-label={`Open ${title}`}
-      className="album-card"
+      className="album-card rx-album-card"
       data-pending-label={title}
       href={`/client/${slug}`}
     >
-      {coverUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          className="photo-img"
-          src={coverUrl}
-          alt={title}
-          loading={loading}
-          decoding="async"
-        />
-      ) : (
-        <div
-          className="photo-fill"
-          style={
-            {
-              "--tile-a": colors[0],
-              "--tile-b": colors[1]
-            } as CSSProperties
-          }
-        />
-      )}
+      <div className="rx-album-card-media">
+        {coverUrl ? (
+          <Image
+            alt={title}
+            className="photo-img"
+            fill
+            loading={loading}
+            sizes="(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw"
+            src={coverUrl}
+            unoptimized
+          />
+        ) : (
+          <div
+            className="photo-fill"
+            style={
+              {
+                "--tile-a": colors[0],
+                "--tile-b": colors[1]
+              } as CSSProperties
+            }
+          />
+        )}
+      </div>
       <div className="album-card-top">
-        <span>Archive</span>
+        <span>{index === undefined ? "Archive" : String(index + 1).padStart(2, "0")}</span>
         <span>{date}</span>
       </div>
       <div className="album-meta">
-        <p className="eyebrow">Client project</p>
+        <p className="eyebrow">Story / Client project</p>
         <h3>{title}</h3>
-        <p>{count} photos · private delivery ready</p>
+        <p>{count} photographs</p>
+        <span className="rx-album-arrow" aria-hidden="true">↗</span>
       </div>
     </Link>
   );

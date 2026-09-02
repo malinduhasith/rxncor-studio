@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { CSSProperties } from "react";
 
 type PhotoTileProps = {
@@ -20,15 +21,16 @@ export function PhotoTile({
   loading = "lazy"
 }: PhotoTileProps) {
   return (
-    <article className="photo-tile">
+    <article className="photo-tile rx-photo-tile">
       {imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          className="photo-img"
-          src={imageUrl}
+        <Image
           alt={title}
+          className="photo-img"
+          fill
           loading={loading}
-          decoding="async"
+          sizes="(max-width: 760px) 50vw, 33vw"
+          src={imageUrl}
+          unoptimized
         />
       ) : (
         <div

@@ -79,7 +79,7 @@ export function DateTimeRangeFields({
   return (
     <div className={className}>
       <label className="field">
-        {startLabel}
+        <span>{startLabel}</span>
         <input
           min={enforceFutureStart ? futureMin : undefined}
           name={startName}
@@ -91,7 +91,7 @@ export function DateTimeRangeFields({
         />
       </label>
       <label className="field">
-        {endLabel}
+        <span>{endLabel}</span>
         <input
           min={endMin || undefined}
           name={endName}

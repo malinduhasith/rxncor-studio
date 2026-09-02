@@ -12,20 +12,20 @@ export default function GlobalError({
   void error;
 
   return (
-    <main className="shell section">
-      <div className="form-panel error-panel">
-        <p className="eyebrow">Something broke</p>
-        <h1 className="panel-title">The page could not load.</h1>
-        <p className="form-note">
+    <main className="rx-state-page" data-tone="orange">
+      <div className="rx-state-panel error-panel">
+        <span>Error / Something broke</span>
+        <h1>THE PAGE<br />COULD NOT LOAD.</h1>
+        <p>
           Nothing sensitive is shown here. Try again, or go back to the main page
           and reopen the section.
         </p>
-        <div className="inline-actions">
-          <button className="button" onClick={reset} type="button">
+        <div>
+          <button className="rx-pill-link" onClick={reset} type="button">
             Try again
           </button>
-          <Link className="button secondary" href="/">
-            Home
+          <Link className="rx-pill-link" href="/">
+            Home <span aria-hidden="true">↗</span>
           </Link>
         </div>
       </div>

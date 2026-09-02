@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   type CSSProperties,
   useCallback,
@@ -299,6 +300,12 @@ export function GalleryLightbox({
   }, [hasMorePhotos, loadMorePhotos]);
 
   useEffect(() => {
+    document.body.classList.toggle("rx-lightbox-open", selectedIndex !== null);
+
+    return () => document.body.classList.remove("rx-lightbox-open");
+  }, [selectedIndex]);
+
+  useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (selectedIndex === null) {
         return;
@@ -444,22 +451,23 @@ export function GalleryLightbox({
                 onClick={() => setSelectedIndex(index)}
                 type="button"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className="photo-img"
-                  src={photo.thumbnailDisplayUrl}
+                <Image
                   alt={photo.filename}
+                  className="photo-img"
+                  fill
                   loading={shouldVirtualizeGallery ? "lazy" : index < 8 ? "eager" : "lazy"}
-                  decoding="async"
+                  sizes="(max-width: 760px) 33vw, (max-width: 1100px) 25vw, 20vw"
+                  src={photo.thumbnailDisplayUrl}
+                  unoptimized
                 />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className="watermark watermark-logo"
-                  src="/sig.png"
+                <Image
                   alt=""
                   aria-hidden="true"
+                  className="watermark watermark-logo"
+                  height={66}
                   loading="lazy"
-                  decoding="async"
+                  src="/sig.png"
+                  width={220}
                 />
                 <div className="tile-caption">
                   <span className="tile-info">
@@ -496,7 +504,12 @@ export function GalleryLightbox({
         </div>
       </section>
       {selectedPhoto ? (
-        <div className="lightbox-modal" role="dialog" aria-modal="true">
+        <div
+          aria-label={`${selectedPhoto.title} preview`}
+          aria-modal="true"
+          className="lightbox-modal"
+          role="dialog"
+        >
           <div className="lightbox-toolbar">
             <div>
               <span className="label">Preview</span>
@@ -542,20 +555,21 @@ export function GalleryLightbox({
               </button>
             </div>
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            className="lightbox-image"
-            src={selectedPreviewUrl ?? selectedPhoto.thumbnailDisplayUrl}
+          <Image
             alt={selectedPhoto.filename}
-            decoding="async"
+            className="lightbox-image"
+            fill
+            sizes="100vw"
+            src={selectedPreviewUrl ?? selectedPhoto.thumbnailDisplayUrl}
+            unoptimized
           />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            className="lightbox-watermark watermark-logo"
-            src="/sig.png"
+          <Image
             alt=""
             aria-hidden="true"
-            decoding="async"
+            className="lightbox-watermark watermark-logo"
+            height={66}
+            src="/sig.png"
+            width={220}
           />
         </div>
       ) : null}

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
+import { PublicPageHero } from "@/components/public/PublicPageHero";
+import { siteConfig } from "@/config/site";
 import { blockReferenceItems, getAboutPageContent } from "@/lib/about-builder";
 import { getPublicPortfolioPhotos } from "@/lib/public-gallery";
-import { siteConfig } from "@/config/site";
 
 export const dynamic = "force-dynamic";
 
@@ -12,37 +14,28 @@ export const metadata: Metadata = {
     "About Malindu Herath, a Melbourne-based Sri Lankan photographer building rxncor.studio around portraits, events, street moments, and client galleries."
 };
 
-function AboutImage({
-  image,
-  index
-}: {
+type AboutImageProps = {
   image?: { imageUrl: string | null; title: string; meta: string };
   index: number;
-}) {
-  if (image?.imageUrl) {
-    return (
-      <figure className="about-image-frame">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={image.imageUrl}
-          alt={`${image.title} from ${image.meta}`}
-          loading="lazy"
-          decoding="async"
-        />
-        <figcaption>
-          <span>{String(index + 1).padStart(2, "0")}</span>
-          {image.title}
-        </figcaption>
-      </figure>
-    );
-  }
+};
 
+function AboutImage({ image, index }: AboutImageProps) {
   return (
-    <figure className="about-image-frame about-image-placeholder">
-      <div aria-hidden="true" />
+    <figure className={`rx-about-image rx-about-image-${index + 1}`}>
+      {image?.imageUrl ? (
+        <Image
+          alt={`${image.title} from ${image.meta}`}
+          fill
+          sizes="(max-width: 760px) 72vw, 34vw"
+          src={image.imageUrl}
+          unoptimized
+        />
+      ) : (
+        <div className="rx-image-fallback" aria-hidden="true" />
+      )}
       <figcaption>
         <span>{String(index + 1).padStart(2, "0")}</span>
-        RXNCOR visual study
+        <span>{image?.title ?? "RXNCOR visual study"}</span>
       </figcaption>
     </figure>
   );
@@ -50,7 +43,7 @@ function AboutImage({
 
 export default async function AboutPage() {
   const [portfolioPhotos, aboutContent] = await Promise.all([
-    getPublicPortfolioPhotos(4),
+    getPublicPortfolioPhotos(4).catch(() => []),
     getAboutPageContent()
   ]);
   const introCards = aboutContent.blocks.filter((block) => block.section === "intro_cards");
@@ -60,100 +53,95 @@ export default async function AboutPage() {
   const toolBlocks = aboutContent.blocks.filter((block) => block.section === "tools");
 
   return (
-    <main className="about-page">
-      <section className="shell about-hero" data-ghost={aboutContent.settings.heroTitle}>
-        <div className="about-hero-copy">
-          <p className="eyebrow">{aboutContent.settings.heroLabel}</p>
-          <h1>{aboutContent.settings.heroTitle}</h1>
-          <p className="lede">{aboutContent.settings.intro}</p>
-        </div>
-        <aside className="about-meta-panel" aria-label="Profile metadata">
-          {aboutContent.settings.metaItems.map(([label, value]) => (
-            <div key={label}>
-              <span>{label}</span>
-              <strong>{value}</strong>
-            </div>
-          ))}
-        </aside>
-      </section>
+    <main className="rx-page rx-about-page">
+      <PublicPageHero
+        description={aboutContent.settings.intro}
+        eyebrow={aboutContent.settings.heroLabel}
+        index="ABOUT / 01"
+        meta={aboutContent.settings.metaItems.slice(0, 3).map(([label, value]) => `${label} / ${value}`)}
+        title={aboutContent.settings.heroTitle}
+      />
 
-      <section className="shell about-visual-strip" aria-label="Selected visual direction">
-        {[0, 1, 2].map((index) => (
-          <AboutImage
-            image={portfolioPhotos[index] ? {
-              imageUrl: portfolioPhotos[index].imageUrl,
-              title: portfolioPhotos[index].title,
-              meta: portfolioPhotos[index].meta
-            } : undefined}
-            index={index}
-            key={index}
-          />
-        ))}
+      <section className="rx-about-collage" aria-label="Selected visual direction">
+        <div className="rx-section-kicker" data-reveal>
+          <span>Selected perspective</span>
+          <span>Melbourne / Sri Lankan</span>
+        </div>
+        <div className="rx-about-image-stage" data-reveal>
+          {[0, 1, 2].map((index) => (
+            <AboutImage
+              image={portfolioPhotos[index] ? {
+                imageUrl: portfolioPhotos[index].imageUrl,
+                title: portfolioPhotos[index].title,
+                meta: portfolioPhotos[index].meta
+              } : undefined}
+              index={index}
+              key={index}
+            />
+          ))}
+          <p>Instinct first.<br />Polish second.</p>
+        </div>
       </section>
 
       {introCards.length ? (
-        <section className="shell section about-block-grid">
-          {introCards.map((block, index) => (
-            <article className="about-copy-panel" key={block.id}>
-              <span className="about-index">{String(index + 1).padStart(2, "0")}</span>
-              {block.label ? <p className="eyebrow">{block.label}</p> : null}
-              <h2>{block.title}</h2>
-              {block.body ? <p>{block.body}</p> : null}
-            </article>
-          ))}
+        <section className="rx-about-principles">
+          <div className="rx-section-kicker" data-reveal>
+            <span>Working principles / 02</span>
+            <span>How the frame comes together</span>
+          </div>
+          <div className="rx-about-principle-grid" data-reveal>
+            {introCards.map((block, index) => (
+              <article key={block.id}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                {block.label ? <small>{block.label}</small> : null}
+                <h2>{block.title}</h2>
+                {block.body ? <p>{block.body}</p> : null}
+              </article>
+            ))}
+          </div>
         </section>
       ) : null}
 
       {bannerBlocks.map((block, index) => {
         const tags = blockReferenceItems(block.reference);
-        const bannerContent = (
-          <>
-            <div>
-              {block.label ? <p className="eyebrow">{block.label}</p> : null}
-              <h2>{block.title}</h2>
-            </div>
-            <div className="about-split-panel">
-              {block.body ? <p>{block.body}</p> : null}
-              {tags.length ? (
-                <div className="about-tag-cloud" aria-label={`${block.title} references`}>
-                  {tags.map((item) => (
-                    <span key={item}>{item}</span>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          </>
-        );
 
-        return index % 2 === 0 ? (
-          <section className="section alt" key={block.id}>
-            <div className="shell about-split">{bannerContent}</div>
-          </section>
-        ) : (
-          <section className="shell section about-split" key={block.id}>
-            {bannerContent}
+        return (
+          <section
+            className="rx-about-band"
+            data-tone={index % 2 === 0 ? "orange" : "dark"}
+            key={block.id}
+          >
+            <div className="rx-section-kicker" data-reveal>
+              <span>{block.label ?? "Perspective"}</span>
+              <span>{String(index + 3).padStart(2, "0")}</span>
+            </div>
+            <div className="rx-about-band-grid" data-reveal>
+              <h2>{block.title}</h2>
+              <div>
+                {block.body ? <p>{block.body}</p> : null}
+                {tags.length ? (
+                  <div className="rx-about-tags" aria-label={`${block.title} references`}>
+                    {tags.map((item) => <span key={item}>{item}</span>)}
+                  </div>
+                ) : null}
+              </div>
+            </div>
           </section>
         );
       })}
 
       {spokenBlocks.length ? (
-        <section className="shell section">
-          <div className="section-head numbered" data-index="NOTES">
-            <div>
-              <p className="eyebrow">Frame notes</p>
-              <h2>Small thoughts around photographing people.</h2>
-            </div>
-            <p>
-              Short lines about looking, timing, light, and delivery. This
-              section can be edited from the admin builder.
-            </p>
+        <section className="rx-about-notes">
+          <div className="rx-section-kicker" data-reveal>
+            <span>Frame notes / 03</span>
+            <span>Things worth keeping close</span>
           </div>
-          <div className="about-statement-grid">
+          <div className="rx-about-note-list" data-reveal>
             {spokenBlocks.map((block, index) => (
-              <article className="about-statement" key={block.id}>
+              <article key={block.id}>
                 <span>{String(index + 1).padStart(2, "0")}</span>
                 <strong>{block.title}</strong>
-                {block.reference ? <small>{block.reference}</small> : null}
+                <small>{block.reference ?? "RXNCOR note"}</small>
               </article>
             ))}
           </div>
@@ -161,49 +149,46 @@ export default async function AboutPage() {
       ) : null}
 
       {timelineBlocks.length ? (
-        <section className="section alt">
-          <div className="shell about-timeline-section">
-            <div className="section-head numbered" data-index="PATH">
-              <div>
-                <p className="eyebrow">Background</p>
-                <h2>A work in progress through people, light, and Melbourne stories.</h2>
-              </div>
-            </div>
-            <div className="about-timeline">
-              {timelineBlocks.map((block, index) => (
-                <article className="about-timeline-item" key={block.id}>
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                  <h3>{block.title}</h3>
-                  {block.body ? <p>{block.body}</p> : null}
-                </article>
-              ))}
-            </div>
+        <section className="rx-about-path">
+          <div className="rx-section-kicker" data-reveal>
+            <span>Background / 04</span>
+            <span>A work in progress</span>
           </div>
-        </section>
-      ) : null}
-
-      {toolBlocks.length ? (
-        <section className="shell section about-tools-section">
-          <div>
-            <p className="eyebrow">Tools</p>
-            <h2>Camera, glass, shoots, and delivery.</h2>
-          </div>
-          <div className="about-tool-grid">
-            {toolBlocks.map((block) => (
-              <span key={block.id}>{block.title}</span>
+          <h2 data-reveal>THE PATH<br />SO FAR.</h2>
+          <div className="rx-about-path-grid" data-reveal>
+            {timelineBlocks.map((block, index) => (
+              <article key={block.id}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <h3>{block.title}</h3>
+                {block.body ? <p>{block.body}</p> : null}
+              </article>
             ))}
           </div>
         </section>
       ) : null}
 
-      <section className="shell section about-closing">
-        <p>{aboutContent.settings.closing}</p>
-        <div className="inline-actions">
-          <Link className="button" href={siteConfig.routes.portfolio}>
-            View portfolio
+      {toolBlocks.length ? (
+        <section className="rx-about-tools">
+          <div className="rx-section-kicker" data-reveal>
+            <span>Tools / 05</span>
+            <span>Camera to delivery</span>
+          </div>
+          <div className="rx-about-tool-list" data-reveal>
+            {toolBlocks.map((block, index) => (
+              <span key={block.id}>{String(index + 1).padStart(2, "0")} / {block.title}</span>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="rx-about-closing">
+        <p data-reveal>{aboutContent.settings.closing}</p>
+        <div data-reveal>
+          <Link className="rx-pill-link" href={siteConfig.routes.portfolio}>
+            View portfolio <span aria-hidden="true">↗</span>
           </Link>
-          <Link className="button secondary" href={siteConfig.routes.book}>
-            Request a shoot
+          <Link className="rx-pill-link" href={siteConfig.routes.book}>
+            Request a shoot <span aria-hidden="true">↗</span>
           </Link>
         </div>
       </section>

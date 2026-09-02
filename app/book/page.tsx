@@ -3,6 +3,7 @@ import Link from "next/link";
 import { submitShootRequestAction } from "../actions";
 import { DateTimeRangeFields } from "@/components/DateTimeRangeFields";
 import { NoticeToaster } from "@/components/Notice";
+import { PublicPageHero } from "@/components/public/PublicPageHero";
 import { siteConfig } from "@/config/site";
 import { shootRequestNotices } from "@/lib/notices";
 import { getSiteContactSettings } from "@/lib/site-settings";
@@ -11,8 +12,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Book a Shoot",
-  description:
-    "Request a photography session with rxncor.studio in Melbourne."
+  description: "Request a photography session with rxncor.studio in Melbourne."
 };
 
 type BookPageProps = {
@@ -21,135 +21,120 @@ type BookPageProps = {
   }>;
 };
 
+const bookingSteps = [
+  ["Send the idea", "Share the shoot type, timing, location, mood, and anything that cannot be missed."],
+  ["Check the date", "I review the request, check availability, and ask any useful follow-up questions."],
+  ["Lock it in", "You receive a clear reply, quote, and confirmation before the session is booked."],
+  ["Make and deliver", "We shoot, edit the final story, and deliver it through your gallery."]
+];
+
 export default async function BookPage({ searchParams }: BookPageProps) {
   const { shoot } = await searchParams;
   const notice = shoot ? shootRequestNotices[shoot] : undefined;
   const siteContactSettings = await getSiteContactSettings();
 
   return (
-    <main>
+    <main className="rx-page rx-book-page">
       <NoticeToaster cleanupQueryKeys={["shoot"]} notices={[notice]} />
+      <PublicPageHero
+        description="Tell me what you are making, celebrating, driving, launching, or trying to remember. Good work begins with a few honest details."
+        eyebrow="Availability and enquiries"
+        index="BOOK / 04"
+        meta={[siteContactSettings.location, "Portrait / Event / Automotive", "Replies by email"]}
+        title="LET'S SHOOT."
+        tone="orange"
+      />
 
-      <section className="shell section editorial-page booking-page">
-        <div className="section-head numbered" data-index="BOOK">
-          <div>
-            <p className="eyebrow">Book a shoot</p>
-            <h1 className="page-title">Book a photography session</h1>
+      <section className="rx-book-content" id="request">
+        <div className="rx-book-form-heading" data-reveal>
+          <div className="rx-section-kicker">
+            <span>Shoot request / 01</span>
+            <span>Required fields are marked by context</span>
           </div>
+          <h2>THE<br />DETAILS.</h2>
           <p>
-            Tell me what you need, when you need it, and where it is happening.
-            I will confirm availability and the next steps before anything is
-            locked in.
+            Dates are requests until confirmed. Add the useful information now;
+            the finer creative decisions can come after availability is clear.
           </p>
         </div>
 
-        <div className="contact-grid" id="request">
-          <form action={submitShootRequestAction} className="form-panel contact-form">
-            <h2>Shoot request</h2>
-            <p className="form-note">
-              Share the date, timing, location, and type of shoot. Add anything
-              useful: guest count, mood, must-have moments, or timing details.
-            </p>
-            <label className="field">
-              Name
-              <input name="name" autoComplete="name" required />
-            </label>
-            <label className="field">
-              Email
-              <input name="email" type="email" autoComplete="email" required />
-            </label>
-            <label className="field">
-              Phone
-              <input name="phone" autoComplete="tel" placeholder="+61" />
-            </label>
-            <label className="field">
-              Shoot type
-              <select name="shoot_type" defaultValue="Portrait session" required>
-                <option>Portrait session</option>
-                <option>Family session</option>
-                <option>Birthday or celebration</option>
-                <option>Event coverage</option>
-                <option>Brand or product</option>
-                <option>Other</option>
-              </select>
-            </label>
-            <label className="field">
-              Location
-              <input name="location" placeholder="Suburb, venue, or planning note" />
-            </label>
-            <DateTimeRangeFields enforceFutureStart />
-            <label className="field">
-              Details
-              <textarea
-                name="message"
-                placeholder="Tell me what this is for, rough guest count, style, and anything time-sensitive."
-              />
-            </label>
-            <button className="button" type="submit">
-              Send request
-            </button>
-          </form>
+        <form action={submitShootRequestAction} className="rx-form rx-book-form" data-reveal>
+          <label className="field">
+            <span>01 / Name</span>
+            <input name="name" autoComplete="name" placeholder="Your name" required />
+          </label>
+          <label className="field">
+            <span>02 / Email</span>
+            <input name="email" type="email" autoComplete="email" placeholder="you@email.com" required />
+          </label>
+          <label className="field">
+            <span>03 / Phone, optional</span>
+            <input name="phone" autoComplete="tel" placeholder="+61" />
+          </label>
+          <label className="field">
+            <span>04 / Shoot type</span>
+            <select name="shoot_type" defaultValue="Portrait session" required>
+              <option>Portrait session</option>
+              <option>Family session</option>
+              <option>Birthday or celebration</option>
+              <option>Event coverage</option>
+              <option>Brand or product</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>05 / Location</span>
+            <input name="location" placeholder="Suburb, venue, or planning note" />
+          </label>
+          <DateTimeRangeFields
+            className="rx-form-pair"
+            endLabel="07 / Finish"
+            enforceFutureStart
+            startLabel="06 / Start"
+          />
+          <label className="field">
+            <span>08 / The idea</span>
+            <textarea
+              name="message"
+              placeholder="Tell me what this is for, the mood, guest count, must-have moments, and anything time-sensitive…"
+            />
+          </label>
+          <button type="submit">
+            Send shoot request <span aria-hidden="true">↗</span>
+          </button>
+        </form>
+      </section>
 
-          <aside className="contact-side" aria-label="Booking process">
-            <div className="form-panel">
-              <p className="eyebrow">How it works</p>
-              <h2>What happens after you send it?</h2>
-              <p className="form-note">
-                I will review the request, check the calendar, and reply by
-                email. If a quote, invoice, or deposit is needed, that comes
-                before the booking is confirmed.
-              </p>
-              <div className="feature-list contact-details">
-                <div className="feature">
-                  <h3>01 Send request</h3>
-                  <p>Share the shoot type, date, time, location, and notes.</p>
-                </div>
-                <div className="feature">
-                  <h3>02 Availability</h3>
-                  <p>I check the calendar and ask any follow-up questions.</p>
-                </div>
-                <div className="feature">
-                  <h3>03 Confirmation</h3>
-                  <p>You get a clear reply before the session is locked in.</p>
-                </div>
-                <div className="feature">
-                  <h3>04 Gallery</h3>
-                  <p>After the shoot, final images can be delivered privately.</p>
-                </div>
-              </div>
-            </div>
+      <section className="rx-book-process">
+        <div className="rx-section-kicker" data-reveal>
+          <span>The process / 02</span>
+          <span>Clear from request to delivery</span>
+        </div>
+        <div className="rx-book-process-grid" data-reveal>
+          <h2>WHAT<br />HAPPENS<br />NEXT?</h2>
+          <div>
+            {bookingSteps.map(([title, detail], index) => (
+              <article key={title}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <h3>{title}</h3>
+                <p>{detail}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            <div className="feature-list contact-details">
-              <div className="feature">
-                <h3>Email</h3>
-                <p>
-                  <a href={`mailto:${siteContactSettings.contactEmail}`}>
-                    {siteContactSettings.contactEmail}
-                  </a>
-                </p>
-              </div>
-              <div className="feature">
-                <h3>Socials</h3>
-                <p>
-                  <a href={siteContactSettings.instagramUrl}>
-                    {siteContactSettings.instagramHandle}
-                  </a>
-                </p>
-              </div>
-              <div className="feature">
-                <h3>Portfolio</h3>
-                <p>
-                  <Link href={siteConfig.routes.portfolio}>View recent work</Link>
-                </p>
-              </div>
-              <div className="feature">
-                <h3>Albums</h3>
-                <p>
-                  <Link href={siteConfig.routes.albums}>Browse public albums</Link>
-                </p>
-              </div>
-            </div>
-          </aside>
+      <section className="rx-book-direct">
+        <span>Prefer a direct conversation?</span>
+        <a href={`mailto:${siteContactSettings.contactEmail}`}>
+          {siteContactSettings.contactEmail} <span aria-hidden="true">↗</span>
+        </a>
+        <div>
+          <Link href={siteConfig.routes.portfolio}>Portfolio</Link>
+          <Link href={siteConfig.routes.albums}>Public albums</Link>
+          <a href={siteContactSettings.instagramUrl} rel="noreferrer" target="_blank">
+            Instagram ↗
+          </a>
         </div>
       </section>
     </main>

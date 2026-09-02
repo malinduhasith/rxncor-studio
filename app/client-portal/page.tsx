@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AlbumCard } from "@/components/AlbumCard";
 import { NoticeToaster } from "@/components/Notice";
+import { PublicPageHero } from "@/components/public/PublicPageHero";
 import { siteConfig } from "@/config/site";
 import {
   clientSessionCookieName,
@@ -97,17 +98,18 @@ export default async function ClientPortalPage({
   const albums = ((albumsData ?? []) as PortalAlbum[]).filter(
     (album) => !album.expires_at || new Date(album.expires_at) >= new Date()
   );
-  const { data: photoRows } = albums.length
-    ? await supabase.from("photos").select("album_id").in(
-        "album_id",
-        albums.map((album) => album.id)
-      )
-    : { data: [] };
-  const photoCounts = new Map<string, number>();
+  const photoCounts = new Map(
+    await Promise.all(
+      albums.map(async (album) => {
+        const { count } = await supabase
+          .from("photos")
+          .select("id", { count: "exact", head: true })
+          .eq("album_id", album.id);
 
-  for (const row of (photoRows ?? []) as { album_id: string }[]) {
-    photoCounts.set(row.album_id, (photoCounts.get(row.album_id) ?? 0) + 1);
-  }
+        return [album.id, count ?? 0] as const;
+      })
+    )
+  );
 
   const displayAlbums = await Promise.all(
     albums.map(async (album) => ({
@@ -118,77 +120,74 @@ export default async function ClientPortalPage({
   );
 
   return (
-    <main className="shell section editorial-page">
+    <main className="rx-page rx-portal-page">
       <NoticeToaster cleanupQueryKeys={["password"]} notices={[passwordNotice]} />
-      <div className="section-head numbered" data-index="01">
-        <div>
-          <p className="eyebrow">Client Portal</p>
-          <h1 className="page-title">Your albums</h1>
-          <p className="muted">Signed in as {portalClient.email ?? portalClient.name}</p>
-        </div>
+      <PublicPageHero
+        description={`Welcome back, ${portalClient.name}. Every active story assigned to this client account is collected here.`}
+        eyebrow="Private client portal"
+        index="DELIVERY / 01"
+        meta={[
+          portalClient.email ?? portalClient.name,
+          `${displayAlbums.length} active galleries`,
+          "Protected access"
+        ]}
+        title="YOUR ALBUMS."
+        tone="dark"
+      >
         <form action={clientSignOutAction}>
-          <button className="button secondary" type="submit">
-            Sign out
-          </button>
+          <button className="rx-outline-button" type="submit">Sign out</button>
         </form>
-      </div>
-      <div className="grid album-gallery-grid">
-        {displayAlbums.map((album, index) => (
-          <AlbumCard
-            key={album.id}
-            title={album.title}
-            slug={album.slug}
-            date={formatDate(album.event_date)}
-            count={album.count}
-            coverUrl={album.coverUrl}
-            loading={index < 4 ? "eager" : "lazy"}
-          />
-        ))}
-      </div>
-      {!displayAlbums.length ? (
-        <p className="muted">No active albums are assigned to this client yet.</p>
-      ) : null}
-      <section className="portal-password-panel">
-        <div>
-          <p className="eyebrow">Client password</p>
-          <h2>Set your own password</h2>
-          <p className="muted">
-            If you were given a temporary password, change it here after signing in.
-          </p>
+      </PublicPageHero>
+
+      <section className="rx-album-index rx-portal-albums">
+        <div className="rx-section-kicker" data-reveal>
+          <span>Assigned stories / Active</span>
+          <span>{String(displayAlbums.length).padStart(2, "0")} galleries</span>
         </div>
-        <form action={changeClientPasswordAction} className="compact-form">
+        {displayAlbums.length ? (
+          <div className="rx-album-grid" data-reveal>
+            {displayAlbums.map((album, index) => (
+              <AlbumCard
+                count={album.count}
+                coverUrl={album.coverUrl}
+                date={formatDate(album.event_date)}
+                index={index}
+                key={album.id}
+                loading={index < 4 ? "eager" : "lazy"}
+                slug={album.slug}
+                title={album.title}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rx-empty-state" data-reveal>
+            <span>Delivery / Waiting</span>
+            <h2>NO ACTIVE<br />ALBUMS YET.</h2>
+            <p>Your assigned galleries will appear here when they are ready.</p>
+          </div>
+        )}
+      </section>
+
+      <section className="rx-portal-password">
+        <div data-reveal>
+          <span>Account security / 02</span>
+          <h2>MAKE THE<br />PASSWORD<br />YOURS.</h2>
+          <p>If you received a temporary password, replace it here after signing in.</p>
+        </div>
+        <form action={changeClientPasswordAction} className="rx-form" data-reveal>
           <label className="field">
-            Current password
-            <input
-              name="current_password"
-              autoComplete="current-password"
-              required
-              type="password"
-            />
+            <span>01 / Current password</span>
+            <input name="current_password" autoComplete="current-password" required type="password" />
           </label>
           <label className="field">
-            New password
-            <input
-              name="new_password"
-              autoComplete="new-password"
-              minLength={6}
-              required
-              type="password"
-            />
+            <span>02 / New password</span>
+            <input name="new_password" autoComplete="new-password" minLength={6} required type="password" />
           </label>
           <label className="field">
-            Confirm new password
-            <input
-              name="confirm_password"
-              autoComplete="new-password"
-              minLength={6}
-              required
-              type="password"
-            />
+            <span>03 / Confirm new password</span>
+            <input name="confirm_password" autoComplete="new-password" minLength={6} required type="password" />
           </label>
-          <button className="button" type="submit">
-            Update password
-          </button>
+          <button type="submit">Update password <span aria-hidden="true">↗</span></button>
         </form>
       </section>
     </main>

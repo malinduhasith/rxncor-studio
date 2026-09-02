@@ -1,5 +1,6 @@
 import { LockKeyhole } from "lucide-react";
 import { cookies } from "next/headers";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { unlockGalleryAction } from "./actions";
@@ -82,20 +83,20 @@ export default async function ClientGalleryPage({
 
   if (album?.expires_at && new Date(album.expires_at) < new Date()) {
     return (
-      <main className="shell section">
-        <div className="form-panel">
-          <p className="eyebrow">Gallery Expired</p>
-          <h1 className="page-title">{album.title}</h1>
-          <p className="form-note">
+      <main className="rx-state-page" data-tone="orange">
+        <div>
+          <span>Gallery / Expired</span>
+          <h1>{album.title}</h1>
+          <p>
             This gallery expired on {album.expires_at.slice(0, 10)}. Contact
             rxncor.studio if you need the gallery reopened or the ZIP resent.
           </p>
-          <div className="inline-actions">
-            <a className="button" href={`mailto:${siteContactSettings.contactEmail}`}>
-              Contact
+          <div>
+            <a className="rx-pill-link" href={`mailto:${siteContactSettings.contactEmail}`}>
+              Contact <span aria-hidden="true">↗</span>
             </a>
-            <Link className="button secondary" href={siteConfig.routes.login}>
-              Client login
+            <Link className="rx-pill-link" href={siteConfig.routes.login}>
+              Client login <span aria-hidden="true">↗</span>
             </Link>
           </div>
         </div>
@@ -187,7 +188,7 @@ export default async function ClientGalleryPage({
   const galleryNotice = notice ? galleryNotices[notice] : undefined;
 
   return (
-    <main className="shell section gallery-page">
+    <main className="rx-page rx-client-gallery gallery-page">
       <NoticeToaster cleanupQueryKeys={["notice"]} notices={[galleryNotice]} />
       <div className="gallery-bar">
         <div>
@@ -252,14 +253,16 @@ export default async function ClientGalleryPage({
           </div>
           <div className="collage-stack">
             {displayPhotos.slice(0, 5).map((photo, index) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={photo.id}
-                src={photo.thumbnailDisplayUrl}
-                alt={`${title} preview ${index + 1}`}
-                loading={index === 0 ? "eager" : "lazy"}
-                decoding="async"
-              />
+              <figure key={photo.id}>
+                <Image
+                  alt={`${title} preview ${index + 1}`}
+                  fill
+                  loading={index === 0 ? "eager" : "lazy"}
+                  sizes="(max-width: 760px) 46vw, 20vw"
+                  src={photo.thumbnailDisplayUrl}
+                  unoptimized
+                />
+              </figure>
             ))}
           </div>
         </section>

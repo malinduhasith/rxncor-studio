@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { AlbumCard } from "@/components/AlbumCard";
+import { PublicPageHero } from "@/components/public/PublicPageHero";
+import { siteConfig } from "@/config/site";
 import { getPublicAlbumCards } from "@/lib/public-gallery";
 
 export const dynamic = "force-dynamic";
@@ -10,44 +13,54 @@ export const metadata: Metadata = {
 };
 
 function formatDate(date: string | null) {
-  if (!date) {
-    return "Public";
-  }
-
-  return date;
+  return date ?? "Public archive";
 }
 
 export default async function AlbumsPage() {
-  const publicAlbums = await getPublicAlbumCards();
+  const publicAlbums = await getPublicAlbumCards().catch(() => []);
 
   return (
-    <main className="shell section editorial-page">
-      <div className="section-head numbered" data-index="01">
-        <div>
-          <p className="eyebrow">Featured Albums</p>
-          <h1 className="page-title">Public albums</h1>
+    <main className="rx-page rx-albums-page">
+      <PublicPageHero
+        description="Complete stories rather than isolated highlights. Public albums stay open; private client deliveries remain protected behind their own links and access details."
+        eyebrow="Stories and client work"
+        index="ALBUMS / 03"
+        meta={[`${publicAlbums.length} public stories`, "Private delivery available", "Full-resolution downloads"]}
+        title="ALBUMS."
+        tone="orange"
+      />
+
+      <section className="rx-album-index">
+        <div className="rx-section-kicker" data-reveal>
+          <span>Public archive / Latest first</span>
+          <span>{String(publicAlbums.length).padStart(2, "0")} stories</span>
         </div>
-        <p>
-          Public albums can be shown here. Private albums should stay discoverable
-          only by direct client link.
-        </p>
-      </div>
-      <div className="grid album-gallery-grid">
-        {publicAlbums.map((album, index) => (
-          <AlbumCard
-            key={album.slug}
-            title={album.title}
-            slug={album.slug}
-            date={formatDate(album.event_date)}
-            count={album.count}
-            coverUrl={album.coverUrl}
-            loading={index < 4 ? "eager" : "lazy"}
-          />
-        ))}
-      </div>
-      {!publicAlbums.length ? (
-        <p className="muted">No public albums are live yet.</p>
-      ) : null}
+        {publicAlbums.length ? (
+          <div className="rx-album-grid" data-reveal>
+            {publicAlbums.map((album, index) => (
+              <AlbumCard
+                count={album.count}
+                coverUrl={album.coverUrl}
+                date={formatDate(album.event_date)}
+                index={index}
+                key={album.slug}
+                loading={index < 4 ? "eager" : "lazy"}
+                slug={album.slug}
+                title={album.title}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rx-empty-state" data-reveal>
+            <span>Archive / Preparing</span>
+            <h2>NEW STORIES<br />COMING SOON.</h2>
+            <p>Public albums will appear here as soon as they are published.</p>
+            <Link className="rx-pill-link" href={siteConfig.routes.portfolio}>
+              View selected frames <span aria-hidden="true">↗</span>
+            </Link>
+          </div>
+        )}
+      </section>
     </main>
   );
 }

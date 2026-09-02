@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import type { CSSProperties } from "react";
+import { PublicPageHero } from "@/components/public/PublicPageHero";
 import { getPublicPortfolioPhotos } from "@/lib/public-gallery";
 import { portfolioItems } from "@/lib/sample-data";
 
@@ -32,16 +34,25 @@ function portfolioFallbackCards(): PortfolioCard[] {
   }));
 }
 
-function PortfolioImage({ item, loading }: { item: PortfolioCard; loading: "eager" | "lazy" }) {
+function PortfolioImage({
+  item,
+  loading = "lazy",
+  sizes = "(max-width: 760px) 100vw, 50vw"
+}: {
+  item: PortfolioCard;
+  loading?: "eager" | "lazy";
+  sizes?: string;
+}) {
   if (item.imageUrl) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        className="portfolio-card-img"
-        src={item.imageUrl}
+      <Image
         alt={`${item.title} from ${item.meta}`}
+        className="portfolio-card-img"
+        fill
         loading={loading}
-        decoding="async"
+        sizes={sizes}
+        src={item.imageUrl}
+        unoptimized
       />
     );
   }
@@ -58,7 +69,7 @@ function PortfolioImage({ item, loading }: { item: PortfolioCard; loading: "eage
 }
 
 export default async function PortfolioPage() {
-  const realPhotos = await getPublicPortfolioPhotos(14);
+  const realPhotos = await getPublicPortfolioPhotos(18).catch(() => []);
   const portfolioCards: PortfolioCard[] = realPhotos.length
     ? realPhotos
     : portfolioFallbackCards();
@@ -66,102 +77,92 @@ export default async function PortfolioPage() {
   const secondaryCards = portfolioCards.slice(1, 4);
 
   return (
-    <main className="shell section editorial-page portfolio-page">
+    <main className="rx-page rx-portfolio-page">
+      <PublicPageHero
+        description="A living edit of people, movement, machines, light, atmosphere, and the split seconds that make a story feel real."
+        eyebrow="Selected photography"
+        index="PORTFOLIO / 02"
+        meta={["Melbourne / Australia", `${portfolioCards.length} selected frames`, "Portrait / Event / Automotive"]}
+        title="THE WORK."
+        tone="dark"
+      />
+
       {leadCard ? (
         <>
-          <section className="portfolio-hero-board" aria-labelledby="portfolio-title">
-            <div className="portfolio-hero-copy">
-              <div className="section-head numbered compact" data-index="01">
-                <div>
-                  <p className="eyebrow">Portfolio</p>
-                  <h1 className="page-title" id="portfolio-title">
-                    A tighter edit of people, light, and story.
-                  </h1>
-                </div>
-              </div>
-              <p className="portfolio-hero-note">
-                Chosen frames from shoots and public albums: portraits, movement,
-                atmosphere, and the small in-between moments that make a set feel
-                alive.
-              </p>
-              <div className="portfolio-hero-meta" aria-label="Portfolio summary">
-                <span>Melbourne</span>
-                <span>People / Event / Story</span>
-                <span>{portfolioCards.length} selected frames</span>
-              </div>
+          <section className="rx-portfolio-lead">
+            <div className="rx-section-kicker" data-reveal>
+              <span>Lead frame / 01</span>
+              <span>{leadCard.meta}</span>
             </div>
-            <article className="portfolio-lead-card">
-              <div className="portfolio-lead-media">
-                <PortfolioImage item={leadCard} loading="eager" />
+            <div className="rx-portfolio-lead-grid" data-reveal>
+              <div className="rx-portfolio-lead-copy">
+                <span>{leadCard.eyebrow ?? "Selected direction"}</span>
+                <h2>{leadCard.title}</h2>
+                <p>
+                  Honest faces, real light, movement, texture, and frames that
+                  feel like they were lived through.
+                </p>
               </div>
-              <div className="portfolio-lead-caption">
-                <span>Lead frame</span>
-                <strong>{leadCard.meta}</strong>
-                <p>{leadCard.title}</p>
-              </div>
-            </article>
+              <figure className="rx-portfolio-lead-image">
+                <PortfolioImage item={leadCard} loading="eager" sizes="(max-width: 760px) 100vw, 64vw" />
+                <figcaption>01 / RXNCOR / {leadCard.meta}</figcaption>
+              </figure>
+            </div>
           </section>
 
-          <section className="portfolio-contact-sheet" aria-label="Portfolio contact sheet">
-            <div className="portfolio-contact-copy">
-              <span className="label">Current direction</span>
-              <p>
-                The edit favours honest faces, real light, movement, texture, and
-                frames that feel like they were lived through.
-              </p>
+          <section className="rx-portfolio-strip" aria-label="Portfolio contact sheet">
+            <div className="rx-portfolio-strip-copy">
+              <span>Current direction</span>
+              <strong>PEOPLE.<br />MOTION.<br />ATMOSPHERE.</strong>
             </div>
             {secondaryCards.map((item, index) => (
-              <article className="portfolio-mini-frame" key={item.id}>
-                <PortfolioImage item={item} loading={index === 0 ? "eager" : "lazy"} />
-                <span>{String(index + 2).padStart(2, "0")}</span>
-              </article>
+              <figure key={item.id}>
+                <PortfolioImage item={item} loading={index === 0 ? "eager" : "lazy"} sizes="(max-width: 760px) 70vw, 25vw" />
+                <figcaption>{String(index + 2).padStart(2, "0")} / {item.title}</figcaption>
+              </figure>
             ))}
           </section>
 
-          <section className="portfolio-card-wall" aria-label="Curated portfolio cards">
-            {portfolioCards.map((item, index) => (
-              <article
-                className={[
-                  "portfolio-project-card",
-                  index % 5 === 0 ? "is-featured" : "",
-                  index % 4 === 2 ? "is-tall" : ""
-                ].filter(Boolean).join(" ")}
-                key={item.id}
-              >
-                <div className="portfolio-card-media">
-                  <PortfolioImage item={item} loading={index < 5 ? "eager" : "lazy"} />
-                </div>
-                <div className="portfolio-card-body">
-                  <div className="portfolio-card-topline">
-                    <span>{String(index + 1).padStart(2, "0")}</span>
-                    <small>{item.detail ?? "Selected frame"}</small>
+          <section className="rx-portfolio-wall">
+            <div className="rx-section-kicker" data-reveal>
+              <span>The edit / 02</span>
+              <span>Every frame earns its place</span>
+            </div>
+            <div className="rx-portfolio-grid" data-reveal>
+              {portfolioCards.map((item, index) => (
+                <article
+                  className={[
+                    "rx-portfolio-card",
+                    index % 7 === 0 ? "is-wide" : "",
+                    index % 5 === 2 ? "is-tall" : ""
+                  ].filter(Boolean).join(" ")}
+                  key={item.id}
+                >
+                  <div className="rx-portfolio-card-media">
+                    <PortfolioImage
+                      item={item}
+                      loading={index < 5 ? "eager" : "lazy"}
+                      sizes="(max-width: 600px) 50vw, (max-width: 1000px) 33vw, 25vw"
+                    />
                   </div>
-                  <h2>{item.meta}</h2>
-                  <p>{item.title}</p>
-                  <dl>
+                  <div className="rx-portfolio-card-caption">
+                    <span>{String(index + 1).padStart(2, "0")}</span>
                     <div>
-                      <dt>Type</dt>
-                      <dd>{item.eyebrow ?? "Portfolio frame"}</dd>
+                      <strong>{item.title}</strong>
+                      <small>{item.meta} / {item.detail ?? "Selected frame"}</small>
                     </div>
-                    <div>
-                      <dt>Use</dt>
-                      <dd>Portfolio edit</dd>
-                    </div>
-                  </dl>
-                </div>
-              </article>
-            ))}
+                  </div>
+                </article>
+              ))}
+            </div>
           </section>
         </>
       ) : (
-        <div className="form-panel">
-          <p className="eyebrow">Portfolio Empty</p>
-          <h2>Choose photos in admin</h2>
-          <p className="form-note">
-            Select photos in the album manager to publish them here. Public album
-            photos will also appear when available.
-          </p>
-        </div>
+        <section className="rx-empty-state">
+          <span>Portfolio / Empty</span>
+          <h2>SELECT FRAMES<br />IN ADMIN.</h2>
+          <p>Chosen album photos will appear here automatically.</p>
+        </section>
       )}
     </main>
   );

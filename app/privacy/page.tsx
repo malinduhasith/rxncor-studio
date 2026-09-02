@@ -12,10 +12,16 @@ export default async function PrivacyPage() {
   const siteContactSettings = await getSiteContactSettings();
 
   return (
-    <main className="shell section">
-      <article className="prose">
-        <p className="eyebrow">Privacy</p>
-        <h1>Privacy policy</h1>
+    <main className="rx-page rx-legal-page">
+      <section className="rx-legal-hero">
+        <div className="rx-section-kicker">
+          <span>Privacy and data</span>
+          <span>LEGAL / 01</span>
+        </div>
+        <h1>PRIVACY<br />POLICY.</h1>
+        <p>How enquiries, client access, gallery files, and delivery records are handled.</p>
+      </section>
+      <article className="prose rx-legal-copy">
         <p>Last updated: 25 May 2026.</p>
         <p>
           {siteConfig.name} collects only the information needed to respond to
@@ -134,8 +140,8 @@ export default async function PrivacyPage() {
             {siteContactSettings.contactEmail}
           </a>.
         </p>
-        <Link className="button secondary" href="/">
-          Back home
+        <Link className="rx-pill-link" href="/">
+          Back home <span aria-hidden="true">↗</span>
         </Link>
       </article>
     </main>
