@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { submitContactAction } from "./actions";
 import { FrameReel, type FrameReelItem } from "@/components/home/FrameReel";
 import { CompositionMark } from "@/components/home/CompositionMark";
 import { HeroVectorField } from "@/components/home/HeroVectorField";
+import { InquiryConsole } from "@/components/home/InquiryConsole";
 import { MelbourneClock } from "@/components/home/MelbourneClock";
 import { MorphCanvas } from "@/components/home/MorphCanvas";
 import { ProjectRail, type ProjectRailItem } from "@/components/home/ProjectRail";
@@ -261,32 +261,7 @@ export default async function Home({ searchParams }: HomePageProps) {
           </Link>
         </div>
 
-        <form action={submitContactAction} className="rr-contact-form" data-reveal>
-          <label>
-            <span>01 / Your name</span>
-            <input autoComplete="name" name="name" placeholder="Name" required />
-          </label>
-          <label>
-            <span>02 / Email</span>
-            <input autoComplete="email" name="email" placeholder="you@email.com" required type="email" />
-          </label>
-          <label>
-            <span>03 / Phone, optional</span>
-            <input autoComplete="tel" name="phone" placeholder="+61" />
-          </label>
-          <label>
-            <span>04 / What are we making?</span>
-            <textarea
-              data-native-scroll
-              name="message"
-              placeholder="The idea, date, location, or gallery question…"
-              required
-            />
-          </label>
-          <button data-cursor="Send" type="submit">
-            Send inquiry <span aria-hidden="true">↗</span>
-          </button>
-        </form>
+        <InquiryConsole />
       </section>
     </main>
   );

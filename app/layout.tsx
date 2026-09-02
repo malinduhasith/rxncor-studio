@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { CookieConsent, CookieSettingsButton } from "@/components/CookieConsent";
 import { MotionController } from "@/components/home/MotionController";
+import { CompositionMark } from "@/components/home/CompositionMark";
 import { MobileViewportGuard } from "@/components/MobileViewportGuard";
 import { PendingInteraction } from "@/components/PendingInteraction";
 import { SiteNav } from "@/components/SiteNav";
@@ -103,12 +104,24 @@ export default async function RootLayout({
           <div className="rx-footer-stairs" aria-hidden="true">
             <i /><i /><i /><i /><i /><i /><i /><i />
           </div>
+          <div aria-hidden="true" className="rx-footer-vector-field">
+            <CompositionMark className="rx-footer-vector rx-footer-vector-focus" variant="focus" />
+            <CompositionMark className="rx-footer-vector rx-footer-vector-wave" variant="waveform" />
+            <CompositionMark className="rx-footer-vector rx-footer-vector-spiral" variant="spiral" />
+          </div>
+          <div className="rx-footer-marquee" aria-hidden="true">
+            <div>BOOK / CREATE / DELIVER / BOOK / CREATE / DELIVER / BOOK / CREATE / DELIVER /</div>
+          </div>
           <div className="rx-footer-main">
             <div className="rx-section-kicker">
               <span>Make something worth remembering</span>
               <span>{siteContactSettings.location}</span>
             </div>
-            <h2>LET&apos;S CREATE.</h2>
+            <h2>
+              <Link data-cursor="Book" href={siteConfig.routes.book}>
+                <span>LET&apos;S</span><span>CREATE.</span>
+              </Link>
+            </h2>
             <div className="rx-footer-grid">
               <div>
                 <span className="rx-footer-label">Start here</span>
