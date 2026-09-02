@@ -15,7 +15,7 @@
 }
 
 .rr-home {
-  overflow: clip;
+  overflow: visible;
   background: var(--rr-paper);
   color: var(--rr-ink);
   font-family: var(--rr-sans);
