@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { siteConfig } from "@/config/site";
+import { CompositionMark } from "@/components/home/CompositionMark";
 
 export type ProjectRailItem = {
   id: string;
@@ -29,6 +30,8 @@ export function ProjectRail({ projects }: ProjectRailProps) {
       style={{ "--rr-item-count": projects.length } as CSSProperties}
     >
       <div className="rr-horizontal-sticky rr-project-sticky" data-horizontal-stage>
+        <CompositionMark className="rr-page-vector rr-project-vector-triangles" variant="triangles" />
+        <CompositionMark className="rr-page-vector rr-project-vector-curve" variant="curve" />
         <div className="rr-horizontal-heading rr-project-heading">
           <div>
             <span>Recent stories / 03</span>
