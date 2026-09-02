@@ -1,7 +1,5 @@
-"use client";
-
+import type { CSSProperties } from "react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
 
 export type FrameReelItem = {
   id: string;
@@ -16,86 +14,71 @@ type FrameReelProps = {
 };
 
 export function FrameReel({ frames }: FrameReelProps) {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-
-        if (!visible) {
-          return;
-        }
-
-        const index = Number((visible.target as HTMLElement).dataset.index ?? 0);
-        setActiveIndex(index);
-      },
-      { rootMargin: "-38% 0px -38%", threshold: [0, 0.2, 0.5, 0.8, 1] }
-    );
-
-    const steps = stepRefs.current;
-    steps.forEach((step) => step && observer.observe(step));
-
-    return () => observer.disconnect();
-  }, [frames.length]);
-
-  const activeFrame = frames[activeIndex] ?? frames[0];
-
-  if (!activeFrame) {
-    return null;
-  }
+  if (!frames.length) return null;
 
   return (
-    <section className="rx-reel" id="frames">
-      <div className="rx-reel-stage">
-        <div className="rx-section-kicker rx-reel-kicker">
-          <span>Selected frames</span>
-          <span>Scroll to explore</span>
-        </div>
-        <h2>FRAMES</h2>
-        <div className="rx-reel-display" aria-live="polite">
-          <div className="rx-reel-ghost" aria-hidden="true">
-            {String(activeIndex + 1).padStart(2, "0")}
+    <section
+      aria-label="Selected photography"
+      className="rr-horizontal rr-frame-reel"
+      data-horizontal
+      data-scroll-track
+      data-transition
+      id="frames"
+      style={{ "--rr-item-count": frames.length } as CSSProperties}
+    >
+      <div className="rr-horizontal-sticky" data-horizontal-stage>
+        <div className="rr-horizontal-heading">
+          <div>
+            <span>Selected frames / 02</span>
+            <span>Scroll to run the reel</span>
           </div>
-          <div className="rx-reel-image" key={activeFrame.id}>
-            {activeFrame.imageUrl ? (
-              <Image
-                alt={activeFrame.title}
-                fill
-                sizes="(max-width: 800px) 76vw, 38vw"
-                src={activeFrame.imageUrl}
-                unoptimized
-              />
-            ) : (
-              <div className="rx-image-fallback" aria-hidden="true" />
-            )}
-          </div>
-          <div className="rx-reel-index">
-            <span>{String(activeIndex + 1).padStart(2, "0")}</span>
+          <h2>FRAMES</h2>
+          <div className="rr-horizontal-counter" aria-hidden="true">
+            <span data-horizontal-index>01</span>
             <i />
             <span>{String(frames.length).padStart(2, "0")}</span>
           </div>
-          <div className="rx-reel-caption">
-            <span>{activeFrame.meta}</span>
-            <strong>{activeFrame.title}</strong>
-            <small>{activeFrame.detail}</small>
+        </div>
+
+        <div className="rr-horizontal-viewport">
+          <div className="rr-frame-track" data-horizontal-track>
+            {frames.map((frame, index) => (
+              <article
+                className="rr-frame-card"
+                data-cursor="View"
+                data-horizontal-item
+                key={frame.id}
+              >
+                <div className="rr-frame-card-media">
+                  {frame.imageUrl ? (
+                    <Image
+                      alt={frame.title}
+                      fill
+                      sizes="(max-width: 760px) 82vw, 62vw"
+                      src={frame.imageUrl}
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="rx-image-fallback" aria-hidden="true" />
+                  )}
+                  <span>{String(index + 1).padStart(3, "0")}</span>
+                </div>
+                <div className="rr-frame-card-copy">
+                  <span>{frame.meta}</span>
+                  <h3>{frame.title}</h3>
+                  <p>{frame.detail}</p>
+                </div>
+              </article>
+            ))}
+            <div className="rr-frame-end">
+              <span>Keep going</span>
+              <strong>More stories below.</strong>
+              <i aria-hidden="true">↓</i>
+            </div>
           </div>
         </div>
-      </div>
-      <div className="rx-reel-steps" aria-hidden="true">
-        {frames.map((frame, index) => (
-          <div
-            className="rx-reel-step"
-            data-index={index}
-            key={frame.id}
-            ref={(element) => {
-              stepRefs.current[index] = element;
-            }}
-          />
-        ))}
+
+        <div className="rr-horizontal-progress" aria-hidden="true"><i /></div>
       </div>
     </section>
   );

@@ -9,6 +9,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { siteConfig } from "@/config/site";
 import { getSiteContactSettings } from "@/lib/site-settings";
 import "./globals.css";
+import "./experience.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),

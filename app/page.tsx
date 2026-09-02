@@ -3,6 +3,8 @@ import Link from "next/link";
 import { submitContactAction } from "./actions";
 import { FrameReel, type FrameReelItem } from "@/components/home/FrameReel";
 import { MelbourneClock } from "@/components/home/MelbourneClock";
+import { MorphCanvas } from "@/components/home/MorphCanvas";
+import { ProjectRail, type ProjectRailItem } from "@/components/home/ProjectRail";
 import { NoticeToaster } from "@/components/Notice";
 import { siteConfig } from "@/config/site";
 import { contactNotices } from "@/lib/notices";
@@ -22,19 +24,18 @@ const services = [
   { name: "Events", detail: "Energy / atmosphere / celebration", href: "/book" },
   { name: "Automotive", detail: "Machines / movement / detail", href: "/book" },
   { name: "Lifestyle", detail: "Brands / spaces / everyday stories", href: "/book" },
-  { name: "Private delivery", detail: "Secure galleries / full-resolution files", href: "/login" }
+  {
+    name: "Private delivery",
+    detail: "Secure galleries / full-resolution files",
+    href: "/login"
+  }
 ];
 
 function displayDate(value: string | null) {
-  if (!value) {
-    return "Selected work";
-  }
+  if (!value) return "Selected work";
 
   const date = new Date(`${value}T00:00:00`);
-
-  if (Number.isNaN(date.valueOf())) {
-    return value;
-  }
+  if (Number.isNaN(date.valueOf())) return value;
 
   return new Intl.DateTimeFormat("en-AU", {
     month: "short",
@@ -66,7 +67,7 @@ export default async function Home({ searchParams }: HomePageProps) {
         imageUrl: null
       }));
 
-  const work = realAlbums.length
+  const work: ProjectRailItem[] = realAlbums.length
     ? realAlbums.map((album) => ({
         id: album.id,
         title: album.title,
@@ -85,107 +86,138 @@ export default async function Home({ searchParams }: HomePageProps) {
       }));
 
   const heroFrame = frames[0];
-  const collageFrames = [frames[1] ?? frames[0], frames[2] ?? frames[0], frames[3] ?? frames[0]];
+  const introFrames = [frames[1] ?? frames[0], frames[2] ?? frames[0]];
 
   return (
-    <main className="rx-home">
+    <main className="rr-home">
       <NoticeToaster cleanupQueryKeys={["contact"]} notices={[contactNotice]} />
 
-      <section className="rx-hero" id="top">
-        <div className="rx-grain" aria-hidden="true" />
-        <div className="rx-crop rx-crop-nw" aria-hidden="true" />
-        <div className="rx-crop rx-crop-ne" aria-hidden="true" />
-        <div className="rx-crop rx-crop-sw" aria-hidden="true" />
-        <div className="rx-crop rx-crop-se" aria-hidden="true" />
+      <section
+        className="rr-hero"
+        data-scroll-track
+        id="top"
+      >
+        <div className="rr-hero-sticky">
+          <MorphCanvas />
+          <div className="rr-cross rr-cross-nw" aria-hidden="true" />
+          <div className="rr-cross rr-cross-ne" aria-hidden="true" />
+          <div className="rr-cross rr-cross-sw" aria-hidden="true" />
+          <div className="rr-cross rr-cross-se" aria-hidden="true" />
 
-        <div className="rx-hero-meta">
-          <span>Independent photo studio</span>
-          <MelbourneClock />
-        </div>
-
-        <h1 className="rx-hero-title" aria-label="Melbourne photographer">
-          <span>MELBOURNE</span>
-          <span>PHOTOGRAPHER</span>
-        </h1>
-
-        <div className="rx-hero-object">
-          <div className="rx-hero-ring" aria-hidden="true" />
-          <div className="rx-hero-image">
-            {heroFrame?.imageUrl ? (
-              <Image
-                alt={heroFrame.title}
-                fill
-                priority
-                sizes="(max-width: 800px) 72vw, 34vw"
-                src={heroFrame.imageUrl}
-                unoptimized
-              />
-            ) : (
-              <div className="rx-image-fallback" aria-hidden="true" />
-            )}
+          <div className="rr-hero-meta">
+            <span>RXNCOR / Independent photo studio</span>
+            <MelbourneClock />
           </div>
-          <Link className="rx-hero-play" href="/#frames">
-            <span aria-hidden="true">↓</span>
-            Explore frames
-          </Link>
-        </div>
 
-        <div className="rx-hero-foot">
-          <p>
-            Honest people. Loud machines. Fast nights. Photographed with feeling in
-            Melbourne and wherever the story takes us.
-          </p>
-          <span>Scroll / 01</span>
-        </div>
-      </section>
+          <h1 className="rr-hero-title">
+            <span>MELBOURNE</span>
+            <span>PHOTOGRAPHER</span>
+          </h1>
 
-      <section className="rx-manifesto" id="about">
-        <div className="rx-section-kicker" data-reveal>
-          <span>Approach / 01</span>
-          <span>Unstaged when it matters</span>
-        </div>
-        <div className="rx-manifesto-copy" data-reveal>
-          <h2>
-            <span>REAL MOMENTS</span>
-            <span>MADE LOUD.</span>
-          </h2>
-          <p>
-            RXNCOR is a Melbourne photography studio led by Malindu. The work sits
-            between documentary instinct and graphic precision—natural enough to
-            feel true, considered enough to last.
-          </p>
-        </div>
-
-        <div className="rx-collage" aria-label="Selected RXNCOR photography" data-reveal>
-          {collageFrames.map((frame, index) => (
-            <figure className={`rx-collage-frame rx-collage-${index + 1}`} key={`${frame.id}-${index}`}>
-              {frame.imageUrl ? (
+          <div className="rr-hero-scene" aria-label="Featured RXNCOR photograph">
+            <div className="rr-hero-orbit" aria-hidden="true" />
+            <div className="rr-hero-photo" data-cursor="View">
+              {heroFrame?.imageUrl ? (
                 <Image
-                  alt={frame.title}
+                  alt={heroFrame.title}
                   fill
-                  sizes="(max-width: 800px) 58vw, 32vw"
-                  src={frame.imageUrl}
+                  priority
+                  sizes="(max-width: 760px) 68vw, 30vw"
+                  src={heroFrame.imageUrl}
                   unoptimized
                 />
               ) : (
                 <div className="rx-image-fallback" aria-hidden="true" />
               )}
-              <figcaption>{String(index + 1).padStart(2, "0")} / {frame.meta}</figcaption>
-            </figure>
-          ))}
-          <span className="rx-collage-note">No stiff poses<br />No empty polish</span>
+            </div>
+            <Link className="rr-hero-action" data-cursor="Go" href="/#frames">
+              <span aria-hidden="true">▶</span>
+              Run the reel
+            </Link>
+          </div>
+
+          <div className="rr-hero-about">
+            <span>About</span>
+            <p>
+              Honest people. Loud machines. Fast nights. Photographed with feeling
+              in Melbourne and wherever the story takes us.
+            </p>
+          </div>
+
+          <div className="rr-hero-location">
+            <span>Location</span>
+            <strong>Melbourne / Australia</strong>
+          </div>
+
+          <Link className="rr-scroll-cue" href="/#about">
+            Scroll <span aria-hidden="true">↓</span>
+          </Link>
         </div>
       </section>
 
-      <section className="rx-services">
-        <div className="rx-section-kicker" data-reveal>
-          <span>What I shoot / 02</span>
-          <span>Built around your story</span>
+      <section
+        className="rr-intro"
+        data-scroll-track
+        data-transition
+        id="about"
+      >
+        <div className="rr-section-label" data-reveal>
+          <span>Approach / 01</span>
+          <span>Feeling first. Polish second.</span>
         </div>
-        <h2 data-reveal>FOCUS</h2>
-        <div className="rx-service-list" data-reveal>
+
+        <div className="rr-intro-headings" data-reveal>
+          <h2>THOUGHTFUL<br />FRAMES WITH<br />MEANING</h2>
+          <h2>BOLD STORIES<br />BUILT TO HOLD<br />ATTENTION</h2>
+        </div>
+
+        <div className="rr-intro-body">
+          <div className="rr-intro-copy" data-reveal>
+            <span>[ RX / 01 ]</span>
+            <p>
+              RXNCOR sits between documentary instinct and graphic precision—natural
+              enough to feel true, considered enough to last.
+            </p>
+            <Link href={siteConfig.routes.about}>
+              About the studio <span aria-hidden="true">↗</span>
+            </Link>
+          </div>
+
+          <div className="rr-intro-media" data-reveal>
+            {introFrames.map((frame, index) => (
+              <figure data-cursor="View" data-parallax={index ? "22" : "38"} key={`${frame.id}-${index}`}>
+                <div>
+                  {frame.imageUrl ? (
+                    <Image
+                      alt={frame.title}
+                      fill
+                      sizes="(max-width: 760px) 86vw, 38vw"
+                      src={frame.imageUrl}
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="rx-image-fallback" aria-hidden="true" />
+                  )}
+                </div>
+                <figcaption>{String(index + 1).padStart(2, "0")} / {frame.meta}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="rr-services" data-transition>
+        <div className="rr-section-label" data-reveal>
+          <span>Focus / 02</span>
+          <span>What I photograph</span>
+        </div>
+        <div className="rr-services-title" data-reveal>
+          <span>Built around</span>
+          <h2>YOUR STORY.</h2>
+        </div>
+        <div className="rr-service-list" data-reveal>
           {services.map((service, index) => (
-            <Link href={service.href} key={service.name}>
+            <Link data-cursor="Open" href={service.href} key={service.name}>
               <small>{String(index + 1).padStart(2, "0")}</small>
               <strong>{service.name}</strong>
               <span>{service.detail}</span>
@@ -196,93 +228,47 @@ export default async function Home({ searchParams }: HomePageProps) {
       </section>
 
       <FrameReel frames={frames.slice(0, 6)} />
+      <ProjectRail projects={work} />
 
-      <section className="rx-work" id="work">
-        <div className="rx-work-heading">
-          <div className="rx-section-kicker" data-reveal>
-            <span>Recent stories / 03</span>
-            <span>Public albums</span>
-          </div>
-          <h2 data-reveal>WORK</h2>
-        </div>
-
-        <div className="rx-project-list">
-          {work.map((album, index) => (
-            <article className="rx-project" key={album.id}>
-              <div className="rx-project-card">
-                <div className="rx-project-side">
-                  <span>{String(index + 1).padStart(2, "0")} / {String(work.length).padStart(2, "0")}</span>
-                  <Link href={`${siteConfig.routes.clientGallery}/${album.slug}`}>
-                    Open story <span aria-hidden="true">↗</span>
-                  </Link>
-                </div>
-                <Link
-                  aria-label={`View ${album.title}`}
-                  className="rx-project-image"
-                  href={`${siteConfig.routes.clientGallery}/${album.slug}`}
-                >
-                  {album.coverUrl ? (
-                    <Image
-                      alt={album.title}
-                      fill
-                      sizes="(max-width: 800px) 90vw, 50vw"
-                      src={album.coverUrl}
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="rx-image-fallback" aria-hidden="true" />
-                  )}
-                </Link>
-                <div className="rx-project-copy">
-                  <span>{album.date}</span>
-                  <h3>{album.title}</h3>
-                  <p>{album.count} photographs / Melbourne and beyond</p>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-
-        <Link className="rx-all-work" href={siteConfig.routes.albums}>
-          <span>View every public album</span>
-          <span aria-hidden="true">↗</span>
-        </Link>
-      </section>
-
-      <section className="rx-contact" id="inquiries">
-        <div className="rx-contact-intro" data-reveal>
-          <div className="rx-section-kicker">
+      <section className="rr-contact" data-transition id="inquiries">
+        <div className="rr-contact-intro" data-reveal>
+          <div className="rr-section-label">
             <span>Start a conversation / 04</span>
-            <span>Usually replies within 48 hours</span>
+            <span>Replies within 48 hours</span>
           </div>
-          <h2>GOT A STORY<br />IN MIND?</h2>
+          <h2>LET&apos;S MAKE<br />SOMETHING<br />ALIVE.</h2>
           <p>
             Tell me what you are making, celebrating, driving, launching, or trying
-            to remember. For a full quote and date request, use the booking page.
+            to remember.
           </p>
-          <Link className="rx-pill-link" href={siteConfig.routes.book}>
+          <Link className="rr-round-link" data-cursor="Book" href={siteConfig.routes.book}>
             Book a shoot <span aria-hidden="true">↗</span>
           </Link>
         </div>
 
-        <form action={submitContactAction} className="rx-contact-form" data-reveal>
+        <form action={submitContactAction} className="rr-contact-form" data-reveal>
           <label>
             <span>01 / Your name</span>
-            <input name="name" autoComplete="name" placeholder="Name" required />
+            <input autoComplete="name" name="name" placeholder="Name" required />
           </label>
           <label>
             <span>02 / Email</span>
-            <input name="email" type="email" autoComplete="email" placeholder="you@email.com" required />
+            <input autoComplete="email" name="email" placeholder="you@email.com" required type="email" />
           </label>
           <label>
             <span>03 / Phone, optional</span>
-            <input name="phone" autoComplete="tel" placeholder="+61" />
+            <input autoComplete="tel" name="phone" placeholder="+61" />
           </label>
           <label>
             <span>04 / What are we making?</span>
-            <textarea name="message" placeholder="A few details about the idea, timing, or gallery question…" required />
+            <textarea
+              data-native-scroll
+              name="message"
+              placeholder="The idea, date, location, or gallery question…"
+              required
+            />
           </label>
-          <button type="submit">
+          <button data-cursor="Send" type="submit">
             Send inquiry <span aria-hidden="true">↗</span>
           </button>
         </form>
