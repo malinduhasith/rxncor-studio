@@ -331,6 +331,7 @@
   border-radius: 46% 54% 59% 41% / 52% 42% 58% 48%;
   transform: translate(-50%, -50%) rotate(calc(var(--scroll-progress) * 120deg));
   animation: rr-orbit 18s linear infinite;
+  pointer-events: none;
 }
 
 .rr-hero-orbit::after {
@@ -1148,20 +1149,20 @@
 }
 
 .cookie-consent {
-  width: min(390px, calc(100vw - 24px)) !important;
-  padding: 22px !important;
-  box-shadow: 8px 8px 0 var(--rr-orange) !important;
+  width: min(330px, calc(100vw - 24px)) !important;
+  padding: 16px !important;
+  box-shadow: 6px 6px 0 var(--rr-orange) !important;
 }
 
 .cookie-consent h2 {
   max-width: 10ch;
-  font-size: clamp(2.15rem, 4vw, 3.2rem) !important;
-  line-height: 0.86 !important;
+  font-size: clamp(1.7rem, 3vw, 2.15rem) !important;
+  line-height: 0.9 !important;
 }
 
 .cookie-consent p {
-  font-size: 0.72rem !important;
-  line-height: 1.45 !important;
+  font-size: 0.63rem !important;
+  line-height: 1.4 !important;
 }
 
 .cookie-actions {
@@ -1169,9 +1170,9 @@
 }
 
 .cookie-actions button {
-  min-height: 40px !important;
-  padding-inline: 12px !important;
-  font-size: 0.52rem !important;
+  min-height: 34px !important;
+  padding-inline: 9px !important;
+  font-size: 0.48rem !important;
 }
 
 @keyframes rr-loader-life {
@@ -1566,11 +1567,11 @@
     bottom: 12px !important;
     left: 12px !important;
     width: auto !important;
-    padding: 18px !important;
+    padding: 14px !important;
   }
 
   .cookie-consent h2 {
-    font-size: 2rem !important;
+    font-size: 1.75rem !important;
   }
 }
 

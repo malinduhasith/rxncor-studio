@@ -57,7 +57,11 @@ export function SiteNav() {
     }
 
     event.preventDefault();
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.dispatchEvent(
+      new CustomEvent("rxncor:scroll-to", {
+        detail: { top: target.getBoundingClientRect().top + window.scrollY }
+      })
+    );
     window.history.pushState(null, "", href);
   }
 

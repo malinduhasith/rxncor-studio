@@ -130,6 +130,30 @@ export function MotionController() {
       smoothing = true;
     };
 
+    const handleScrollRequest = (event: Event) => {
+      const requestedTop = (event as CustomEvent<{ top?: number }>).detail?.top;
+
+      if (typeof requestedTop !== "number" || !Number.isFinite(requestedTop)) return;
+
+      const maxScroll = Math.max(
+        0,
+        document.documentElement.scrollHeight - window.innerHeight
+      );
+      const nextTop = clamp(requestedTop, 0, maxScroll);
+
+      if (smoothEnabled) {
+        targetScroll = nextTop;
+        renderedScroll = window.scrollY;
+        smoothing = true;
+        return;
+      }
+
+      window.scrollTo({
+        top: nextTop,
+        behavior: reducedMotion.matches ? "auto" : "smooth"
+      });
+    };
+
     const updateScrollScenes = () => {
       const viewportHeight = Math.max(1, window.innerHeight);
       const viewportWidth = Math.max(1, window.innerWidth);
@@ -217,6 +241,7 @@ export function MotionController() {
     document.documentElement.addEventListener("mouseleave", handlePointerLeave);
     window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("wheel", handleWheel, { passive: false });
+    window.addEventListener("rxncor:scroll-to", handleScrollRequest);
     animationFrame = window.requestAnimationFrame(tick);
 
     return () => {
@@ -227,6 +252,7 @@ export function MotionController() {
       document.documentElement.removeEventListener("mouseleave", handlePointerLeave);
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("rxncor:scroll-to", handleScrollRequest);
       document.body.classList.remove("rr-smooth-enabled");
       root.classList.remove("rr-motion-ready");
       root.removeAttribute("data-scrolled");
