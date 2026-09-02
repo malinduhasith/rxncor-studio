@@ -830,7 +830,7 @@
   align-self: stretch;
   height: 100%;
   display: grid;
-  grid-template-rows: auto minmax(120px, 1fr) auto auto;
+  grid-template-rows: auto minmax(96px, 1fr) auto auto auto;
   gap: 16px;
   overflow: hidden;
   padding: 22px 20px 20px;
@@ -885,7 +885,7 @@
   position: relative;
   align-self: center;
   justify-self: center;
-  width: min(13vw, 170px);
+  width: min(11vw, 145px);
   aspect-ratio: 1;
   border: 1px solid color-mix(in srgb, var(--rr-ink) 52%, transparent);
   border-radius: 50%;
@@ -948,6 +948,54 @@
   line-height: 0.88;
   overflow-wrap: anywhere;
   text-transform: uppercase;
+}
+
+.rr-frame-settings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  border: 1px solid currentColor;
+  background: currentColor;
+}
+
+.rr-frame-settings > div {
+  min-width: 0;
+  min-height: 38px;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  padding: 6px 7px;
+  background: var(--rr-paper);
+}
+
+.rr-frame-settings > div:nth-child(1),
+.rr-frame-settings > div:nth-child(2),
+.rr-frame-settings-empty {
+  grid-column: 1 / -1;
+}
+
+.rr-frame-settings dt,
+.rr-frame-settings dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--rr-mono);
+  text-transform: uppercase;
+}
+
+.rr-frame-settings dt {
+  color: var(--rr-orange);
+  font-size: 0.43rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.rr-frame-settings dd {
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.025em;
+  line-height: 1.25;
 }
 
 /* Frames opener: an editorial anchor and a lightweight CSS 3D study. */
@@ -1486,6 +1534,143 @@
   text-transform: uppercase;
 }
 
+/* Reusable photographic composition drawings across the full homepage. */
+.rr-page-vector {
+  position: absolute;
+  z-index: 1;
+  width: min(42vw, 650px);
+  height: auto;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.16;
+  pointer-events: none;
+  filter: drop-shadow(0 16px 18px color-mix(in srgb, currentColor 10%, transparent));
+  transform-style: preserve-3d;
+  animation: rr-vector-breathe 7s ease-in-out infinite alternate;
+}
+
+.rr-page-vector path,
+.rr-page-vector rect,
+.rr-page-vector circle {
+  stroke-dasharray: 1500;
+  stroke-dashoffset: 1500;
+  animation: rr-page-vector-draw 7s cubic-bezier(0.2, 0.75, 0.2, 1) infinite alternate;
+}
+
+.rr-hero-vector-aperture {
+  top: 13%;
+  right: -8vw;
+  width: min(44vw, 690px);
+  color: var(--rr-orange);
+  opacity: 0.25;
+  transform: perspective(900px) rotateX(63deg) rotateZ(calc(-10deg + var(--scroll-progress) * 70deg));
+}
+
+.rr-hero-vector-curve {
+  bottom: -9%;
+  left: -11vw;
+  width: min(39vw, 610px);
+  opacity: 0.18;
+  transform: perspective(900px) rotateY(58deg) rotateZ(7deg);
+  animation-delay: -2.6s;
+}
+
+.rr-intro > :not(.rr-page-vector),
+.rr-services > :not(.rr-page-vector),
+.rr-contact > :not(.rr-page-vector) {
+  position: relative;
+  z-index: 2;
+}
+
+.rr-intro-vector-spiral {
+  top: 12%;
+  right: -12vw;
+  width: min(50vw, 760px);
+  color: var(--rr-orange);
+  transform: perspective(1000px) rotateX(66deg) rotateZ(-7deg);
+}
+
+.rr-intro-vector-v {
+  bottom: -2%;
+  left: -9vw;
+  width: min(37vw, 570px);
+  transform: perspective(900px) rotateY(54deg) rotateZ(8deg);
+  animation-delay: -3.5s;
+}
+
+.rr-services {
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.rr-services-vector-radial {
+  top: -5%;
+  right: -9vw;
+  width: min(58vw, 880px);
+  opacity: 0.22;
+  transform: perspective(900px) rotateX(58deg) rotateZ(calc(-8deg + var(--rr-pointer-x) * 4deg));
+}
+
+.rr-services-vector-tunnel {
+  bottom: -22%;
+  left: 6vw;
+  width: min(45vw, 680px);
+  opacity: 0.15;
+  transform: perspective(1000px) rotateY(-47deg) rotateZ(-3deg);
+  animation-delay: -4s;
+}
+
+.rr-project-viewport {
+  z-index: 2;
+}
+
+.rr-project-vector-triangles {
+  top: 21%;
+  right: -8vw;
+  width: min(56vw, 850px);
+  color: var(--rr-orange);
+  opacity: 0.24;
+  transform: perspective(1000px) rotateX(63deg) rotateZ(calc(5deg + var(--horizontal-progress) * -34deg));
+}
+
+.rr-project-vector-curve {
+  bottom: -8%;
+  left: -12vw;
+  width: min(43vw, 650px);
+  color: var(--rr-cream);
+  opacity: 0.12;
+  transform: perspective(900px) rotateY(61deg) rotateZ(-9deg);
+  animation-delay: -2s;
+}
+
+.rr-contact {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.rr-contact-vector-spiral {
+  top: 19%;
+  left: -15vw;
+  width: min(54vw, 810px);
+  color: var(--rr-orange);
+  opacity: 0.2;
+  transform: perspective(1000px) rotateY(52deg) rotateZ(-8deg);
+}
+
+.rr-contact-vector-thirds {
+  right: -14vw;
+  bottom: -10%;
+  width: min(49vw, 740px);
+  opacity: 0.15;
+  transform: perspective(1000px) rotateX(61deg) rotateZ(7deg);
+  animation-delay: -4.8s;
+}
+
 .rr-motion-ready [data-reveal] {
   opacity: 1;
   transform: translate3d(0, 18px, 0);
@@ -1677,6 +1862,16 @@
   58%, 100% { stroke-dashoffset: 0; }
 }
 
+@keyframes rr-page-vector-draw {
+  0%, 8% { stroke-dashoffset: 1500; }
+  72%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes rr-vector-breathe {
+  from { filter: drop-shadow(0 10px 12px color-mix(in srgb, currentColor 6%, transparent)); }
+  to { filter: drop-shadow(0 24px 26px color-mix(in srgb, currentColor 16%, transparent)); }
+}
+
 @media (max-width: 1040px) {
   .rr-hero-title {
     font-size: clamp(4.8rem, 10vw, 7rem);
@@ -1737,6 +1932,33 @@
 
   .rr-site-noise {
     opacity: 0.04;
+  }
+
+  .rr-page-vector {
+    width: 92vw;
+    opacity: 0.1;
+  }
+
+  .rr-hero-vector-curve,
+  .rr-intro-vector-v,
+  .rr-services-vector-tunnel,
+  .rr-project-vector-curve,
+  .rr-contact-vector-thirds {
+    display: none;
+  }
+
+  .rr-hero-vector-aperture {
+    top: 22%;
+    right: -39vw;
+    width: 112vw;
+  }
+
+  .rr-intro-vector-spiral,
+  .rr-services-vector-radial,
+  .rr-project-vector-triangles,
+  .rr-contact-vector-spiral {
+    width: 105vw;
+    opacity: 0.11;
   }
 
   .rr-cursor-orb,
@@ -2005,6 +2227,10 @@
     scroll-snap-align: center;
   }
 
+  .rr-frame-card {
+    height: 760px;
+  }
+
   .rr-frame-card-copy,
   .rr-project-meta {
     gap: 8px;
@@ -2025,6 +2251,10 @@
 
   .rr-frame-card-gauge {
     display: none;
+  }
+
+  .rr-frame-settings > div {
+    min-height: 34px;
   }
 
   .rr-frame-card-copy h3,
@@ -2165,6 +2395,14 @@
 
   .rr-composition-thirds {
     opacity: 0.58;
+  }
+
+  .rr-page-vector,
+  .rr-page-vector path,
+  .rr-page-vector rect,
+  .rr-page-vector circle {
+    animation: none;
+    stroke-dashoffset: 0;
   }
 
   .rr-motion-ready [data-reveal] {
