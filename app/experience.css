@@ -1082,8 +1082,8 @@
   display: grid;
   gap: 17px;
   pointer-events: none;
-  transform: translate3d(calc(var(--horizontal-progress) * -8vw), 0, 0);
-  opacity: calc(1 - var(--horizontal-progress) * 1.55);
+  transform: translate3d(calc(var(--horizontal-progress) * -24vw), 0, 0);
+  opacity: calc(1 - var(--horizontal-progress) * 9);
 }
 
 .rr-frame-manifesto > span,
