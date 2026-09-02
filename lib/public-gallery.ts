@@ -97,11 +97,12 @@ export async function getPublicAlbumCards(limit?: number) {
   );
 }
 
-export async function getPublicPortfolioPhotos(limit = 9) {
+export async function getPublicPortfolioPhotos(limit?: number) {
   const supabase = createSupabaseAdminClient();
   const { data: selectedAlbumRows } = await supabase
     .from("albums")
     .select("id, title, event_date, expires_at")
+    .eq("is_public", true)
     .order("event_date", { ascending: false });
   const selectedAlbums = ((selectedAlbumRows ?? []) as {
     id: string;
@@ -115,24 +116,29 @@ export async function getPublicPortfolioPhotos(limit = 9) {
     const selectedAlbumTitles = new Map(
       selectedAlbums.map((album) => [album.id, album.title])
     );
-    const selectedPhotoQuery = supabase
+    let selectedPhotoQuery = supabase
       .from("photos")
       .select(publicPhotoMetadataSelect)
       .in("album_id", selectedAlbumIds)
       .eq("is_selected", true)
-      .order("uploaded_at", { ascending: false })
-      .limit(limit);
+      .order("uploaded_at", { ascending: false });
+    if (limit) {
+      selectedPhotoQuery = selectedPhotoQuery.limit(limit);
+    }
     const selectedPhotoResult = await selectedPhotoQuery;
     let selectedPhotoRows: unknown[] | null = selectedPhotoResult.data;
 
     if (selectedPhotoResult.error) {
-      const fallback = await supabase
+      let fallbackQuery = supabase
         .from("photos")
         .select(publicPhotoBaseSelect)
         .in("album_id", selectedAlbumIds)
         .eq("is_selected", true)
-        .order("uploaded_at", { ascending: false })
-        .limit(limit);
+        .order("uploaded_at", { ascending: false });
+      if (limit) {
+        fallbackQuery = fallbackQuery.limit(limit);
+      }
+      const fallback = await fallbackQuery;
       selectedPhotoRows = fallback.data as unknown[] | null;
     }
 
@@ -176,21 +182,27 @@ export async function getPublicPortfolioPhotos(limit = 9) {
     return [];
   }
 
-  const photoResult = await supabase
+  let photoQuery = supabase
     .from("photos")
     .select(publicPhotoMetadataSelect)
     .in("album_id", albumIds)
-    .order("uploaded_at", { ascending: false })
-    .limit(limit);
+    .order("uploaded_at", { ascending: false });
+  if (limit) {
+    photoQuery = photoQuery.limit(limit);
+  }
+  const photoResult = await photoQuery;
   let photoRows: unknown[] | null = photoResult.data;
 
   if (photoResult.error) {
-    const fallback = await supabase
+    let fallbackQuery = supabase
       .from("photos")
       .select(publicPhotoBaseSelect)
       .in("album_id", albumIds)
-      .order("uploaded_at", { ascending: false })
-      .limit(limit);
+      .order("uploaded_at", { ascending: false });
+    if (limit) {
+      fallbackQuery = fallbackQuery.limit(limit);
+    }
+    const fallback = await fallbackQuery;
     photoRows = fallback.data as unknown[] | null;
   }
 
