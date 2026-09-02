@@ -93,6 +93,12 @@ export function FrameReel({ frames }: FrameReelProps) {
                 </div>
                 <div className="rr-frame-card-copy">
                   <span>{frame.meta}</span>
+                  <div className="rr-frame-card-gauge" aria-hidden="true">
+                    <span>RX / {String(index + 1).padStart(3, "0")}</span>
+                    <i />
+                    <i />
+                    <i />
+                  </div>
                   <h3>{frame.title}</h3>
                   <p>{frame.detail}</p>
                 </div>
