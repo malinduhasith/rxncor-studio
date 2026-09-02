@@ -125,12 +125,16 @@ export function SiteNav() {
           <div className="rx-nav-links">
             {navItems.map((item) => {
               const active = isActive(pathname, item.href);
+              const renderedHref =
+                pathname === "/" && item.href.startsWith("/#")
+                  ? item.href.slice(1)
+                  : item.href;
 
               return (
                 <Link
                   aria-current={active ? "page" : undefined}
                   data-pending-label={item.label}
-                  href={item.href}
+                  href={renderedHref}
                   key={item.href}
                   onClick={(event) => handleNavClick(event, item.href)}
                 >
