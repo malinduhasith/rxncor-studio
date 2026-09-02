@@ -19,6 +19,12 @@ export type PublicPortfolioPhoto = {
   filename: string;
   eyebrow: string;
   imageUrl: string | null;
+  cameraModel: string | null;
+  lensModel: string | null;
+  focalLength: string | null;
+  aperture: string | null;
+  shutterSpeed: string | null;
+  iso: string | null;
 };
 
 type PublicAlbumRow = {
@@ -157,7 +163,13 @@ export async function getPublicPortfolioPhotos(limit?: number) {
             detail: label.detail,
             filename: label.filename,
             eyebrow: label.eyebrow,
-            imageUrl: await signedUrl(photo.preview_url)
+            imageUrl: await signedUrl(photo.preview_url),
+            cameraModel: photo.camera_model ?? null,
+            lensModel: photo.lens_model ?? null,
+            focalLength: photo.focal_length ?? null,
+            aperture: photo.aperture ?? null,
+            shutterSpeed: photo.shutter_speed ?? null,
+            iso: photo.iso ?? null
           };
         })
       );
@@ -220,7 +232,13 @@ export async function getPublicPortfolioPhotos(limit?: number) {
         detail: label.detail,
         filename: label.filename,
         eyebrow: label.eyebrow,
-        imageUrl: await signedUrl(photo.preview_url)
+        imageUrl: await signedUrl(photo.preview_url),
+        cameraModel: photo.camera_model ?? null,
+        lensModel: photo.lens_model ?? null,
+        focalLength: photo.focal_length ?? null,
+        aperture: photo.aperture ?? null,
+        shutterSpeed: photo.shutter_speed ?? null,
+        iso: photo.iso ?? null
       };
     })
   );
