@@ -47,7 +47,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   const { contact } = await searchParams;
   const contactNotice = contact ? contactNotices[contact] : undefined;
   const [realPortfolioPhotos, realAlbums] = await Promise.all([
-    getPublicPortfolioPhotos(7).catch(() => []),
+    getPublicPortfolioPhotos().catch(() => []),
     getPublicAlbumCards(4).catch(() => [])
   ]);
 
@@ -225,7 +225,7 @@ export default async function Home({ searchParams }: HomePageProps) {
         </div>
       </section>
 
-      <FrameReel frames={frames.slice(0, 4)} />
+      <FrameReel frames={frames} />
       <ProjectRail projects={work} />
 
       <section className="rr-contact" data-transition id="inquiries">
