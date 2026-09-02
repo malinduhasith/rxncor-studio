@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { submitContactAction } from "./actions";
 import { FrameReel, type FrameReelItem } from "@/components/home/FrameReel";
+import { CompositionMark } from "@/components/home/CompositionMark";
 import { MelbourneClock } from "@/components/home/MelbourneClock";
 import { MorphCanvas } from "@/components/home/MorphCanvas";
 import { ProjectRail, type ProjectRailItem } from "@/components/home/ProjectRail";
@@ -57,7 +58,13 @@ export default async function Home({ searchParams }: HomePageProps) {
         title: photo.title,
         meta: photo.meta,
         detail: photo.detail,
-        imageUrl: photo.imageUrl
+        imageUrl: photo.imageUrl,
+        cameraModel: photo.cameraModel,
+        lensModel: photo.lensModel,
+        focalLength: photo.focalLength,
+        aperture: photo.aperture,
+        shutterSpeed: photo.shutterSpeed,
+        iso: photo.iso
       }))
     : portfolioItems.map((item, index) => ({
         id: `sample-${index}`,
@@ -99,6 +106,8 @@ export default async function Home({ searchParams }: HomePageProps) {
       >
         <div className="rr-hero-sticky">
           <MorphCanvas />
+          <CompositionMark className="rr-page-vector rr-hero-vector-aperture" variant="aperture" />
+          <CompositionMark className="rr-page-vector rr-hero-vector-curve" variant="curve" />
           <div className="rr-cross rr-cross-nw" aria-hidden="true" />
           <div className="rr-cross rr-cross-ne" aria-hidden="true" />
           <div className="rr-cross rr-cross-sw" aria-hidden="true" />
@@ -160,6 +169,8 @@ export default async function Home({ searchParams }: HomePageProps) {
         data-transition
         id="about"
       >
+        <CompositionMark className="rr-page-vector rr-intro-vector-spiral" variant="spiral" />
+        <CompositionMark className="rr-page-vector rr-intro-vector-v" variant="v" />
         <div className="rr-section-label" data-reveal>
           <span>Approach / 01</span>
           <span>Feeling first. Polish second.</span>
@@ -205,6 +216,8 @@ export default async function Home({ searchParams }: HomePageProps) {
       </section>
 
       <section className="rr-services" data-transition>
+        <CompositionMark className="rr-page-vector rr-services-vector-radial" variant="radial" />
+        <CompositionMark className="rr-page-vector rr-services-vector-tunnel" variant="tunnel" />
         <div className="rr-section-label" data-reveal>
           <span>Focus / 02</span>
           <span>What I photograph</span>
@@ -229,6 +242,8 @@ export default async function Home({ searchParams }: HomePageProps) {
       <ProjectRail projects={work} />
 
       <section className="rr-contact" data-transition id="inquiries">
+        <CompositionMark className="rr-page-vector rr-contact-vector-spiral" variant="spiral" />
+        <CompositionMark className="rr-page-vector rr-contact-vector-thirds" variant="thirds" />
         <div className="rr-contact-intro" data-reveal>
           <div className="rr-section-label">
             <span>Start a conversation / 04</span>
