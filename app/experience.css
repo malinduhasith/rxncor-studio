@@ -109,7 +109,7 @@
     radial-gradient(circle at 21% 31%, #000 0 0.55px, transparent 0.8px),
     radial-gradient(circle at 72% 64%, #fff 0 0.5px, transparent 0.8px);
   background-size: 4px 4px, 5px 5px;
-  animation: rr-noise-jitter 220ms steps(2) infinite;
+  transform: translate3d(-1%, -1%, 0);
 }
 
 .rr-scroll-transition {
@@ -191,7 +191,7 @@
 .rr-hero {
   --scroll-progress: 0;
   position: relative;
-  height: 180svh;
+  height: 118svh;
   background: var(--rr-paper);
 }
 
@@ -491,8 +491,8 @@
 
 .rr-intro {
   position: relative;
-  min-height: 160svh;
-  padding: 100px 3.7vw 140px;
+  min-height: 0;
+  padding: 88px 3.7vw 100px;
   background: var(--rr-paper);
 }
 
@@ -500,7 +500,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 11vw;
-  padding: 90px 0 120px;
+  padding: 72px 0 88px;
 }
 
 .rr-intro-headings h2 {
@@ -562,18 +562,18 @@
 }
 
 .rr-intro-media figure:nth-child(2) {
-  margin-top: 28vh;
+  margin-top: 12vh;
 }
 
 .rr-intro-media figure > div {
   position: relative;
-  height: min(58vw, 720px);
+  height: min(43vw, 560px);
   overflow: hidden;
   background: var(--rr-orange);
 }
 
 .rr-intro-media figure:nth-child(2) > div {
-  height: min(48vw, 590px);
+  height: min(37vw, 480px);
 }
 
 .rr-intro-media figcaption {
@@ -586,13 +586,13 @@
 
 .rr-services {
   position: relative;
-  padding: 95px 3.7vw 125px;
+  padding: 76px 3.7vw 92px;
   background: var(--rr-orange);
   color: var(--rr-ink);
 }
 
 .rr-services-title {
-  padding: 74px 0 55px;
+  padding: 58px 0 42px;
 }
 
 .rr-services-title > span {
@@ -618,7 +618,7 @@
 }
 
 .rr-service-list a {
-  min-height: 94px;
+  min-height: 82px;
   display: grid;
   grid-template-columns: 52px minmax(220px, 1.1fr) minmax(260px, 0.9fr) 36px;
   align-items: center;
@@ -665,7 +665,7 @@
 .rr-horizontal {
   --horizontal-progress: 0;
   position: relative;
-  height: calc(100svh + var(--rr-item-count, 4) * 72svh);
+  height: 205svh;
   background: var(--rr-paper);
   color: var(--rr-ink);
 }
@@ -750,7 +750,7 @@
 }
 
 .rr-frame-card {
-  width: min(72vw, 1050px);
+  width: min(66vw, 960px);
   height: min(64vh, 650px);
   flex: 0 0 auto;
   display: grid;
@@ -881,7 +881,7 @@
 }
 
 .rr-project-card {
-  width: min(82vw, 1160px);
+  width: min(72vw, 1040px);
   height: min(66vh, 680px);
   flex: 0 0 auto;
   display: grid;
@@ -1074,8 +1074,8 @@
 }
 
 .rr-motion-ready [data-reveal] {
-  opacity: 0;
-  transform: translate3d(0, 42px, 0);
+  opacity: 1;
+  transform: translate3d(0, 18px, 0);
   transition:
     opacity 720ms cubic-bezier(0.2, 0.8, 0.2, 1),
     transform 850ms cubic-bezier(0.2, 0.8, 0.2, 1);

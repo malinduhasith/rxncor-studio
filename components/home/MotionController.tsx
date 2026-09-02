@@ -6,16 +6,6 @@ import { usePathname } from "next/navigation";
 const clamp = (value: number, min = 0, max = 1) =>
   Math.min(max, Math.max(min, value));
 
-function isNativeScrollTarget(target: EventTarget | null) {
-  return target instanceof Element
-    ? Boolean(
-        target.closest(
-          "input, textarea, select, [contenteditable='true'], [data-native-scroll]"
-        )
-      )
-    : false;
-}
-
 export function MotionController() {
   const pathname = usePathname();
 
@@ -23,13 +13,9 @@ export function MotionController() {
     const root = document.documentElement;
     const cursor = document.querySelector<HTMLElement>(".rr-cursor-orb");
     const cursorLabel = cursor?.querySelector<HTMLElement>("span");
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const finePointer = window.matchMedia("(pointer: fine)");
-    const isHome = pathname === "/";
-    const smoothEnabled = isHome && finePointer.matches && !reducedMotion.matches;
 
     root.classList.add("rr-motion-ready");
-    document.body.classList.toggle("rr-smooth-enabled", smoothEnabled);
 
     const revealObserver = new IntersectionObserver(
       (entries) => {
@@ -59,16 +45,14 @@ export function MotionController() {
       document.querySelectorAll<HTMLElement>("[data-transition]")
     );
 
-    let targetScroll = window.scrollY;
-    let renderedScroll = window.scrollY;
-    let smoothing = false;
     let previousScroll = window.scrollY;
     let pointerX = window.innerWidth / 2;
     let pointerY = window.innerHeight / 2;
     let cursorX = pointerX;
     let cursorY = pointerY;
     let cursorVisible = false;
-    let animationFrame = 0;
+    let cursorFrame = 0;
+    let sceneFrame = 0;
 
     const updateCursorMode = (target: EventTarget | null) => {
       if (!cursor || !(target instanceof Element)) return;
@@ -97,6 +81,10 @@ export function MotionController() {
         "--rr-pointer-y",
         String((event.clientY / Math.max(1, window.innerHeight) - 0.5) * 2)
       );
+
+      if (!cursorFrame && cursor && finePointer.matches) {
+        cursorFrame = window.requestAnimationFrame(updateCursor);
+      }
     };
 
     const handlePointerLeave = () => {
@@ -104,33 +92,8 @@ export function MotionController() {
       cursor?.removeAttribute("data-visible");
     };
 
-    const handleScroll = () => {
-      if (!smoothing) {
-        targetScroll = window.scrollY;
-        renderedScroll = window.scrollY;
-      }
-    };
-
-    const handleWheel = (event: WheelEvent) => {
-      if (!smoothEnabled || isNativeScrollTarget(event.target) || event.ctrlKey) return;
-
-      event.preventDefault();
-      const multiplier =
-        event.deltaMode === 1 ? 18 : event.deltaMode === 2 ? window.innerHeight : 1;
-      const maxScroll = Math.max(
-        0,
-        document.documentElement.scrollHeight - window.innerHeight
-      );
-
-      targetScroll = clamp(
-        targetScroll + event.deltaY * multiplier * 0.92,
-        0,
-        maxScroll
-      );
-      smoothing = true;
-    };
-
     const updateScrollScenes = () => {
+      sceneFrame = 0;
       const viewportHeight = Math.max(1, window.innerHeight);
       const viewportWidth = Math.max(1, window.innerWidth);
       const scrollY = window.scrollY;
@@ -189,25 +152,25 @@ export function MotionController() {
       root.style.setProperty("--rr-transition", (transition * 0.62).toFixed(3));
     };
 
-    const tick = () => {
-      if (smoothing) {
-        renderedScroll += (targetScroll - renderedScroll) * 0.115;
-        if (Math.abs(targetScroll - renderedScroll) < 0.45) {
-          renderedScroll = targetScroll;
-          smoothing = false;
-        }
-        window.scrollTo(0, renderedScroll);
+    function updateCursor() {
+      if (!cursor || !finePointer.matches) {
+        cursorFrame = 0;
+        return;
       }
 
-      if (cursor && finePointer.matches) {
-        cursorX += (pointerX - cursorX) * 0.16;
-        cursorY += (pointerY - cursorY) * 0.16;
-        cursor.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0) translate(-50%, -50%)`;
-        cursor.toggleAttribute("data-visible", cursorVisible);
-      }
+      cursorX += (pointerX - cursorX) * 0.2;
+      cursorY += (pointerY - cursorY) * 0.2;
+      cursor.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0) translate(-50%, -50%)`;
+      cursor.toggleAttribute("data-visible", cursorVisible);
 
-      updateScrollScenes();
-      animationFrame = window.requestAnimationFrame(tick);
+      const moving = Math.abs(pointerX - cursorX) + Math.abs(pointerY - cursorY) > 0.2;
+      cursorFrame = moving ? window.requestAnimationFrame(updateCursor) : 0;
+    }
+
+    const scheduleSceneUpdate = () => {
+      if (!sceneFrame) {
+        sceneFrame = window.requestAnimationFrame(updateScrollScenes);
+      }
     };
 
     const handlePointerOver = (event: PointerEvent) => updateCursorMode(event.target);
@@ -215,19 +178,19 @@ export function MotionController() {
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
     window.addEventListener("pointerover", handlePointerOver, { passive: true });
     document.documentElement.addEventListener("mouseleave", handlePointerLeave);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("wheel", handleWheel, { passive: false });
-    animationFrame = window.requestAnimationFrame(tick);
+    window.addEventListener("scroll", scheduleSceneUpdate, { passive: true });
+    window.addEventListener("resize", scheduleSceneUpdate, { passive: true });
+    updateScrollScenes();
 
     return () => {
       revealObserver.disconnect();
-      window.cancelAnimationFrame(animationFrame);
+      window.cancelAnimationFrame(cursorFrame);
+      window.cancelAnimationFrame(sceneFrame);
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerover", handlePointerOver);
       document.documentElement.removeEventListener("mouseleave", handlePointerLeave);
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("wheel", handleWheel);
-      document.body.classList.remove("rr-smooth-enabled");
+      window.removeEventListener("scroll", scheduleSceneUpdate);
+      window.removeEventListener("resize", scheduleSceneUpdate);
       root.classList.remove("rr-motion-ready");
       root.removeAttribute("data-scrolled");
       root.removeAttribute("data-scroll-direction");
@@ -239,12 +202,6 @@ export function MotionController() {
 
   return (
     <>
-      {pathname === "/" ? (
-        <div aria-hidden="true" className="rr-loader">
-          <div className="rr-loader-runner"><i /><i /><i /></div>
-          <span>RXNCOR / Loading the frames</span>
-        </div>
-      ) : null}
       <div aria-hidden="true" className="rr-site-noise" />
       <div aria-hidden="true" className="rr-scroll-transition" />
       <div aria-hidden="true" className="rr-cursor-orb" data-mode="default">

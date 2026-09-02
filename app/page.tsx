@@ -124,13 +124,12 @@ export default async function Home({ searchParams }: HomePageProps) {
                   priority
                   sizes="(max-width: 760px) 68vw, 30vw"
                   src={heroFrame.imageUrl}
-                  unoptimized
                 />
               ) : (
                 <div className="rx-image-fallback" aria-hidden="true" />
               )}
             </div>
-            <Link className="rr-hero-action" data-cursor="Go" href="/#frames">
+            <Link className="rr-hero-action" data-cursor="Go" href="#frames">
               <span aria-hidden="true">▶</span>
               Run the reel
             </Link>
@@ -149,7 +148,7 @@ export default async function Home({ searchParams }: HomePageProps) {
             <strong>Melbourne / Australia</strong>
           </div>
 
-          <Link className="rr-scroll-cue" href="/#about">
+          <Link className="rr-scroll-cue" href="#about">
             Scroll <span aria-hidden="true">↓</span>
           </Link>
         </div>
@@ -193,7 +192,6 @@ export default async function Home({ searchParams }: HomePageProps) {
                       fill
                       sizes="(max-width: 760px) 86vw, 38vw"
                       src={frame.imageUrl}
-                      unoptimized
                     />
                   ) : (
                     <div className="rx-image-fallback" aria-hidden="true" />
@@ -227,7 +225,7 @@ export default async function Home({ searchParams }: HomePageProps) {
         </div>
       </section>
 
-      <FrameReel frames={frames.slice(0, 6)} />
+      <FrameReel frames={frames.slice(0, 4)} />
       <ProjectRail projects={work} />
 
       <section className="rr-contact" data-transition id="inquiries">

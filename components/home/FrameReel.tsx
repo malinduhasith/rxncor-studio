@@ -54,9 +54,10 @@ export function FrameReel({ frames }: FrameReelProps) {
                     <Image
                       alt={frame.title}
                       fill
+                      loading={index < 2 ? "eager" : "lazy"}
+                      quality={78}
                       sizes="(max-width: 760px) 82vw, 62vw"
                       src={frame.imageUrl}
-                      unoptimized
                     />
                   ) : (
                     <div className="rx-image-fallback" aria-hidden="true" />

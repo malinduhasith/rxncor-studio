@@ -56,9 +56,9 @@ export function ProjectRail({ projects }: ProjectRailProps) {
                     <Image
                       alt={project.title}
                       fill
+                      quality={78}
                       sizes="(max-width: 760px) 84vw, 58vw"
                       src={project.coverUrl}
-                      unoptimized
                     />
                   ) : (
                     <div className="rx-image-fallback" aria-hidden="true" />

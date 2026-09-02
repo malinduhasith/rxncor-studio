@@ -139,12 +139,13 @@ export function MorphCanvas() {
     let renderedPointerX = 0;
     let renderedPointerY = 0;
     let frame = 0;
+    let visible = true;
     const startedAt = performance.now();
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const scrollSection = canvas.closest<HTMLElement>("[data-scroll-track]");
 
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
       const width = Math.max(1, Math.round(canvas.clientWidth * dpr));
       const height = Math.max(1, Math.round(canvas.clientHeight * dpr));
       if (canvas.width !== width || canvas.height !== height) {
@@ -160,6 +161,11 @@ export function MorphCanvas() {
     };
 
     const render = (now: number) => {
+      if (!visible || document.hidden) {
+        frame = 0;
+        return;
+      }
+
       resize();
       renderedPointerX += (pointerX - renderedPointerX) * 0.055;
       renderedPointerY += (pointerY - renderedPointerY) * 0.055;
@@ -180,12 +186,34 @@ export function MorphCanvas() {
       frame = window.requestAnimationFrame(render);
     };
 
+    const startRendering = () => {
+      if (!frame && visible && !document.hidden) {
+        frame = window.requestAnimationFrame(render);
+      }
+    };
+
+    const visibilityObserver = new IntersectionObserver(
+      ([entry]) => {
+        visible = entry?.isIntersecting ?? false;
+        if (visible) startRendering();
+      },
+      { rootMargin: "15% 0px" }
+    );
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) startRendering();
+    };
+
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
-    frame = window.requestAnimationFrame(render);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    visibilityObserver.observe(canvas);
+    startRendering();
 
     return () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("pointermove", handlePointerMove);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      visibilityObserver.disconnect();
       gl.deleteBuffer(buffer);
       gl.deleteProgram(program);
       gl.deleteShader(vertexShader);
