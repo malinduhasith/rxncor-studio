@@ -28,22 +28,16 @@ export function MotionController() {
       { rootMargin: "0px 0px -9%", threshold: 0.08 }
     );
 
-    document
-      .querySelectorAll("[data-reveal]")
-      .forEach((element) => revealObserver.observe(element));
+    const observeReveals = (scope: ParentNode) => {
+      if (scope instanceof Element && scope.matches("[data-reveal]")) {
+        revealObserver.observe(scope);
+      }
+      scope
+        .querySelectorAll("[data-reveal]")
+        .forEach((element) => revealObserver.observe(element));
+    };
 
-    const scrollSections = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-scroll-track]")
-    );
-    const horizontalSections = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-horizontal]")
-    );
-    const parallaxElements = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-parallax]")
-    );
-    const transitionSections = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-transition]")
-    );
+    observeReveals(document);
 
     let previousScroll = window.scrollY;
     let pointerX = window.innerWidth / 2;
@@ -97,6 +91,18 @@ export function MotionController() {
       const viewportHeight = Math.max(1, window.innerHeight);
       const viewportWidth = Math.max(1, window.innerWidth);
       const scrollY = window.scrollY;
+      const scrollSections = document.querySelectorAll<HTMLElement>(
+        "[data-scroll-track]"
+      );
+      const horizontalSections = document.querySelectorAll<HTMLElement>(
+        "[data-horizontal]"
+      );
+      const parallaxElements = document.querySelectorAll<HTMLElement>(
+        "[data-parallax]"
+      );
+      const transitionSections = document.querySelectorAll<HTMLElement>(
+        "[data-transition]"
+      );
 
       root.toggleAttribute("data-scrolled", scrollY > 24);
       root.dataset.scrollDirection = scrollY >= previousScroll ? "down" : "up";
@@ -129,7 +135,8 @@ export function MotionController() {
         track.style.transform = `translate3d(${-progress * travel}px, 0, 0)`;
         section.style.setProperty("--horizontal-progress", progress.toFixed(4));
         section.querySelectorAll<HTMLElement>("[data-horizontal-index]").forEach((node) => {
-          node.textContent = String(active).padStart(2, "0");
+          const nextIndex = String(active).padStart(2, "0");
+          if (node.textContent !== nextIndex) node.textContent = nextIndex;
         });
       }
 
@@ -173,6 +180,15 @@ export function MotionController() {
       }
     };
 
+    const contentObserver = new MutationObserver((entries) => {
+      for (const entry of entries) {
+        entry.addedNodes.forEach((node) => {
+          if (node instanceof Element) observeReveals(node);
+        });
+      }
+      scheduleSceneUpdate();
+    });
+
     const handlePointerOver = (event: PointerEvent) => updateCursorMode(event.target);
 
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
@@ -180,10 +196,12 @@ export function MotionController() {
     document.documentElement.addEventListener("mouseleave", handlePointerLeave);
     window.addEventListener("scroll", scheduleSceneUpdate, { passive: true });
     window.addEventListener("resize", scheduleSceneUpdate, { passive: true });
+    contentObserver.observe(document.body, { childList: true, subtree: true });
     updateScrollScenes();
 
     return () => {
       revealObserver.disconnect();
+      contentObserver.disconnect();
       window.cancelAnimationFrame(cursorFrame);
       window.cancelAnimationFrame(sceneFrame);
       window.removeEventListener("pointermove", handlePointerMove);
