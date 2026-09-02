@@ -14,6 +14,36 @@ const navItems = [
   { href: siteConfig.routes.albums, label: "Albums", index: "04" }
 ];
 
+let navScrollFrame = 0;
+
+function scrollToSection(top: number) {
+  window.cancelAnimationFrame(navScrollFrame);
+
+  const start = window.scrollY;
+  const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  const destination = Math.min(max, Math.max(0, top));
+
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    window.scrollTo(0, destination);
+    return;
+  }
+
+  const startedAt = performance.now();
+  const duration = Math.min(1400, Math.max(760, Math.abs(destination - start) * 0.22));
+
+  const step = (now: number) => {
+    const progress = Math.min(1, (now - startedAt) / duration);
+    const eased = 1 - Math.pow(1 - progress, 4);
+    window.scrollTo(0, start + (destination - start) * eased);
+
+    if (progress < 1) {
+      navScrollFrame = window.requestAnimationFrame(step);
+    }
+  };
+
+  navScrollFrame = window.requestAnimationFrame(step);
+}
+
 function isActive(pathname: string, href: string) {
   if (href.includes("#")) {
     return false;
@@ -57,11 +87,7 @@ export function SiteNav() {
     }
 
     event.preventDefault();
-    window.dispatchEvent(
-      new CustomEvent("rxncor:scroll-to", {
-        detail: { top: target.getBoundingClientRect().top + window.scrollY }
-      })
-    );
+    scrollToSection(target.getBoundingClientRect().top + window.scrollY);
     window.history.pushState(null, "", href);
   }
 

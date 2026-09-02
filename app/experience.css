@@ -1154,10 +1154,20 @@
   box-shadow: 6px 6px 0 var(--rr-orange) !important;
 }
 
+.cookie-consent .cookie-card {
+  padding: 14px !important;
+}
+
+.cookie-consent .eyebrow {
+  font-size: 0.54rem !important;
+  line-height: 1.2 !important;
+}
+
 .cookie-consent h2 {
-  max-width: 10ch;
+  max-width: none;
   font-size: clamp(1.7rem, 3vw, 2.15rem) !important;
   line-height: 0.9 !important;
+  margin: 8px 0 !important;
 }
 
 .cookie-consent p {
@@ -1166,13 +1176,16 @@
 }
 
 .cookie-actions {
-  gap: 8px !important;
+  flex-wrap: nowrap !important;
+  gap: 4px !important;
+  margin-top: 10px !important;
 }
 
 .cookie-actions button {
   min-height: 34px !important;
-  padding-inline: 9px !important;
-  font-size: 0.48rem !important;
+  padding-inline: 6px !important;
+  font-size: 0.43rem !important;
+  white-space: nowrap;
 }
 
 @keyframes rr-loader-life {
@@ -1568,6 +1581,10 @@
     left: 12px !important;
     width: auto !important;
     padding: 14px !important;
+  }
+
+  .cookie-consent .cookie-card {
+    padding: 12px !important;
   }
 
   .cookie-consent h2 {
