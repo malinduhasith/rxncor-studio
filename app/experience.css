@@ -677,6 +677,10 @@
   color: var(--rr-ink);
 }
 
+.rr-frame-reel {
+  height: var(--rr-scroll-height, 205svh);
+}
+
 .rr-horizontal-sticky {
   position: sticky;
   top: 0;
@@ -771,6 +775,25 @@
   height: 100%;
   overflow: hidden;
   background: var(--rr-orange);
+}
+
+.rr-frame-card-media::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background:
+    linear-gradient(90deg, transparent 33%, rgba(248, 246, 239, 0.58) 33% calc(33% + 1px), transparent calc(33% + 1px) 66%, rgba(248, 246, 239, 0.58) 66% calc(66% + 1px), transparent calc(66% + 1px)),
+    linear-gradient(transparent 33%, rgba(248, 246, 239, 0.58) 33% calc(33% + 1px), transparent calc(33% + 1px) 66%, rgba(248, 246, 239, 0.58) 66% calc(66% + 1px), transparent calc(66% + 1px));
+  opacity: 0;
+  transform: scale(1.04) rotateX(4deg);
+  transition: opacity 320ms ease, transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+
+.rr-frame-card:hover .rr-frame-card-media::before {
+  opacity: 0.55;
+  transform: scale(0.94) rotateX(0deg);
 }
 
 .rr-frame-card-media img,
@@ -945,6 +968,109 @@
   color: transparent;
   -webkit-text-stroke: 1px color-mix(in srgb, var(--rr-ink) 14%, transparent);
   opacity: 0.9;
+}
+
+.rr-composition-rig {
+  position: absolute;
+  top: 49%;
+  right: 1.5vw;
+  z-index: 1;
+  width: min(48vw, 760px);
+  aspect-ratio: 3 / 2;
+  perspective: 1100px;
+  transform:
+    translate3d(calc(var(--horizontal-progress) * -10vw), -50%, 0)
+    rotateX(calc(58deg + var(--rr-pointer-y) * -5deg))
+    rotateY(calc(-8deg + var(--rr-pointer-x) * 5deg))
+    rotateZ(calc(-5deg + var(--horizontal-progress) * 28deg));
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.rr-composition-rig::before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  border: 1px dashed color-mix(in srgb, var(--rr-ink) 18%, transparent);
+  border-radius: 50%;
+  transform: translateZ(-55px) rotateZ(8deg);
+  animation: rr-frame-spin-flat 34s linear infinite;
+}
+
+.rr-composition-label {
+  position: absolute;
+  top: -42px;
+  left: 0;
+  font-family: var(--rr-mono);
+  font-size: 0.52rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transform: translateZ(70px);
+}
+
+.rr-composition-plane {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: color-mix(in srgb, var(--rr-ink) 65%, transparent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  filter: drop-shadow(0 12px 15px color-mix(in srgb, var(--rr-ink) 10%, transparent));
+  transform-style: preserve-3d;
+  animation: rr-composition-plane 16s ease-in-out infinite;
+}
+
+.rr-composition-plane path,
+.rr-composition-plane rect,
+.rr-composition-plane circle {
+  stroke-dasharray: 1500;
+  stroke-dashoffset: 1500;
+  animation: rr-composition-draw 4s cubic-bezier(0.2, 0.75, 0.2, 1) infinite;
+}
+
+.rr-composition-thirds {
+  animation-delay: 0s;
+  transform: translateZ(72px);
+}
+
+.rr-composition-golden {
+  stroke: color-mix(in srgb, var(--rr-orange) 82%, transparent);
+  animation-delay: -4s;
+  transform: translateZ(24px) rotateZ(1.5deg);
+}
+
+.rr-composition-golden path,
+.rr-composition-golden rect {
+  animation-delay: -4s;
+}
+
+.rr-composition-triangles {
+  animation-delay: -8s;
+  transform: translateZ(-24px) rotateZ(-1deg);
+}
+
+.rr-composition-triangles path,
+.rr-composition-triangles rect,
+.rr-composition-triangles circle {
+  animation-delay: -8s;
+}
+
+.rr-composition-radial {
+  stroke: color-mix(in srgb, #2b84b8 82%, var(--rr-ink));
+  animation-delay: -12s;
+  transform: translateZ(-72px) rotateZ(2deg);
+}
+
+.rr-composition-radial path,
+.rr-composition-radial rect,
+.rr-composition-radial circle {
+  animation-delay: -12s;
 }
 
 .rr-frame-manifesto {
@@ -1540,6 +1666,17 @@
   to { transform: translate3d(7px, 8px, 46px) scale(1.15); }
 }
 
+@keyframes rr-composition-plane {
+  0%, 21% { opacity: 0.72; filter: drop-shadow(0 18px 22px color-mix(in srgb, var(--rr-ink) 16%, transparent)); }
+  29%, 92% { opacity: 0.08; filter: none; }
+  100% { opacity: 0.72; filter: drop-shadow(0 18px 22px color-mix(in srgb, var(--rr-ink) 16%, transparent)); }
+}
+
+@keyframes rr-composition-draw {
+  0% { stroke-dashoffset: 1500; }
+  58%, 100% { stroke-dashoffset: 0; }
+}
+
 @media (max-width: 1040px) {
   .rr-hero-title {
     font-size: clamp(4.8rem, 10vw, 7rem);
@@ -1577,6 +1714,11 @@
   .rr-frame-orbital {
     right: 1vw;
     width: 36vw;
+  }
+
+  .rr-composition-rig {
+    right: -2vw;
+    width: 56vw;
   }
 
   .rr-contact {
@@ -1813,6 +1955,18 @@
     transform: none;
   }
 
+  .rr-composition-rig {
+    top: 350px;
+    right: -24vw;
+    width: 96vw;
+    opacity: 0.46;
+    transform: rotateX(64deg) rotateZ(-8deg);
+  }
+
+  .rr-composition-label {
+    display: none;
+  }
+
   .rr-horizontal-counter {
     top: 75px;
   }
@@ -1994,6 +2148,23 @@
 
   .rr-frame-card-gauge::before {
     animation: none;
+  }
+
+  .rr-composition-rig::before,
+  .rr-composition-plane,
+  .rr-composition-plane path,
+  .rr-composition-plane rect,
+  .rr-composition-plane circle {
+    animation: none;
+  }
+
+  .rr-composition-plane {
+    opacity: 0.08;
+    stroke-dashoffset: 0;
+  }
+
+  .rr-composition-thirds {
+    opacity: 0.58;
   }
 
   .rr-motion-ready [data-reveal] {
