@@ -3,7 +3,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { PublicPageHero } from "@/components/public/PublicPageHero";
 import { siteConfig } from "@/config/site";
-import { blockReferenceItems, getAboutPageContent } from "@/lib/about-builder";
+import {
+  blockReferenceItems,
+  defaultAboutBlocks,
+  defaultAboutSettings
+} from "@/lib/about-builder";
 import { getPublicPortfolioPhotos } from "@/lib/public-gallery";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +15,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "About Malindu Herath",
   description:
-    "About Malindu Herath, a Melbourne-based Sri Lankan photographer building rxncor.studio around portraits, events, street moments, and client galleries."
+    "About Malindu Herath, a Melbourne-based Sri Lankan photographer using a practical technical workflow for portraits, events, automotive work, and secure client delivery."
 };
 
 type AboutImageProps = {
@@ -28,7 +32,6 @@ function AboutImage({ image, index }: AboutImageProps) {
           fill
           sizes="(max-width: 760px) 72vw, 34vw"
           src={image.imageUrl}
-          unoptimized
         />
       ) : (
         <div className="rx-image-fallback" aria-hidden="true" />
@@ -42,10 +45,21 @@ function AboutImage({ image, index }: AboutImageProps) {
 }
 
 export default async function AboutPage() {
-  const [portfolioPhotos, aboutContent] = await Promise.all([
-    getPublicPortfolioPhotos(4).catch(() => []),
-    getAboutPageContent()
-  ]);
+  const portfolioPhotos = await getPublicPortfolioPhotos(4).catch(() => []);
+  const aboutContent = {
+    settings: defaultAboutSettings,
+    blocks: defaultAboutBlocks.map((block) =>
+      block.id === "default-banner-delivery"
+        ? {
+            ...block,
+            label: "File workflow",
+            title: "The finished file matters as much as the capture.",
+            body:
+              "The workflow continues through selection, exposure and colour correction, consistent crops, and exports matched to their intended use. Client galleries separate fast previews from full-resolution files and keep private work behind access controls."
+          }
+        : block
+    )
+  };
   const introCards = aboutContent.blocks.filter((block) => block.section === "intro_cards");
   const bannerBlocks = aboutContent.blocks.filter((block) => block.section === "banners");
   const spokenBlocks = aboutContent.blocks.filter((block) => block.section === "spoken");
@@ -64,8 +78,8 @@ export default async function AboutPage() {
 
       <section className="rx-about-collage" aria-label="Selected visual direction">
         <div className="rx-section-kicker" data-reveal>
-          <span>Selected perspective</span>
-          <span>Melbourne / Sri Lankan</span>
+          <span>Working samples</span>
+          <span>Capture / Edit / Delivery</span>
         </div>
         <div className="rx-about-image-stage" data-reveal>
           {[0, 1, 2].map((index) => (
@@ -79,15 +93,15 @@ export default async function AboutPage() {
               key={index}
             />
           ))}
-          <p>Instinct first.<br />Polish second.</p>
+          <p>Observe.<br />Capture.<br />Refine.</p>
         </div>
       </section>
 
       {introCards.length ? (
         <section className="rx-about-principles">
           <div className="rx-section-kicker" data-reveal>
-            <span>Working principles / 02</span>
-            <span>How the frame comes together</span>
+            <span>Working method / 02</span>
+            <span>Brief to delivery</span>
           </div>
           <div className="rx-about-principle-grid" data-reveal>
             {introCards.map((block, index) => (
@@ -133,8 +147,8 @@ export default async function AboutPage() {
       {spokenBlocks.length ? (
         <section className="rx-about-notes">
           <div className="rx-section-kicker" data-reveal>
-            <span>Frame notes / 03</span>
-            <span>Things worth keeping close</span>
+            <span>Technical notes / 03</span>
+            <span>Practical working rules</span>
           </div>
           <div className="rx-about-note-list" data-reveal>
             {spokenBlocks.map((block, index) => (
@@ -152,7 +166,7 @@ export default async function AboutPage() {
         <section className="rx-about-path">
           <div className="rx-section-kicker" data-reveal>
             <span>Background / 04</span>
-            <span>A work in progress</span>
+            <span>Photography and software</span>
           </div>
           <h2 data-reveal>THE PATH<br />SO FAR.</h2>
           <div className="rx-about-path-grid" data-reveal>
@@ -171,7 +185,7 @@ export default async function AboutPage() {
         <section className="rx-about-tools">
           <div className="rx-section-kicker" data-reveal>
             <span>Tools / 05</span>
-            <span>Camera to delivery</span>
+            <span>Capture to cloud delivery</span>
           </div>
           <div className="rx-about-tool-list" data-reveal>
             {toolBlocks.map((block, index) => (

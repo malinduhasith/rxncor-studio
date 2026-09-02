@@ -1,112 +1,112 @@
 export const aboutProfile = {
   name: "Malindu Herath",
-  hero: "Melbourne photographer. Portraits, events, and honest stories.",
+  hero: "Photographer with a technical approach.",
   intro:
-    "I am Malindu, Sri Lankan-born and based in Melbourne. RXNCOR is where I am shaping a photography practice around portraits, events, street moments, and honest client stories.",
+    "I am Malindu, a Sri Lankan photographer based in Melbourne. I work across portraits, events, and automotive photography. I keep the process practical: understand the brief, control exposure and light, capture efficiently, then deliver consistent files through simple private galleries.",
   closing:
-    "I am interested in photographs that feel lived in: real light, real people, a little atmosphere, and a frame that carries something true without trying too hard.",
+    "I am still developing my style and improving the process with every shoot. My aim is straightforward: technically reliable photographs that feel natural and are easy for the client to receive and use.",
   metadata: [
     ["Based in", "Melbourne"],
     ["Origin", "Sri Lanka"],
-    ["Focus", "Portraits / Events / Stories"],
-    ["Brand", "RXNCOR.STUDIO"]
+    ["Work", "Portraits / Events / Automotive"],
+    ["Workflow", "Capture / Edit / Secure delivery"]
   ]
 };
 
 export const aboutBrandNote = {
-  label: "Name",
-  title: "RXNCOR is the mark around the photography.",
+  label: "Studio system",
+  title: "RXNCOR is a small studio and a system I am building.",
   body:
-    "RXNCOR is the visual identity around the work: portraits, events, street frames, and private client galleries. The name is treated as a mark for the images, not a long explanation."
+    "My background is in software design and development, so I also build the technical side of the studio. The website, gallery access, file permissions, and delivery workflow are designed to keep the experience clear without distracting from the photographs."
 };
 
 export const aboutPerspective = {
-  label: "Perspective",
-  title: "Real light, real people, and enough room for the moment.",
+  label: "Method",
+  title: "Repeatable decisions over unnecessary complexity.",
   body:
-    "I like photographs that feel present rather than polished into something flat. The work looks for small gestures, imperfect timing, atmosphere, and the feeling around the person.",
+    "I start with the intended use of the image, the available light, and the movement in the scene. From there I choose focal length, shutter speed, aperture, ISO, and lighting deliberately. The equipment supports the photograph; it is not the subject of it.",
   points: [
-    "Honest portraits",
-    "Documentary feeling",
-    "Available light",
-    "Emotion over perfection",
-    "Quiet details",
-    "Client stories"
+    "Brief and shot planning",
+    "Manual exposure control",
+    "Available light and flash",
+    "Movement-aware shutter speed",
+    "Consistent colour",
+    "Purpose-based export"
   ]
 };
 
 export const aboutSections = [
   {
     index: "01",
-    label: "About",
-    title: "Photography first. Everything else stays out of the way.",
+    label: "Planning",
+    title: "Start with the use of the photograph.",
     body:
-      "I am still figuring out my visual language. I am drawn to images that feel alive, imperfect, atmospheric, and honest. Photography feels like observation first, then a small act of construction: noticing a moment and shaping how it is remembered."
+      "Before shooting, I try to understand where the images will be used, what must be covered, the location, available light, timing, and delivery requirements. A clear brief prevents unnecessary equipment and missed moments."
   },
   {
     index: "02",
-    label: "Creative practice",
-    title: "People, movement, light, and the quiet parts between.",
+    label: "Capture",
+    title: "Control the variables that matter.",
     body:
-      "I like portraits, people, events, street moments, documentary-style frames, and cinematic light. I look for mood, movement, texture, contrast, and emotion. I do not want the work to feel overly perfect. I want it to feel present and real."
+      "I normally work with manual exposure, RAW files, fast prime lenses, available light, and controlled flash when needed. I watch skin tone, highlight detail, focus, and shutter speed while leaving enough room for natural movement."
   },
   {
     index: "03",
-    label: "Client delivery",
-    title: "A simple, private place for finished stories.",
+    label: "Post and delivery",
+    title: "Keep the full set consistent.",
     body:
-      "After the shoot, the work needs to feel just as careful as the day itself. Galleries are kept clean, private when needed, easy to view, and ready for clients to download without making the experience feel heavy."
+      "After culling, I work toward consistent exposure, colour, crop, and export settings across the set. Finished files are delivered through public or access-controlled galleries with predictable previews and full-resolution downloads."
   }
 ];
 
 export const aboutValues = [
   {
-    line: "Look for the quiet second before the pose.",
-    reference: "Portrait timing"
+    line: "Expose for the subject and protect important highlights.",
+    reference: "Exposure"
   },
   {
-    line: "Let real light keep some of its rough edges.",
-    reference: "Available light"
+    line: "Choose shutter speed from movement, not habit.",
+    reference: "Motion control"
   },
   {
-    line: "The best frame usually feels a little lived in.",
-    reference: "Documentary feeling"
+    line: "Use available light first; add flash when it solves a problem.",
+    reference: "Lighting"
   },
   {
-    line: "Leave some air around the person.",
-    reference: "Human presence"
+    line: "Keep colour and contrast consistent across the complete set.",
+    reference: "Post-production"
   },
   {
-    line: "Deliver it simply. The gallery should not get in the way of the photograph.",
-    reference: "Client delivery / private galleries"
+    line: "Cull firmly and deliver only finished work.",
+    reference: "Selection"
   },
   {
-    line: "Do not polish the life out of it.",
-    reference: "Imperfect beauty"
+    line: "Use simple galleries, clear permissions, and predictable downloads.",
+    reference: "Delivery system"
   }
 ];
 
 export const aboutTimeline = [
   {
     place: "Sri Lanka",
-    detail: "Early memories, faces, streets, colour, and the beginning of a visual eye."
+    detail: "Where I grew up and first became interested in cameras, people, streets, and colour."
   },
   {
-    place: "First cameras",
-    detail: "Learning by trying, missing frames, watching light, and slowly understanding timing."
-  },
-  {
-    place: "Portraits and people",
-    detail: "A growing interest in faces, mood, gestures, and the quiet parts between posed moments."
+    place: "Software engineering",
+    detail: "A background in software design and development that influences how I plan workflows and solve technical problems."
   },
   {
     place: "Melbourne",
     detail:
-      "A deeper photography practice shaped by events, street moments, client stories, and changing light."
+      "Where I am building practical experience across portraits, events, automotive work, and client commissions."
   },
   {
     place: "RXNCOR.STUDIO",
-    detail: "An independent photography portfolio focused on honest frames and private gallery delivery."
+    detail: "An independent photography practice with a custom portfolio, access control, and cloud-based gallery delivery."
+  },
+  {
+    place: "Ongoing",
+    detail: "Testing, reviewing, and improving both the photographic work and the delivery system one project at a time."
   }
 ];
 
@@ -114,21 +114,20 @@ export const aboutTools = [
   "Sony A7 IV",
   "Sony 35mm f/1.4 GM",
   "Sony 85mm f/1.4 GM II",
-  "Portrait sessions",
-  "Event coverage",
-  "Street moments",
-  "Documentary frames",
-  "Client galleries"
+  "Godox V1 Pro flash",
+  "RAW capture",
+  "Manual exposure",
+  "Colour-managed editing",
+  "Next.js client galleries",
+  "Supabase metadata",
+  "Cloudflare R2 delivery"
 ];
 
 export const aboutPhotographyTags = [
-  "Portraits",
-  "Events",
-  "Street",
-  "Documentary",
-  "Cinematic light",
-  "Real moments",
-  "Private galleries",
-  "Melbourne",
-  "Sri Lanka"
+  "RAW capture",
+  "Consistent white balance",
+  "Purpose-based crops",
+  "Web and full-resolution exports",
+  "Private gallery access",
+  "Cloud delivery"
 ];
