@@ -21,6 +21,13 @@
   font-family: var(--rr-sans);
 }
 
+@media (min-width: 761px) {
+  html.rr-home-active,
+  html.rr-home-active body {
+    overflow: visible;
+  }
+}
+
 .rr-home *,
 .rr-home *::before,
 .rr-home *::after {

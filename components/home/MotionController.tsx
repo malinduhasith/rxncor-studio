@@ -16,6 +16,7 @@ export function MotionController() {
     const finePointer = window.matchMedia("(pointer: fine)");
 
     root.classList.add("rr-motion-ready");
+    root.classList.toggle("rr-home-active", pathname === "/");
 
     const revealObserver = new IntersectionObserver(
       (entries) => {
@@ -210,6 +211,7 @@ export function MotionController() {
       window.removeEventListener("scroll", scheduleSceneUpdate);
       window.removeEventListener("resize", scheduleSceneUpdate);
       root.classList.remove("rr-motion-ready");
+      root.classList.remove("rr-home-active");
       root.removeAttribute("data-scrolled");
       root.removeAttribute("data-scroll-direction");
       root.style.removeProperty("--rr-pointer-x");
