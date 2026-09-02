@@ -2860,11 +2860,11 @@
   }
 }
 
-/* Frames is intentionally a light editorial plate in both moods. */
-:root[data-theme="dark"] .rr-frame-reel {
+/* Work is intentionally black in both moods; do not invert it twice. */
+:root[data-theme="dark"] .rr-project-rail {
   --rr-paper: #efefec;
   --rr-ink: #0a0a0a;
   --rr-cream: #f8f6ef;
-  background-color: #efefec;
-  color: #0a0a0a;
+  background-color: #0a0a0a;
+  color: #f8f6ef;
 }
