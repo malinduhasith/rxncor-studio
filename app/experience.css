@@ -2860,6 +2860,420 @@
   }
 }
 
+/* -------------------------------------------------------------------------- */
+/* Refined booking finale                                                     */
+/* -------------------------------------------------------------------------- */
+
+.rx-signature-mark {
+  width: clamp(104px, 8.2vw, 138px);
+  height: 42px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #071528;
+}
+
+.rx-signature-mark img {
+  width: 92%;
+  height: auto;
+  object-fit: contain;
+}
+
+.rx-brand-location {
+  max-width: 10ch;
+  font-family: var(--rr-mono);
+  font-size: 0.48rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.rr-contact {
+  grid-template-columns: minmax(360px, 0.82fr) minmax(520px, 1.18fr);
+  min-height: 920px;
+  background: #071528;
+  color: #fff3d7;
+}
+
+.rr-contact::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 auto;
+  z-index: 0;
+  width: 58.8%;
+  background: #fff3d7;
+}
+
+.rr-contact-intro {
+  z-index: 2;
+  min-height: 920px;
+  padding: clamp(72px, 7vw, 112px) clamp(28px, 4vw, 70px) 58px;
+  border-right: 1px solid rgba(255, 243, 215, 0.24);
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255, 243, 215, 0.5) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 76% 68%, rgba(121, 185, 222, 0.45) 0 1px, transparent 1.5px),
+    #071528;
+  background-size: 61px 61px, 89px 89px, auto;
+}
+
+.rr-contact-intro::after {
+  display: none;
+}
+
+.rr-contact-intro .rr-section-label {
+  color: #fff3d7;
+  opacity: 0.76;
+}
+
+.rr-contact-intro h2 {
+  max-width: 6.5ch;
+  margin-top: auto;
+  padding-top: 100px;
+  color: #fff3d7;
+  font-size: clamp(4.6rem, 7.1vw, 8.4rem);
+  line-height: 0.83;
+  text-shadow: none;
+  transform: none;
+}
+
+.rr-contact-intro > p {
+  max-width: 42ch;
+  margin-top: 30px;
+  color: rgba(255, 243, 215, 0.75);
+  font-size: 0.72rem;
+  line-height: 1.75;
+}
+
+.rr-contact-intro .rr-round-link {
+  width: 112px;
+  height: 112px;
+  margin-top: 38px;
+  border-color: #ff5b2a;
+  background: #ff5b2a;
+  color: #071528;
+  box-shadow: 7px 7px 0 #fff3d7;
+  transform: rotate(-4deg);
+}
+
+.rr-contact-intro .rr-round-link::before {
+  inset: 10px;
+  animation-duration: 16s;
+}
+
+.rr-contact-intro .rr-round-link:hover {
+  box-shadow: 3px 3px 0 #fff3d7;
+  transform: translate(4px, 4px) rotate(3deg);
+}
+
+.rr-contact-vector-spiral {
+  top: 24%;
+  left: -13vw;
+  z-index: 1;
+  width: min(42vw, 620px);
+  color: #79b9de;
+  opacity: 0.15;
+}
+
+.rr-contact-vector-thirds {
+  display: none;
+}
+
+.rr-inquiry-console {
+  z-index: 2;
+  min-height: 920px;
+  border-left: 0;
+  background: #fff3d7;
+  color: #071528;
+}
+
+.rr-inquiry-console::after {
+  background:
+    linear-gradient(90deg, rgba(7, 21, 40, 0.035) 1px, transparent 1px),
+    linear-gradient(rgba(7, 21, 40, 0.035) 1px, transparent 1px);
+  background-size: 30px 30px;
+  opacity: 0.65;
+}
+
+.rr-inquiry-vector-field {
+  color: #071528;
+}
+
+.rr-inquiry-vector {
+  opacity: 0.075;
+}
+
+.rr-inquiry-vector svg path,
+.rr-inquiry-vector svg rect,
+.rr-inquiry-vector svg circle {
+  animation-duration: 12s;
+}
+
+.rr-inquiry-vector-focus {
+  top: 6%;
+  right: -18%;
+  width: min(42vw, 600px);
+  animation-duration: 42s;
+}
+
+.rr-inquiry-vector-waveform {
+  right: -12%;
+  bottom: 5%;
+  width: 68%;
+  opacity: 0.055;
+  animation-duration: 10s;
+}
+
+.rr-inquiry-status {
+  position: relative;
+  inset: auto;
+  grid-template-columns: 1fr minmax(120px, 0.7fr) auto;
+  min-height: 84px;
+  padding: 19px clamp(24px, 4vw, 68px);
+  border-bottom: 1px solid rgba(7, 21, 40, 0.2);
+  background: transparent;
+  color: #071528;
+}
+
+.rr-inquiry-status span,
+.rr-inquiry-status strong,
+.rr-inquiry-status p {
+  font-size: 0.58rem;
+}
+
+.rr-inquiry-status strong,
+.rr-inquiry-status p[data-ready="true"] {
+  color: #ff5b2a;
+}
+
+.rr-inquiry-progress i {
+  height: 4px;
+  border-color: rgba(7, 21, 40, 0.4);
+}
+
+.rr-inquiry-progress i[data-complete="true"],
+.rr-inquiry-status p i {
+  background: #ff5b2a;
+}
+
+.rr-inquiry-console .rr-contact-form {
+  min-height: calc(920px - 84px);
+  justify-content: center;
+  gap: 0;
+  padding: 34px clamp(24px, 4vw, 68px) 54px;
+  background: transparent;
+  color: #071528;
+  backdrop-filter: none;
+}
+
+.rr-inquiry-console .rr-contact-form label {
+  margin: 0;
+  padding: 22px 0 18px;
+  border-color: rgba(7, 21, 40, 0.32);
+  background: transparent;
+  color: #071528;
+  transition: border-color 200ms ease, padding-left 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rr-inquiry-console .rr-contact-form label::before {
+  top: 50%;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  border: 0;
+  background: #ff5b2a;
+}
+
+.rr-inquiry-console .rr-contact-form label[data-active="true"] {
+  margin: 0;
+  padding-inline: 17px 0;
+  border-color: #ff5b2a;
+  background: transparent;
+  color: #071528;
+}
+
+.rr-inquiry-console .rr-contact-form label[data-active="true"]::before {
+  background: #ff5b2a;
+}
+
+.rr-inquiry-console .rr-contact-form label > span {
+  color: rgba(7, 21, 40, 0.72);
+  font-size: 0.58rem;
+}
+
+.rr-inquiry-console .rr-contact-form label > span i,
+.rr-inquiry-console .rr-contact-form label[data-complete="true"] > span i {
+  color: #ff5b2a;
+}
+
+.rr-inquiry-console .rr-contact-form input,
+.rr-inquiry-console .rr-contact-form textarea {
+  color: #071528;
+  font-size: clamp(1.55rem, 2.15vw, 2.35rem);
+}
+
+.rr-inquiry-console .rr-contact-form input::placeholder,
+.rr-inquiry-console .rr-contact-form textarea::placeholder,
+.rr-inquiry-console .rr-contact-form label[data-active="true"] input::placeholder,
+.rr-inquiry-console .rr-contact-form label[data-active="true"] textarea::placeholder {
+  color: rgba(7, 21, 40, 0.34);
+}
+
+.rr-inquiry-console .rr-contact-form textarea {
+  min-height: 105px;
+}
+
+.rr-inquiry-console .rr-contact-form button {
+  min-height: 68px;
+  margin-top: 30px;
+  border-color: #071528;
+  background: #071528;
+  color: #fff3d7;
+  box-shadow: 6px 6px 0 #ff5b2a;
+}
+
+.rr-inquiry-console .rr-contact-form button::before {
+  background: #ff5b2a;
+}
+
+.rr-inquiry-console .rr-contact-form button:hover,
+.rr-inquiry-console .rr-contact-form button[data-ready="true"] {
+  color: #071528;
+  box-shadow: 2px 2px 0 #ff5b2a;
+}
+
+/* Keep the closing panel expressive without competing with the form. */
+.rx-footer-stairs,
+.rx-footer-vector-wave,
+.rx-footer-vector-spiral {
+  display: none;
+}
+
+.rx-footer-vector-focus {
+  top: 8%;
+  right: -14vw;
+  width: min(52vw, 760px);
+  opacity: 0.09;
+  animation-duration: 48s;
+}
+
+.rx-footer-marquee {
+  padding-block: 8px;
+  opacity: 0.82;
+}
+
+.rx-footer h2 {
+  padding-block: clamp(58px, 8vw, 110px);
+}
+
+.rx-footer h2 a {
+  display: block;
+}
+
+.rx-footer h2 span {
+  display: inline;
+}
+
+.rx-footer h2 span + span {
+  margin-left: 0.2em;
+}
+
+.rx-footer h2 span:last-child {
+  color: inherit;
+  -webkit-text-stroke: 0;
+}
+
+.rx-footer h2 a:hover span:first-child,
+.rx-footer h2 a:hover span:last-child {
+  color: inherit;
+  -webkit-text-stroke: 0;
+  transform: none;
+}
+
+@media (max-width: 980px) {
+  .rr-contact {
+    grid-template-columns: minmax(300px, 0.78fr) minmax(440px, 1.22fr);
+  }
+
+  .rr-contact-intro h2 {
+    font-size: clamp(4.4rem, 7.8vw, 6.5rem);
+  }
+}
+
+@media (max-width: 760px) {
+  .rx-signature-mark {
+    width: 110px;
+    height: 38px;
+  }
+
+  .rx-brand-location {
+    display: none;
+  }
+
+  .rr-contact {
+    display: block;
+    min-height: 0;
+  }
+
+  .rr-contact::before {
+    display: none;
+  }
+
+  .rr-contact-intro {
+    min-height: 640px;
+    padding: 72px 20px 48px;
+    border-right: 0;
+  }
+
+  .rr-contact-intro h2 {
+    max-width: 6ch;
+    padding-top: 70px;
+    font-size: clamp(4.15rem, 18vw, 6.5rem);
+  }
+
+  .rr-contact-intro > p {
+    font-size: 0.68rem;
+  }
+
+  .rr-contact-intro .rr-round-link {
+    width: 102px;
+    height: 102px;
+  }
+
+  .rr-inquiry-console {
+    min-height: 0;
+    border-top: 1px solid #071528;
+  }
+
+  .rr-inquiry-status {
+    grid-template-columns: 1fr auto;
+    min-height: 88px;
+    padding: 16px 20px;
+  }
+
+  .rr-inquiry-console .rr-contact-form {
+    min-height: 0;
+    padding: 28px 20px 58px;
+  }
+
+  .rr-inquiry-console .rr-contact-form label {
+    padding-block: 20px 16px;
+  }
+
+  .rr-inquiry-vector-focus {
+    top: 10%;
+    right: -44%;
+    width: 125%;
+  }
+
+  .rx-footer h2 span,
+  .rx-footer h2 span:last-child {
+    display: block;
+    margin-left: 0;
+  }
+}
+
 /* Work is intentionally black in both moods; do not invert it twice. */
 :root[data-theme="dark"] .rr-project-rail {
   --rr-paper: #efefec;

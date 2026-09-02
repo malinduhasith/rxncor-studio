@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { MouseEvent } from "react";
@@ -99,11 +100,10 @@ export function SiteNav() {
     >
       <nav className="rx-nav" aria-label="Main navigation">
         <Link className="rx-brand" data-pending-label="home" href="/">
-          <span className="rx-brand-mark" aria-hidden="true">R</span>
-          <span>
-            RXNCOR
-            <small>Photo studio / Melbourne</small>
+          <span className="rx-signature-mark" aria-hidden="true">
+            <Image alt="" height={41} priority src="/sig.png" width={136} />
           </span>
+          <span className="rx-brand-location">Photo studio / Melbourne</span>
         </Link>
 
         <button

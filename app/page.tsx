@@ -248,13 +248,13 @@ export default async function Home({ searchParams }: HomePageProps) {
         <CompositionMark className="rr-page-vector rr-contact-vector-thirds" variant="thirds" />
         <div className="rr-contact-intro" data-reveal>
           <div className="rr-section-label">
-            <span>Start a conversation / 04</span>
-            <span>Replies within 48 hours</span>
+            <span>New commission / 04</span>
+            <span>Melbourne + anywhere</span>
           </div>
-          <h2>LET&apos;S MAKE<br />SOMETHING<br />ALIVE.</h2>
+          <h2>BRING ME<br />THE IDEA.</h2>
           <p>
-            Tell me what you are making, celebrating, driving, launching, or trying
-            to remember.
+            A date, a place, a feeling. Give me the useful details and I&apos;ll shape
+            the visual approach with you.
           </p>
           <Link className="rr-round-link" data-cursor="Book" href={siteConfig.routes.book}>
             Book a shoot <span aria-hidden="true">↗</span>

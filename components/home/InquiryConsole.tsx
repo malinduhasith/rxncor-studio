@@ -28,21 +28,14 @@ export function InquiryConsole() {
         <div className="rr-inquiry-vector rr-inquiry-vector-focus">
           <CompositionMark variant="focus" />
         </div>
-        <div className="rr-inquiry-vector rr-inquiry-vector-sensor">
-          <CompositionMark variant="sensor" />
-        </div>
         <div className="rr-inquiry-vector rr-inquiry-vector-waveform">
           <CompositionMark variant="waveform" />
         </div>
-        <div className="rr-inquiry-vector rr-inquiry-vector-meter">
-          <CompositionMark variant="meter" />
-        </div>
-        <span className="rr-inquiry-scan" />
       </div>
 
       <div className="rr-inquiry-status" aria-live="polite">
         <div>
-          <span>Brief signal</span>
+          <span>Your brief</span>
           <strong>{String(completeCount).padStart(2, "0")} / 03</strong>
         </div>
         <div className="rr-inquiry-progress" aria-hidden="true">
@@ -51,7 +44,7 @@ export function InquiryConsole() {
           ))}
         </div>
         <p data-ready={isReady ? "true" : "false"}>
-          <i /> {isReady ? "Signal ready / transmit" : "Building shoot brief"}
+          <i /> {isReady ? "Ready to send" : "Add the essentials"}
         </p>
       </div>
 
@@ -102,7 +95,7 @@ export function InquiryConsole() {
           />
         </label>
         <button data-cursor="Send" data-ready={isReady ? "true" : "false"} type="submit">
-          <span>{isReady ? "Transmit shoot brief" : "Send inquiry"}</span>
+          <span>{isReady ? "Send the brief" : "Send inquiry"}</span>
           <span aria-hidden="true">↗</span>
         </button>
       </form>
