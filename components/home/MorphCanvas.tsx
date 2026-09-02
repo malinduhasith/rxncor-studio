@@ -52,14 +52,16 @@ const fragmentShaderSource = `
     float outerLine = 1.0 - smoothstep(0.0, 0.008, abs(distanceToShape - 0.072));
     float farLine = 1.0 - smoothstep(0.0, 0.006, abs(distanceToShape - 0.13));
 
-    vec3 shadow = vec3(0.62, 0.08, 0.015);
-    vec3 orange = vec3(1.0, 0.245, 0.055);
-    vec3 highlight = vec3(1.0, 0.62, 0.23);
-    vec3 color = mix(shadow, orange, diffuse);
+    vec3 shadow = vec3(0.035, 0.095, 0.24);
+    vec3 steelBlue = vec3(0.13, 0.36, 0.63);
+    vec3 highlight = vec3(1.0, 0.51, 0.33);
+    vec3 color = mix(shadow, steelBlue, diffuse);
     color = mix(color, highlight, innerGlow * 0.66);
 
     float alpha = max(fill * 0.97, outerLine * 0.35);
     alpha = max(alpha, farLine * 0.16);
+    float grain = fract(sin(dot(floor(gl_FragCoord.xy * 0.32), vec2(12.9898, 78.233))) * 43758.5453);
+    color += (grain - 0.5) * 0.055 * fill;
     gl_FragColor = vec4(color, alpha);
   }
 `;
