@@ -99,7 +99,19 @@ export function SiteNav() {
       data-menu-open={menuOpen ? "true" : "false"}
     >
       <nav className="rx-nav" aria-label="Main navigation">
-        <Link className="rx-brand" data-pending-label="home" href="/">
+        <Link
+          className="rx-brand"
+          data-pending-label="home"
+          href="/"
+          onClick={(event) => {
+            setMenuOpen(false);
+            if (pathname === "/") {
+              event.preventDefault();
+              window.history.pushState(null, "", "/");
+              scrollToSection(0);
+            }
+          }}
+        >
           <span className="rx-signature-mark" aria-hidden="true">
             <Image alt="" height={41} priority src="/sig.png" width={136} />
           </span>

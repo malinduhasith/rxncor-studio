@@ -64,7 +64,7 @@ function restoreScrollIfNeeded() {
     const raw = window.sessionStorage.getItem(SCROLL_RESTORE_KEY);
 
     if (!raw) {
-      return;
+      return false;
     }
 
     const parsed = JSON.parse(raw) as {
@@ -79,15 +79,32 @@ function restoreScrollIfNeeded() {
       typeof parsed.y !== "number" ||
       Date.now() - Number(parsed.at ?? 0) > 30_000
     ) {
-      return;
+      return false;
     }
 
     window.requestAnimationFrame(() => {
       window.scrollTo({ top: parsed.y, left: 0, behavior: "auto" });
     });
+    return true;
   } catch {
     window.sessionStorage.removeItem(SCROLL_RESTORE_KEY);
+    return false;
   }
+}
+
+function scrollToRouteStart() {
+  const hash = window.location.hash.slice(1);
+  const target = hash ? document.getElementById(decodeURIComponent(hash)) : null;
+
+  if (target) {
+    const header = document.querySelector<HTMLElement>(".rx-site-header");
+    const offset = (header?.offsetHeight ?? 0) + 20;
+    const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - offset);
+    window.scrollTo({ top, left: 0, behavior: "auto" });
+    return;
+  }
+
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 }
 
 export function PendingInteraction() {
@@ -131,12 +148,22 @@ export function PendingInteraction() {
   }, [clearPending]);
 
   useEffect(() => {
+    window.history.scrollRestoration = "manual";
+
     const frame = window.requestAnimationFrame(() => {
       clearPending();
-      restoreScrollIfNeeded();
+      if (!restoreScrollIfNeeded()) {
+        window.requestAnimationFrame(scrollToRouteStart);
+      }
     });
 
-    return () => window.cancelAnimationFrame(frame);
+    const handleHashChange = () => window.requestAnimationFrame(scrollToRouteStart);
+    window.addEventListener("hashchange", handleHashChange);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("hashchange", handleHashChange);
+    };
   }, [pathname, search, clearPending]);
 
   useEffect(() => {
@@ -155,7 +182,6 @@ export function PendingInteraction() {
         return;
       }
 
-      saveScrollRestorePoint();
       anchor.dataset.pending = "true";
       startPending(
         `Opening ${cleanLabel(

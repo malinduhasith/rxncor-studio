@@ -2946,15 +2946,15 @@ html body .rr-home .rr-inquiry-console .rr-contact-form textarea::placeholder {
   height: 42px;
   display: grid;
   place-items: center;
-  overflow: hidden;
-  border-radius: 2px;
-  background: #071528;
+  overflow: visible;
+  background: transparent;
 }
 
 .rx-signature-mark img {
-  width: 92%;
+  width: 100%;
   height: auto;
   object-fit: contain;
+  filter: var(--logo-filter);
 }
 
 .rx-brand-location {
