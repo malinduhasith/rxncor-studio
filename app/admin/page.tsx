@@ -1476,7 +1476,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <div className="admin-brand-mark" aria-hidden="true">R</div>
             <div>
               <strong className="admin-sidebar-title">RXNCOR</strong>
-              <span>Studio operations</span>
+              <span>Administration</span>
             </div>
           </div>
           <a className="admin-create-shortcut" href={adminHref("new-album")}>
@@ -1544,7 +1544,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </details>
           <div className="admin-topbar">
             <div>
-              <p className="eyebrow">Studio OS / {activeViewCopy.label}</p>
+              <p className="eyebrow">Admin / {activeViewCopy.label}</p>
               <p className="muted">
                 {attentionCount ? `${attentionCount} items need attention` : "Everything is ready"}
               </p>
