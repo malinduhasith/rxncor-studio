@@ -90,6 +90,7 @@ import {
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
 import { getSiteContactSettings } from "@/lib/site-settings";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import styles from "./admin.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -1466,7 +1467,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const attentionCount = operationalItems.filter((item) => item.attention).length;
 
   return (
-    <main className="shell section admin-workspace">
+    <main className={styles.app}>
       <div className="admin-layout" data-view={activeView}>
         <aside
           className="sidebar admin-sidebar"
@@ -3168,7 +3169,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       </div>
                     </form>
                   ) : null}
-                  <div className="table-wrap">
+                  <div className="table-wrap admin-photo-legacy-table">
                     <table className="table file-table">
                       <thead>
                         <tr>
@@ -3417,6 +3418,107 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       </tbody>
                     </table>
                   </div>
+                  {displayPhotos.length ? (
+                    <div className="admin-photo-grid" aria-label="Album photos">
+                      {displayPhotos.map((photo) => (
+                        <article className="admin-photo-card" key={`card-${photo.id}`}>
+                          <div className="admin-photo-visual">
+                            {photo.thumbnailDisplayUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={photo.thumbnailDisplayUrl} alt={photo.displayLabel.title} />
+                            ) : (
+                              <div className="admin-photo-placeholder">Preview unavailable</div>
+                            )}
+                            <label className="admin-photo-check">
+                              <input
+                                aria-label={`Select ${photo.filename}`}
+                                form={`bulk-photo-form-${selectedAlbum.id}`}
+                                name="photo_ids"
+                                type="checkbox"
+                                value={photo.id}
+                              />
+                              <span>Select</span>
+                            </label>
+                            <div className="admin-photo-status">
+                              {photo.isCover ? <span>Cover</span> : null}
+                              {photo.is_selected ? <span>In Frames</span> : null}
+                            </div>
+                          </div>
+                          <div className="admin-photo-card-body">
+                            <div className="admin-photo-title">
+                              <div>
+                                <strong>{photo.displayLabel.title}</strong>
+                                <span>{photo.displayLabel.eyebrow}</span>
+                              </div>
+                              <span>{formatBytes(
+                                photo.file_size_bytes ??
+                                  (photo.thumbnail_size_bytes ?? 0) +
+                                    (photo.preview_size_bytes ?? 0) +
+                                    (photo.full_size_bytes ?? 0),
+                              )}</span>
+                            </div>
+                            <p>{photo.displayLabel.detail}</p>
+                            <div className="admin-photo-primary-actions">
+                              <AdminFileActionButton albumId={selectedAlbum.id} photoId={photo.id} kind="preview" />
+                              <form action={togglePhotoSelectedAction}>
+                                <input name="photo_id" type="hidden" value={photo.id} />
+                                <button className="button secondary small" type="submit">
+                                  <Star size={15} /> {photo.is_selected ? "Remove from Frames" : "Add to Frames"}
+                                </button>
+                              </form>
+                            </div>
+                            <details className="admin-photo-more">
+                              <summary>File details and actions</summary>
+                              <dl>
+                                <div><dt>File</dt><dd>{photo.filename}</dd></div>
+                                <div><dt>Uploaded</dt><dd>{formatDateTime(photo.uploaded_at)}</dd></div>
+                                <div><dt>Storage key</dt><dd>{photo.r2_object_key}</dd></div>
+                              </dl>
+                              <div className="admin-photo-secondary-actions">
+                                <AdminFileActionButton albumId={selectedAlbum.id} photoId={photo.id} kind="full" />
+                                <form action={setCoverPhotoAction}>
+                                  <input name="photo_id" type="hidden" value={photo.id} />
+                                  <button className="button secondary small" disabled={photo.isCover} type="submit">
+                                    <Star size={15} /> {photo.isCover ? "Current cover" : "Set as cover"}
+                                  </button>
+                                </form>
+                              </div>
+                              <details className="photo-meta-editor">
+                                <summary>Edit public label and camera data</summary>
+                                <form action={updatePhotoMetadataAction} className="photo-meta-form">
+                                  <input name="photo_id" type="hidden" value={photo.id} />
+                                  <label className="field">Card title<input name="display_title" defaultValue={photo.display_title ?? ""} placeholder={photo.displayLabel.title} /></label>
+                                  <label className="field">Caption<input name="caption" defaultValue={photo.caption ?? ""} placeholder="Short human caption" /></label>
+                                  <label className="field">Camera<input name="camera_model" defaultValue={photo.camera_model ?? ""} placeholder="Sony A7 IV" /></label>
+                                  <label className="field">Lens<input name="lens_model" defaultValue={photo.lens_model ?? ""} placeholder="Sony 35mm f/1.4 GM" /></label>
+                                  <label className="field">Focal length<input name="focal_length" defaultValue={photo.focal_length ?? ""} placeholder="35mm" /></label>
+                                  <label className="field">Aperture<input name="aperture" defaultValue={photo.aperture ?? ""} placeholder="f/1.8" /></label>
+                                  <label className="field">Shutter<input name="shutter_speed" defaultValue={photo.shutter_speed ?? ""} placeholder="1/250" /></label>
+                                  <label className="field">ISO<input name="iso" defaultValue={photo.iso ?? ""} placeholder="ISO 400" /></label>
+                                  <label className="field">Captured<input name="captured_at" type="datetime-local" defaultValue={dateTimeInputValue(photo.captured_at ?? null)} /></label>
+                                  <label className="field">Location<input name="location" defaultValue={photo.location ?? ""} placeholder="Melbourne" /></label>
+                                  <button className="button secondary small" type="submit"><Save size={15} /> Save metadata</button>
+                                </form>
+                              </details>
+                              <form action={deletePhotoAction} className="admin-photo-delete">
+                                <input name="photo_id" type="hidden" value={photo.id} />
+                                <ConfirmSubmitButton className="button danger small" confirmMessage={`Delete ${photo.filename} from this album and R2?`}>
+                                  <Trash2 size={15} /> Delete photo
+                                </ConfirmSubmitButton>
+                              </form>
+                            </details>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="admin-empty-state">
+                      <ImageUp size={24} />
+                      <strong>No photos yet</strong>
+                      <p>Upload the first set of photographs to start preparing this gallery.</p>
+                      <a className="button small" href={adminHref("uploads", { album: selectedAlbum.id })}>Upload photos</a>
+                    </div>
+                  )}
                 </div>
               ) : null}
 
