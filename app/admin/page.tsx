@@ -43,6 +43,7 @@ import {
   updateShootRequestAction,
 } from "./actions";
 import { AdminFileActionButton } from "@/components/admin/AdminFileActionButton";
+import { AdminPasswordField } from "@/components/admin/AdminPasswordField";
 import { AdminPhotoUpload } from "@/components/admin/AdminPhotoUpload";
 import { AdminZipUpload } from "@/components/admin/AdminZipUpload";
 import { AlbumSlugFields } from "@/components/admin/AlbumSlugFields";
@@ -245,6 +246,16 @@ const adminViews = [
 ] as const;
 
 type AdminView = (typeof adminViews)[number];
+
+const adminNavGroups: Array<{
+  label: string;
+  views: AdminView[];
+}> = [
+  { label: "Workspace", views: ["overview", "requests", "inquiries"] },
+  { label: "Gallery delivery", views: ["albums", "new-album", "clients", "uploads", "delivery"] },
+  { label: "Website", views: ["about", "contact"] },
+  { label: "Operations", views: ["monitoring", "downloads", "backups"] },
+];
 
 const adminViewCopy: Record<
   AdminView,
@@ -1409,26 +1420,37 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           className="sidebar admin-sidebar"
           aria-label="Admin workspace navigation"
         >
-          <strong className="admin-sidebar-title">Admin</strong>
-          {adminViews.map((viewName, index) => (
-            <a
-              className={activeView === viewName ? "active" : undefined}
-              href={adminHref(viewName, {
-                album: selectedAlbum?.id,
-                q: viewName === "albums" ? albumQuery : undefined,
-                status: viewName === "albums" ? albumStatusFilter : undefined,
+          <div className="admin-sidebar-brand">
+            <strong className="admin-sidebar-title">RXNCOR</strong>
+            <span>Studio admin</span>
+          </div>
+          {adminNavGroups.map((group) => (
+            <div className="admin-nav-group" key={group.label}>
+              <span className="admin-nav-group-label">{group.label}</span>
+              {group.views.map((viewName) => {
+                const index = adminViews.indexOf(viewName);
+                return (
+                  <a
+                    className={activeView === viewName ? "active" : undefined}
+                    href={adminHref(viewName, {
+                      album: selectedAlbum?.id,
+                      q: viewName === "albums" ? albumQuery : undefined,
+                      status: viewName === "albums" ? albumStatusFilter : undefined,
+                    })}
+                    aria-current={activeView === viewName ? "page" : undefined}
+                    key={viewName}
+                  >
+                    <span className="admin-nav-number">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className="admin-nav-copy">
+                      <span>{adminViewCopy[viewName].label}</span>
+                      <small>{adminViewCopy[viewName].title}</small>
+                    </span>
+                  </a>
+                );
               })}
-              aria-current={activeView === viewName ? "page" : undefined}
-              key={viewName}
-            >
-              <span className="admin-nav-number">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <span className="admin-nav-copy">
-                <span>{adminViewCopy[viewName].label}</span>
-                <small>{adminViewCopy[viewName].title}</small>
-              </span>
-            </a>
+            </div>
           ))}
         </aside>
 
@@ -1444,7 +1466,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </button>
             </form>
           </div>
-          <h1 className="admin-title">Gallery control</h1>
+          <h1 className="admin-title">Studio admin</h1>
           <div className="admin-page-header">
             <div>
               <span className="label">Current page</span>
@@ -1489,6 +1511,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               )}
             </div>
           </div>
+          <nav className="admin-command-bar" aria-label="Primary admin actions">
+            <a href={adminHref("clients")}>1. Add client</a>
+            <a href={adminHref("new-album")}>2. Create album</a>
+            <a href={adminHref("uploads", { album: selectedAlbum?.id })}>3. Upload files</a>
+            <a href={adminHref("albums", { album: selectedAlbum?.id })}>4. Review &amp; send</a>
+          </nav>
           <NoticeToaster cleanupQueryKeys={["notice"]} notices={[noticeContent]} />
           <NoticeStack notices={dataLoadNotices} />
 
@@ -2712,18 +2740,18 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                 type="hidden"
                                 value={selectedAlbum.id}
                               />
-                              <button
+                              <ConfirmSubmitButton
                                 className="button small"
-                                type="submit"
                                 disabled={
                                   !selectedAssignedClients.some(
                                     (client) => client.email,
                                   )
                                 }
+                                confirmMessage={`Send the gallery-ready email to ${selectedAssignedClients.filter((client) => client.email).length} client${selectedAssignedClients.filter((client) => client.email).length === 1 ? "" : "s"}?${selectedAlbum.is_password_protected ? " The gallery password is not included; send it separately." : ""}`}
                               >
                                 <Mail size={16} />
-                                Email clients
-                              </button>
+                                Review &amp; send email
+                              </ConfirmSubmitButton>
                             </form>
                             <CopyTextButton
                               text={selectedShareMessage}
@@ -2804,6 +2832,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                           type="hidden"
                           value={selectedAlbum.id}
                         />
+                        <div className="admin-form-section-heading">
+                          <span className="label">Step 1</span>
+                          <h3>Gallery details and access</h3>
+                          <p>Save the client assignment, link, access method and password before sending delivery email.</p>
+                        </div>
                         <label className="field">
                           Client
                           <select
@@ -2846,18 +2879,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                             )}
                           />
                         </label>
-                        <label className="field">
-                          New password
-                          <input
-                            name="password"
-                            type="password"
-                            placeholder={
-                              selectedAlbum.is_password_protected
-                                ? "Leave blank to keep current password"
-                                : "Optional"
-                            }
-                          />
-                        </label>
+                        <AdminPasswordField
+                          label="Gallery password"
+                          placeholder={selectedAlbum.is_password_protected ? "Leave blank to keep the current password" : "Optional"}
+                          helper={selectedAlbum.is_password_protected ? "A password is active. For security it cannot be displayed. Generate and copy a replacement here if needed." : "Optional shared password for this specific gallery. This is separate from each client's portal password."}
+                        />
                         <label className="checkbox-field">
                           <input
                             name="is_public"
@@ -3290,7 +3316,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
           {activeView === "clients" ? (
             <section id="clients" className="admin-section">
-              <h2 className="section-title">Create client</h2>
+              <div className="section-head compact">
+                <div>
+                  <p className="eyebrow">Client access</p>
+                  <h2>Create and manage clients</h2>
+                </div>
+                <p>Client passwords open the portal and every assigned album. Gallery passwords protect only one shared gallery.</p>
+              </div>
               <form action={createClientAction}>
                 <label className="field">
                   Client name
@@ -3308,18 +3340,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   Phone
                   <input name="phone" placeholder="+61" />
                 </label>
-                <label className="field">
-                  Client password
-                  <input
-                    name="password"
-                    type="password"
-                    placeholder="Optional"
-                  />
-                  <small>
-                    Used only on the public client login page. This is separate
-                    from admin login and album passwords.
-                  </small>
-                </label>
+                <AdminPasswordField
+                  label="Client portal password"
+                  placeholder="Optional"
+                  helper="Lets this client sign in and see every album assigned to them. It is separate from gallery passwords."
+                />
                 <button className="button" type="submit">
                   Create client
                 </button>
@@ -3400,7 +3425,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
           {activeView === "new-album" ? (
             <section id="albums" className="admin-section">
-              <h2 className="section-title">Create album</h2>
+              <div className="section-head compact">
+                <div>
+                  <p className="eyebrow">Gallery setup</p>
+                  <h2>Create an album</h2>
+                </div>
+                <p>Choose the client, create the gallery link, then select one clear access method. You can upload files after saving.</p>
+              </div>
               <form action={createAlbumAction}>
                 <label className="field">
                   Client
@@ -3419,10 +3450,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   Event date
                   <input name="event_date" type="date" />
                 </label>
-                <label className="field">
-                  Password
-                  <input name="password" type="password" />
-                </label>
+                <AdminPasswordField
+                  label="Gallery password"
+                  placeholder="Optional shared gallery password"
+                  helper="Use this only when everyone opening this gallery should enter the same password. Generate it, copy it, then save the album."
+                />
                 <label className="checkbox-field">
                   <input name="is_public" type="checkbox" />
                   Public album

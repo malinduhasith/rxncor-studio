@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Copy, KeyRound, Trash2 } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, KeyRound, RefreshCw, Trash2 } from "lucide-react";
 import { ConfirmSubmitButton } from "@/components/admin/ConfirmSubmitButton";
 
 type ClientPasswordResetFormProps = {
@@ -25,6 +25,7 @@ export function ClientPasswordResetForm({
 }: ClientPasswordResetFormProps) {
   const [password, setPassword] = useState("");
   const [copied, setCopied] = useState(false);
+  const [visible, setVisible] = useState(false);
   const loginMessage = useMemo(
     () =>
       [
@@ -50,23 +51,49 @@ export function ClientPasswordResetForm({
     window.setTimeout(() => setCopied(false), 1800);
   }
 
+  function generatePassword() {
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$";
+    const values = new Uint32Array(14);
+    window.crypto.getRandomValues(values);
+    setPassword(Array.from(values, (value) => alphabet[value % alphabet.length]).join(""));
+    setVisible(true);
+    setCopied(false);
+  }
+
   return (
-    <div className="password-reset-row">
+    <div className="password-reset-row admin-password-manager">
+      <div className="admin-password-manager-head">
+        <div>
+          <span className="label">Portal password</span>
+          <strong>{hasPassword ? "Active" : "Not set"}</strong>
+        </div>
+        <span className={`admin-status-dot ${hasPassword ? "is-ready" : "needs-action"}`}>
+          {hasPassword ? "Client can sign in" : "Setup required"}
+        </span>
+      </div>
       <form action={resetAction} className="password-inline-form">
         <input name="client_id" type="hidden" value={clientId} />
-        <label className="field">
-          Set new password
-          <input
-            name="password"
-            type="password"
-            minLength={4}
-            placeholder="New client password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            autoComplete="new-password"
-            required
-          />
-        </label>
+        <div className="field admin-password-field">
+          <span className="admin-field-label">Set or replace password</span>
+          <div className="admin-password-control">
+            <input
+              name="password"
+              type={visible ? "text" : "password"}
+              minLength={4}
+              placeholder="Enter or generate a password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="new-password"
+              required
+            />
+            <button aria-label={visible ? "Hide password" : "Show password"} className="admin-icon-button" onClick={() => setVisible((current) => !current)} type="button">
+              {visible ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
+          </div>
+        </div>
+        <button className="button secondary small" onClick={generatePassword} type="button">
+          <RefreshCw size={16} /> Generate
+        </button>
         <button className="button secondary small" type="submit" disabled={!password}>
           <KeyRound size={16} />
           Set password
@@ -78,7 +105,7 @@ export function ClientPasswordResetForm({
         disabled={!password}
         onClick={copyLogin}
       >
-        <Copy size={16} />
+        {copied ? <Check size={16} /> : <Copy size={16} />}
         {copied ? "Copied" : "Copy with password"}
       </button>
       {hasPassword ? (
