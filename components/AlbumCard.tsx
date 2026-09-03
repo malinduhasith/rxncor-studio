@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
+import { CompositionMark } from "@/components/home/CompositionMark";
 
 type AlbumCardProps = {
   title: string;
@@ -23,6 +24,9 @@ export function AlbumCard({
   loading = "lazy",
   index
 }: AlbumCardProps) {
+  const cardVariants = ["thirds", "spiral", "triangles", "radial", "curve", "v"] as const;
+  const cardVariant = cardVariants[(index ?? 0) % cardVariants.length];
+
   return (
     <Link
       aria-label={`Open ${title}`}
@@ -52,6 +56,15 @@ export function AlbumCard({
             }
           />
         )}
+      </div>
+      <div aria-hidden="true" className="rx-album-card-vectors">
+        <CompositionMark className="rx-album-card-composition" variant={cardVariant} />
+        <CompositionMark className="rx-album-card-focus" variant="focus" />
+      </div>
+      <div aria-hidden="true" className="rx-album-card-telemetry">
+        <span>AF-C / TRACK</span>
+        <span>GRID / ACTIVE</span>
+        <span>{String(count).padStart(3, "0")} FRAMES</span>
       </div>
       <div className="album-card-top">
         <span>{index === undefined ? "Archive" : String(index + 1).padStart(2, "0")}</span>

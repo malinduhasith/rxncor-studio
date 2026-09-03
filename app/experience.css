@@ -2938,6 +2938,271 @@ html body .rr-home .rr-inquiry-console .rr-contact-form textarea::placeholder {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Albums — animated composition laboratory                                   */
+/* -------------------------------------------------------------------------- */
+
+.rx-albums-hero-stage,
+.rx-album-index {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.rx-albums-hero-stage .rx-subhero,
+.rx-album-index > :not(.rx-albums-index-vectors) {
+  position: relative;
+  z-index: 2;
+}
+
+.rx-albums-hero-vectors,
+.rx-albums-index-vectors {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+.rx-albums-hero-vectors {
+  z-index: 3;
+}
+
+.rx-albums-vector,
+.rx-albums-index-vector,
+.rx-album-card-vectors svg,
+.rx-albums-instrument-rail svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rx-albums-vector {
+  position: absolute;
+  width: clamp(260px, 35vw, 660px);
+  color: #111;
+  opacity: 0.24;
+  filter: drop-shadow(16px 20px 0 rgba(7, 21, 40, 0.08));
+  animation: rx-albums-drift 10s ease-in-out infinite alternate;
+}
+
+.rx-albums-vector path,
+.rx-albums-vector rect,
+.rx-albums-vector circle,
+.rx-albums-index-vector path,
+.rx-albums-index-vector rect,
+.rx-albums-index-vector circle,
+.rx-album-card-vectors path,
+.rx-album-card-vectors rect,
+.rx-album-card-vectors circle,
+.rx-albums-instrument-rail path,
+.rx-albums-instrument-rail rect,
+.rx-albums-instrument-rail circle {
+  stroke-dasharray: 1600;
+  stroke-dashoffset: 1600;
+  animation: rx-albums-draw 7s cubic-bezier(0.2, 0.75, 0.2, 1) infinite alternate;
+}
+
+.rx-albums-vector-aperture { top: 2%; right: 2%; animation-duration: 13s; }
+.rx-albums-vector-thirds { top: 17%; left: 29%; width: clamp(320px, 46vw, 840px); animation-delay: -5s; }
+.rx-albums-vector-perspective { right: -9%; bottom: -12%; width: clamp(380px, 54vw, 980px); animation-delay: -8s; }
+.rx-albums-vector-meter { left: -7%; bottom: -7%; width: clamp(280px, 36vw, 680px); animation-duration: 9s; }
+.rx-albums-vector-waveform { left: 3%; top: 15%; width: clamp(260px, 31vw, 560px); animation-delay: -3s; }
+.rx-albums-vector-spiral { right: 28%; top: -13%; width: clamp(300px, 39vw, 720px); animation-duration: 16s; }
+
+.rx-albums-index-vectors {
+  color: var(--rx-black);
+  opacity: 0.075;
+}
+
+.rx-albums-index-vector {
+  position: absolute;
+  width: min(46vw, 760px);
+  animation: rx-albums-orbit 18s linear infinite;
+}
+
+.rx-albums-index-sensor { top: 2%; left: -13%; }
+.rx-albums-index-triangles { top: 19%; right: -12%; animation-direction: reverse; }
+.rx-albums-index-v { top: 39%; left: -11%; animation-duration: 24s; }
+.rx-albums-index-radial { top: 55%; right: -10%; animation-duration: 15s; }
+.rx-albums-index-curve { bottom: 9%; left: -7%; animation-direction: reverse; }
+.rx-albums-index-tunnel { right: 13%; bottom: -8%; animation-duration: 22s; }
+
+.rx-albums-instrument-rail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 24px 0 54px;
+  border: 1px solid var(--rx-black);
+  background: color-mix(in srgb, var(--rx-paper) 88%, transparent);
+  backdrop-filter: blur(5px);
+}
+
+.rx-albums-instrument-rail > div {
+  min-width: 0;
+  border-right: 1px solid var(--rx-black);
+  padding: 12px;
+}
+
+.rx-albums-instrument-rail > div:last-child { border-right: 0; }
+
+.rx-albums-instrument-rail span {
+  display: block;
+  font-family: var(--rx-mono);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rx-albums-instrument-rail svg {
+  width: 100%;
+  height: 125px;
+  margin-top: 8px;
+  stroke-width: 2;
+  animation: rx-albums-instrument 8s ease-in-out infinite alternate;
+}
+
+.rx-albums-instrument-rail > div:nth-child(2) svg { animation-delay: -2s; }
+.rx-albums-instrument-rail > div:nth-child(3) svg { animation-delay: -4s; }
+.rx-albums-instrument-rail > div:nth-child(4) svg { animation-delay: -6s; }
+
+.rx-album-card-vectors {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  color: #fff3d7;
+  pointer-events: none;
+}
+
+.rx-album-card-vectors svg {
+  position: absolute;
+  transition: opacity 300ms ease, transform 700ms cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+
+.rx-album-card-composition {
+  top: 9%;
+  left: 4%;
+  width: 92%;
+  opacity: 0.28;
+  stroke-width: 1.5;
+  transform: perspective(800px) rotateX(2deg) rotateY(-4deg);
+}
+
+.rx-album-card-focus {
+  top: 22%;
+  right: -13%;
+  width: 52%;
+  opacity: 0.38;
+  stroke-width: 2;
+  animation: rx-albums-focus 14s linear infinite;
+}
+
+.rx-album-card:hover .rx-album-card-composition {
+  opacity: 0.64;
+  transform: perspective(800px) rotateX(-3deg) rotateY(5deg) scale(1.04);
+}
+
+.rx-album-card:hover .rx-album-card-focus { opacity: 0.8; }
+
+.rx-album-card-telemetry {
+  position: absolute;
+  top: 52px;
+  right: 18px;
+  z-index: 3;
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+  color: #fff3d7;
+  font-family: var(--rx-mono);
+  font-size: 0.48rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rx-album-card-telemetry span::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--rx-orange);
+  animation: rx-albums-pulse 1.7s steps(2, end) infinite;
+}
+
+@keyframes rx-albums-draw {
+  0%, 7% { stroke-dashoffset: 1600; }
+  72%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes rx-albums-drift {
+  from { transform: translate3d(-10px, 7px, -30px) rotate(-2deg); }
+  to { transform: translate3d(18px, -13px, 70px) rotate(3deg); }
+}
+
+@keyframes rx-albums-orbit {
+  from { transform: rotate(-3deg) scale(0.94); }
+  50% { transform: rotate(4deg) scale(1.06); }
+  to { transform: rotate(-3deg) scale(0.94); }
+}
+
+@keyframes rx-albums-instrument {
+  from { opacity: 0.35; transform: translateY(3px) scale(0.96); }
+  to { opacity: 0.82; transform: translateY(-3px) scale(1.02); }
+}
+
+@keyframes rx-albums-focus {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes rx-albums-pulse {
+  50% { opacity: 0.25; }
+}
+
+@media (max-width: 760px) {
+  .rx-albums-vector { width: 88vw; opacity: 0.18; }
+  .rx-albums-vector-thirds { left: 5%; }
+  .rx-albums-vector-waveform { left: -22%; }
+  .rx-albums-vector-spiral { right: -25%; }
+  .rx-albums-index-vector { width: 105vw; }
+  .rx-albums-instrument-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rx-albums-instrument-rail > div:nth-child(2) { border-right: 0; }
+  .rx-albums-instrument-rail > div:nth-child(-n + 2) { border-bottom: 1px solid var(--rx-black); }
+  .rx-albums-instrument-rail svg { height: 96px; }
+  .rx-album-card-composition { top: 14%; }
+  .rx-album-card-focus { width: 68%; right: -24%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rx-albums-vector,
+  .rx-albums-index-vector,
+  .rx-albums-instrument-rail svg,
+  .rx-album-card-vectors svg,
+  .rx-album-card-telemetry span::before,
+  .rx-albums-vector path,
+  .rx-albums-vector rect,
+  .rx-albums-vector circle,
+  .rx-albums-index-vector path,
+  .rx-albums-index-vector rect,
+  .rx-albums-index-vector circle,
+  .rx-album-card-vectors path,
+  .rx-album-card-vectors rect,
+  .rx-album-card-vectors circle,
+  .rx-albums-instrument-rail path,
+  .rx-albums-instrument-rail rect,
+  .rx-albums-instrument-rail circle {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
 /* Refined booking finale                                                     */
 /* -------------------------------------------------------------------------- */
 
