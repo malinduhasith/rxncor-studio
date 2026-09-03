@@ -1353,10 +1353,20 @@ export async function sendAlbumReadyEmailAction(formData: FormData) {
     redirect(`/admin?view=albums&notice=email-no-recipients&album=${album.id}#manager`);
   }
 
+  const requestedClientIds = formUuidList(formData, "recipient_client_ids");
+  const usesRecipientSelection = formData.get("recipient_selection") === "true";
+  const recipientClientIds = usesRecipientSelection
+    ? requestedClientIds.filter((clientId) => clientIds.includes(clientId))
+    : clientIds;
+
+  if (!recipientClientIds.length) {
+    redirect(`/admin?view=albums&notice=email-no-recipients&album=${album.id}#manager`);
+  }
+
   const { data: clients } = await supabase
     .from("clients")
-    .select("name, email, password_hash")
-    .in("id", clientIds);
+    .select("id, name, email, password_hash")
+    .in("id", recipientClientIds);
   const { count } = await supabase
     .from("photos")
     .select("id", { count: "exact", head: true })
@@ -1394,7 +1404,7 @@ export async function sendAlbumReadyEmailAction(formData: FormData) {
     entityType: "album",
     entityId: album.id,
     summary: `Sent album ready email for ${album.title}`,
-    metadata: { recipients: clientIds.length }
+    metadata: { recipients: result.sent, requested_recipients: recipientClientIds.length }
   });
 
   redirect(`/admin?view=albums&notice=email-sent&album=${album.id}#manager`);

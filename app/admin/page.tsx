@@ -1,18 +1,33 @@
 import {
+  Aperture,
+  Archive,
+  BookOpenText,
   CalendarDays,
   CircleAlert,
   CircleCheck,
+  CloudUpload,
+  ContactRound,
   DatabaseBackup,
+  Download,
   ExternalLink,
   FileArchive,
+  FolderKanban,
+  Gauge,
   ImageUp,
+  LayoutDashboard,
   Link as LinkIcon,
   LockKeyhole,
   Mail,
+  Menu,
+  MessageSquareText,
+  Plus,
   Save,
   Search,
+  Settings2,
   Star,
   Trash2,
+  UsersRound,
+  X,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -226,6 +241,7 @@ type AdminPageProps = {
     q?: string;
     status?: string;
     view?: string;
+    clientQ?: string;
   }>;
 };
 
@@ -246,6 +262,22 @@ const adminViews = [
 ] as const;
 
 type AdminView = (typeof adminViews)[number];
+
+const adminViewIcons: Record<AdminView, typeof LayoutDashboard> = {
+  overview: LayoutDashboard,
+  about: BookOpenText,
+  contact: ContactRound,
+  albums: FolderKanban,
+  clients: UsersRound,
+  "new-album": Plus,
+  uploads: CloudUpload,
+  monitoring: Gauge,
+  delivery: Mail,
+  downloads: Download,
+  requests: Aperture,
+  inquiries: MessageSquareText,
+  backups: Archive,
+};
 
 const adminNavGroups: Array<{
   label: string;
@@ -790,6 +822,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     q: albumQuery = "",
     status: albumStatusFilter = "all",
     view,
+    clientQ = "",
   } = await searchParams;
   const activeView = isAdminView(view)
     ? view
@@ -879,6 +912,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   ]);
 
   const clients = (clientsResult.data ?? []) as ClientOption[];
+  const normalisedClientQuery = clientQ.trim().toLowerCase();
+  const filteredClients = normalisedClientQuery
+    ? clients.filter((client) =>
+        [client.name, client.email, client.phone]
+          .filter(Boolean)
+          .some((value) => value!.toLowerCase().includes(normalisedClientQuery)),
+      )
+    : clients;
   const albums = (albumsResult.data ?? []) as AdminAlbum[];
   const albumClients = (albumClientsResult.data ?? []) as AdminAlbumClient[];
   const shootRequests = (shootRequestsResult.data ?? []) as ShootRequest[];
@@ -1412,6 +1453,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     },
     (_, index) => siteContactSettings.customLinks[index] ?? null,
   );
+  const attentionCount = operationalItems.filter((item) => item.attention).length;
 
   return (
     <main className="shell section admin-workspace">
@@ -1421,14 +1463,20 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           aria-label="Admin workspace navigation"
         >
           <div className="admin-sidebar-brand">
-            <strong className="admin-sidebar-title">RXNCOR</strong>
-            <span>Studio admin</span>
+            <div className="admin-brand-mark" aria-hidden="true">R</div>
+            <div>
+              <strong className="admin-sidebar-title">RXNCOR</strong>
+              <span>Studio operations</span>
+            </div>
           </div>
+          <a className="admin-create-shortcut" href={adminHref("new-album")}>
+            <Plus size={17} /> New album
+          </a>
           {adminNavGroups.map((group) => (
             <div className="admin-nav-group" key={group.label}>
               <span className="admin-nav-group-label">{group.label}</span>
               {group.views.map((viewName) => {
-                const index = adminViews.indexOf(viewName);
+                const ViewIcon = adminViewIcons[viewName];
                 return (
                   <a
                     className={activeView === viewName ? "active" : undefined}
@@ -1440,25 +1488,56 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     aria-current={activeView === viewName ? "page" : undefined}
                     key={viewName}
                   >
-                    <span className="admin-nav-number">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
+                    <ViewIcon className="admin-nav-icon" size={18} />
                     <span className="admin-nav-copy">
                       <span>{adminViewCopy[viewName].label}</span>
-                      <small>{adminViewCopy[viewName].title}</small>
                     </span>
+                    {viewName === "overview" && attentionCount > 0 ? (
+                      <span className="admin-nav-count">{attentionCount}</span>
+                    ) : null}
+                    {viewName === "requests" && newShootRequestCount > 0 ? (
+                      <span className="admin-nav-count">{newShootRequestCount}</span>
+                    ) : null}
+                    {viewName === "inquiries" && newInquiryCount > 0 ? (
+                      <span className="admin-nav-count">{newInquiryCount}</span>
+                    ) : null}
                   </a>
                 );
               })}
             </div>
           ))}
+          <div className="admin-sidebar-footer">
+            <a href="/" target="_blank" rel="noreferrer">
+              <ExternalLink size={16} /> Open website
+            </a>
+            <small>{user.email}</small>
+          </div>
         </aside>
 
         <section className="dashboard-panel admin-main-panel">
+          <details className="admin-mobile-nav">
+            <summary><Menu size={18} /> Navigate admin</summary>
+            <div className="admin-mobile-nav-grid">
+              {adminViews.map((viewName) => {
+                const ViewIcon = adminViewIcons[viewName];
+                return (
+                  <a
+                    className={activeView === viewName ? "active" : undefined}
+                    href={adminHref(viewName, { album: selectedAlbum?.id })}
+                    key={viewName}
+                  >
+                    <ViewIcon size={17} /> {adminViewCopy[viewName].label}
+                  </a>
+                );
+              })}
+            </div>
+          </details>
           <div className="admin-topbar">
             <div>
-              <p className="eyebrow">Admin / {activeViewCopy.label}</p>
-              <p className="muted">Signed in as {user.email}</p>
+              <p className="eyebrow">Studio OS / {activeViewCopy.label}</p>
+              <p className="muted">
+                {attentionCount ? `${attentionCount} items need attention` : "Everything is ready"}
+              </p>
             </div>
             <form action={signOutAction}>
               <button className="button secondary" type="submit">
@@ -1466,10 +1545,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </button>
             </form>
           </div>
-          <h1 className="admin-title">Studio admin</h1>
           <div className="admin-page-header">
             <div>
-              <span className="label">Current page</span>
+              <span className="label">{activeViewCopy.label}</span>
               <h2>{activeViewCopy.title}</h2>
               <p>{activeViewCopy.detail}</p>
             </div>
@@ -2734,31 +2812,60 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                             </p>
                           </div>
                           <div className="inline-actions">
-                            <form action={sendAlbumReadyEmailAction}>
-                              <input
-                                name="album_id"
-                                type="hidden"
-                                value={selectedAlbum.id}
-                              />
-                              <ConfirmSubmitButton
-                                className="button small"
-                                disabled={
-                                  !selectedAssignedClients.some(
-                                    (client) => client.email,
-                                  )
-                                }
-                                confirmMessage={`Send the gallery-ready email to ${selectedAssignedClients.filter((client) => client.email).length} client${selectedAssignedClients.filter((client) => client.email).length === 1 ? "" : "s"}?${selectedAlbum.is_password_protected ? " The gallery password is not included; send it separately." : ""}`}
-                              >
-                                <Mail size={16} />
-                                Review &amp; send email
-                              </ConfirmSubmitButton>
-                            </form>
                             <CopyTextButton
                               text={selectedShareMessage}
                               label="Copy message"
                             />
                           </div>
                         </div>
+                        <form className="admin-email-composer" action={sendAlbumReadyEmailAction}>
+                          <input name="album_id" type="hidden" value={selectedAlbum.id} />
+                          <input name="recipient_selection" type="hidden" value="true" />
+                          <div className="admin-email-composer-head">
+                            <div>
+                              <span className="label">Email recipients</span>
+                              <strong>Choose exactly who receives this delivery</strong>
+                            </div>
+                            <span className="pill">
+                              {selectedAssignedClients.filter((client) => client.email).length} available
+                            </span>
+                          </div>
+                          <div className="admin-recipient-list">
+                            {selectedAssignedClients.map((client) => (
+                              <label className="admin-recipient" key={client.id}>
+                                <input
+                                  defaultChecked={Boolean(client.email)}
+                                  disabled={!client.email}
+                                  name="recipient_client_ids"
+                                  type="checkbox"
+                                  value={client.id}
+                                />
+                                <span>
+                                  <strong>{client.name}</strong>
+                                  <small>{client.email ?? "Add an email before sending"}</small>
+                                </span>
+                                <span className={`admin-status-dot ${client.email ? "is-ready" : "needs-action"}`}>
+                                  {client.email ? "Ready" : "Missing email"}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                          <div className="admin-email-action-row">
+                            <p>
+                              {selectedAlbum.is_password_protected
+                                ? "For security, the gallery password is never included in this email. Copy it separately."
+                                : "The gallery link and access instructions are included automatically."}
+                            </p>
+                            <ConfirmSubmitButton
+                              className="button small"
+                              disabled={!selectedAssignedClients.some((client) => client.email)}
+                              confirmMessage={`Send the gallery-ready email to the checked recipients?${selectedAlbum.is_password_protected ? " The gallery password is not included; send it separately." : ""}`}
+                            >
+                              <Mail size={16} />
+                              Send delivery email
+                            </ConfirmSubmitButton>
+                          </div>
+                        </form>
                         <pre>{selectedShareMessage}</pre>
                         <div className="delivery-summary-grid">
                           <div>
@@ -3323,6 +3430,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </div>
                 <p>Client passwords open the portal and every assigned album. Gallery passwords protect only one shared gallery.</p>
               </div>
+              <details className="admin-create-panel" open={!clients.length}>
+                <summary><Plus size={18} /> Add a new client</summary>
               <form action={createClientAction}>
                 <label className="field">
                   Client name
@@ -3349,10 +3458,50 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   Create client
                 </button>
               </form>
+              </details>
+
+              <div className="admin-list-toolbar">
+                <form action="/admin" method="get" role="search">
+                  <input name="view" type="hidden" value="clients" />
+                  <Search size={18} aria-hidden="true" />
+                  <input
+                    aria-label="Search clients"
+                    defaultValue={clientQ}
+                    name="clientQ"
+                    placeholder="Search by name, email, or phone"
+                    type="search"
+                  />
+                  <button className="button secondary small" type="submit">Search</button>
+                  {clientQ ? (
+                    <a className="button secondary small" href={adminHref("clients")}>
+                      <X size={15} /> Clear
+                    </a>
+                  ) : null}
+                </form>
+                <span className="pill">{filteredClients.length} of {clients.length} clients</span>
+              </div>
 
               <div className="client-list">
-                {clients.map((client) => (
-                  <div className="client-card" key={client.id}>
+                {filteredClients.map((client) => (
+                  <details className="client-card" key={client.id}>
+                    <summary className="client-card-summary">
+                      <span className="client-avatar" aria-hidden="true">
+                        {client.name.trim().slice(0, 2).toUpperCase()}
+                      </span>
+                      <span className="client-card-identity">
+                        <strong>{client.name}</strong>
+                        <small>{client.email ?? "No email saved"}</small>
+                      </span>
+                      <span className="client-card-metric">
+                        <strong>{clientAlbumCounts.get(client.id) ?? 0}</strong>
+                        <small>Albums</small>
+                      </span>
+                      <span className={`admin-status-dot ${client.password_hash ? "is-ready" : "needs-action"}`}>
+                        {client.password_hash ? "Portal ready" : "Needs password"}
+                      </span>
+                      <Settings2 className="client-card-settings" size={18} aria-hidden="true" />
+                    </summary>
+                    <div className="client-card-body">
                     <form
                       action={updateClientAction}
                       className="client-edit-row"
@@ -3414,10 +3563,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         Delete
                       </ConfirmSubmitButton>
                     </form>
-                  </div>
+                    </div>
+                  </details>
                 ))}
-                {!clients.length ? (
-                  <p className="muted">No clients yet.</p>
+                {!filteredClients.length ? (
+                  <div className="admin-empty-state">
+                    <UsersRound size={24} />
+                    <strong>{clients.length ? "No matching clients" : "No clients yet"}</strong>
+                    <p>{clients.length ? "Try a different name, email, or phone number." : "Add the first client to begin a private delivery workflow."}</p>
+                  </div>
                 ) : null}
               </div>
             </section>

@@ -12705,3 +12705,268 @@ body:has(.admin-login-page) .rx-footer {
     grid-template-columns: 1fr;
   }
 }
+
+/* Final admin cascade: keep the operations UI independent from public-page themes. */
+html body main.admin-workspace {
+  --admin-bg: #ecece7;
+  --admin-surface: #fffdf4;
+  --admin-surface-muted: #f5f4ec;
+  --admin-text: #111417;
+  --admin-muted: #667078;
+  --admin-line: rgba(17, 20, 23, 0.16);
+  --admin-primary: #ff572f;
+  --admin-primary-hover: #e9441d;
+  --admin-success: #087f5b;
+  --admin-warning: #b54708;
+  width: 100%;
+  max-width: none;
+  min-height: 100svh;
+  padding: 82px 20px 48px;
+  background:
+    linear-gradient(rgba(17,20,23,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17,20,23,.035) 1px, transparent 1px),
+    var(--admin-bg);
+  background-size: 28px 28px;
+  color: var(--admin-text);
+}
+
+html body main.admin-workspace .admin-layout {
+  width: min(1680px, 100%);
+  margin: 0 auto;
+  grid-template-columns: 268px minmax(0, 1fr);
+  gap: 18px;
+}
+
+html body main.admin-workspace .admin-sidebar {
+  top: 82px;
+  display: block;
+  max-height: calc(100svh - 102px);
+  padding: 12px;
+  border: 0;
+  border-radius: 18px;
+  overflow-y: auto;
+  background: #111923;
+  box-shadow: 0 18px 50px rgba(7,13,20,.18);
+}
+
+html body main.admin-workspace .admin-sidebar-title { color: #fffdf4; }
+html body main.admin-workspace .admin-sidebar .admin-create-shortcut { color: #111923; background: var(--admin-primary); }
+html body main.admin-workspace .admin-sidebar a:not(.admin-create-shortcut) { color: rgba(255,255,255,.72); background: transparent; box-shadow: none; }
+html body main.admin-workspace .admin-sidebar a:not(.admin-create-shortcut):hover { color: #fff; background: rgba(255,255,255,.08); }
+html body main.admin-workspace .admin-sidebar a.active:not(.admin-create-shortcut) { color: #111923; background: #fff3d8; box-shadow: none; }
+
+html body main.admin-workspace .admin-page-header {
+  min-height: 156px;
+  display: grid;
+  align-items: end;
+  grid-template-columns: minmax(0,1fr) auto;
+  margin: 0;
+  padding: 26px 28px;
+  border: 1px solid rgba(17,20,23,.2);
+  border-radius: 18px 18px 0 0;
+  background: radial-gradient(circle at 82% 28%, rgba(255,87,47,.22), transparent 27%), #fffdf4;
+}
+
+html body main.admin-workspace .admin-page-header h2 {
+  margin: 5px 0 7px;
+  color: #101317;
+  font-size: clamp(2rem,4vw,3.8rem);
+  font-weight: 850;
+  letter-spacing: -.065em;
+  line-height: .96;
+}
+
+html body main.admin-workspace .admin-command-bar {
+  position: sticky;
+  top: 72px;
+  z-index: 12;
+  margin-bottom: 18px;
+  border-color: rgba(17,20,23,.2);
+  background: #111923;
+}
+
+html body main.admin-workspace .admin-command-bar a { color: rgba(255,255,255,.74); border-color: rgba(255,255,255,.13); }
+html body main.admin-workspace .admin-command-bar a:hover { color: #111923; background: var(--admin-primary); }
+
+html body main.admin-workspace .button { border-color: #111923; border-radius: 9px; background: #111923; color: #fffdf4; }
+html body main.admin-workspace .button:hover { border-color: var(--admin-primary); background: var(--admin-primary); color: #111923; }
+html body main.admin-workspace .button.secondary { border-color: rgba(17,20,23,.22); background: #fffdf4; color: #111923; }
+html body main.admin-workspace .button.secondary:hover { border-color: #111923; background: #111923; color: #fffdf4; }
+html body main.admin-workspace .button.danger { border-color: #b42318; background: transparent; color: #b42318; }
+
+html body main.admin-workspace input,
+html body main.admin-workspace select,
+html body main.admin-workspace textarea { border-color: rgba(17,20,23,.25); border-radius: 9px; background: #fffef9; color: #111417; }
+
+html body main.admin-workspace input:focus,
+html body main.admin-workspace select:focus,
+html body main.admin-workspace textarea:focus { border-color: var(--admin-primary); outline-color: rgba(255,87,47,.18); }
+
+html body main.admin-workspace .stat,
+html body main.admin-workspace .manager-panel,
+html body main.admin-workspace .workflow-panel,
+html body main.admin-workspace .form-panel,
+html body main.admin-workspace .client-card,
+html body main.admin-workspace .about-builder-section,
+html body main.admin-workspace .about-builder-block,
+html body main.admin-workspace .table-wrap,
+html body main.admin-workspace .request-card,
+html body main.admin-workspace .section-head.compact {
+  border-color: rgba(17,20,23,.16);
+  border-radius: 14px;
+  background-color: #fffdf4;
+  box-shadow: 0 8px 28px rgba(17,20,23,.055);
+}
+
+@media (max-width: 920px) {
+  html body main.admin-workspace { padding: 76px 12px 36px; }
+  html body main.admin-workspace .admin-layout { grid-template-columns: 1fr; }
+  html body main.admin-workspace .admin-sidebar { display: none; }
+  html body main.admin-workspace .admin-mobile-nav { display: block; }
+  html body main.admin-workspace .admin-page-header { min-height: 140px; }
+}
+
+@media (max-width: 640px) {
+  html body main.admin-workspace .admin-page-header { grid-template-columns: 1fr; gap: 18px; padding: 21px 18px; }
+  html body main.admin-workspace .admin-command-bar { position: static; grid-template-columns: 1fr 1fr; }
+}
+
+html body main.admin-workspace .admin-sidebar-brand { justify-content: flex-start; align-items: center; padding: 10px 10px 18px; border-bottom-color: rgba(255,255,255,.13); }
+html body main.admin-workspace .admin-sidebar-brand > div:last-child { display: grid; gap: 2px; }
+html body main.admin-workspace .admin-sidebar-brand > div > span { color: rgba(255,255,255,.55); font-size: .72rem; }
+html body main.admin-workspace .admin-brand-mark { width: 38px; height: 38px; display: grid; flex: 0 0 auto; place-items: center; border-radius: 50%; background: #fff3d8; color: #111923; font-weight: 950; }
+html body main.admin-workspace .admin-create-shortcut { min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 12px 2px 2px; border: 1px solid #ff7654; border-radius: 10px; font-size: .83rem; font-weight: 850; }
+html body main.admin-workspace .admin-nav-group { gap: 2px; padding-top: 14px; }
+html body main.admin-workspace .admin-nav-group-label { padding: 0 10px 5px; color: rgba(255,255,255,.38); font-size: .68rem; letter-spacing: .12em; }
+html body main.admin-workspace .admin-nav-icon { flex: 0 0 auto; opacity: .9; }
+html body main.admin-workspace .admin-nav-copy > span { font-size: .82rem; font-weight: 720; }
+html body main.admin-workspace .admin-nav-count { min-width: 22px; height: 22px; display: grid; margin-left: auto; place-items: center; border-radius: 999px; background: var(--admin-primary); color: #111923; font-size: .68rem; font-weight: 900; }
+html body main.admin-workspace .admin-sidebar-footer { display: grid; gap: 6px; margin-top: 16px; padding: 14px 10px 5px; border-top: 1px solid rgba(255,255,255,.13); }
+html body main.admin-workspace .admin-sidebar-footer a { min-height: 30px !important; padding: 0 !important; }
+html body main.admin-workspace .admin-sidebar-footer small { overflow: hidden; color: rgba(255,255,255,.42); font-size: .68rem; text-overflow: ellipsis; }
+html body main.admin-workspace .admin-mobile-nav { display: none; }
+
+html body main.admin-workspace .admin-create-panel { margin-bottom: 14px; border: 1px solid rgba(17,20,23,.16); border-radius: 14px; overflow: hidden; background: #fffdf4; }
+html body main.admin-workspace .admin-create-panel > summary { min-height: 58px; display: flex; align-items: center; gap: 9px; padding: 14px 18px; cursor: pointer; font-weight: 800; list-style: none; }
+html body main.admin-workspace .admin-create-panel > summary::-webkit-details-marker { display: none; }
+html body main.admin-workspace .admin-create-panel[open] > summary { border-bottom: 1px solid var(--admin-line); }
+html body main.admin-workspace .admin-create-panel > form { border: 0; border-radius: 0; }
+html body main.admin-workspace .admin-list-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0; padding: 10px; border: 1px solid rgba(17,20,23,.16); border-radius: 12px; background: rgba(255,253,244,.78); }
+html body main.admin-workspace .admin-list-toolbar form { min-width: min(620px,100%); display: flex; align-items: center; gap: 8px; }
+html body main.admin-workspace .admin-list-toolbar input[type="search"] { min-width: 0; flex: 1; }
+html body main.admin-workspace .client-list { gap: 9px; }
+html body main.admin-workspace details.client-card { display: block; padding: 0; overflow: clip; }
+html body main.admin-workspace .client-card-summary { min-height: 82px; display: grid; align-items: center; grid-template-columns: 46px minmax(180px,1fr) 72px auto 22px; gap: 14px; padding: 14px 16px; cursor: pointer; list-style: none; }
+html body main.admin-workspace .client-card-summary::-webkit-details-marker { display: none; }
+html body main.admin-workspace details.client-card[open] .client-card-summary { border-bottom: 1px solid var(--admin-line); background: #f7f4e8; }
+html body main.admin-workspace .client-avatar { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #111923; color: #fff3d8; font-size: .72rem; font-weight: 900; letter-spacing: .04em; }
+html body main.admin-workspace .client-card-identity,
+html body main.admin-workspace .client-card-metric { min-width: 0; display: grid; gap: 3px; }
+html body main.admin-workspace .client-card-identity small { overflow: hidden; color: var(--admin-muted); font-size: .76rem; text-overflow: ellipsis; white-space: nowrap; }
+html body main.admin-workspace .client-card-metric { text-align: right; }
+html body main.admin-workspace .client-card-metric small { color: var(--admin-muted); font-size: .68rem; }
+html body main.admin-workspace .client-card-settings { color: var(--admin-muted); transition: transform .2s ease; }
+html body main.admin-workspace details.client-card[open] .client-card-settings { transform: rotate(45deg); }
+html body main.admin-workspace .client-card-body { display: grid; gap: 14px; padding: 16px; }
+html body main.admin-workspace .admin-empty-state { min-height: 190px; display: grid; place-items: center; align-content: center; gap: 7px; padding: 26px; border: 1px dashed rgba(17,20,23,.3); border-radius: 14px; color: var(--admin-muted); text-align: center; }
+html body main.admin-workspace .admin-empty-state p { max-width: 44ch; margin: 0; font-size: .84rem; }
+
+@media (max-width: 920px) {
+  html body main.admin-workspace .admin-mobile-nav { position: sticky; top: 70px; z-index: 25; display: block; margin-bottom: 10px; border-radius: 12px; background: #111923; color: #fffdf4; box-shadow: 0 12px 30px rgba(7,13,20,.16); }
+  html body main.admin-workspace .admin-mobile-nav > summary { min-height: 48px; display: flex; align-items: center; gap: 8px; padding: 10px 14px; cursor: pointer; font-size: .82rem; font-weight: 800; list-style: none; }
+  html body main.admin-workspace .admin-mobile-nav > summary::-webkit-details-marker { display: none; }
+  html body main.admin-workspace .admin-mobile-nav-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; padding: 0 8px 8px; }
+  html body main.admin-workspace .admin-mobile-nav-grid a { display: flex; align-items: center; gap: 7px; padding: 10px; border-radius: 8px; color: rgba(255,255,255,.7); font-size: .75rem; }
+  html body main.admin-workspace .admin-mobile-nav-grid a.active { background: #fff3d8; color: #111923; }
+}
+
+@media (max-width: 640px) {
+  html body main.admin-workspace .admin-list-toolbar,
+  html body main.admin-workspace .admin-list-toolbar form { min-width: 0; align-items: stretch; flex-direction: column; }
+  html body main.admin-workspace .client-card-summary { grid-template-columns: 42px minmax(0,1fr) 20px; gap: 10px; }
+  html body main.admin-workspace .client-card-metric,
+  html body main.admin-workspace .client-card-summary .admin-status-dot { display: none; }
+}
+
+html body main.admin-workspace .admin-email-composer {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid rgba(17,20,23,.18);
+  border-radius: 12px;
+  background: #fffef9;
+}
+
+html body main.admin-workspace .admin-email-composer-head,
+html body main.admin-workspace .admin-email-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+html body main.admin-workspace .admin-email-composer-head > div {
+  display: grid;
+  gap: 4px;
+}
+
+html body main.admin-workspace .admin-recipient-list {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 7px;
+}
+
+html body main.admin-workspace .admin-recipient {
+  min-width: 0;
+  display: grid;
+  align-items: center;
+  grid-template-columns: 20px minmax(0,1fr) auto;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--admin-line);
+  border-radius: 9px;
+  background: var(--admin-surface-muted);
+  cursor: pointer;
+}
+
+html body main.admin-workspace .admin-recipient > input {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  padding: 0;
+}
+
+html body main.admin-workspace .admin-recipient > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+html body main.admin-workspace .admin-recipient small {
+  overflow: hidden;
+  color: var(--admin-muted);
+  font-size: .72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html body main.admin-workspace .admin-email-action-row {
+  padding-top: 4px;
+  border-top: 1px solid var(--admin-line);
+}
+
+html body main.admin-workspace .admin-email-action-row p {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: .76rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 720px) {
+  html body main.admin-workspace .admin-recipient-list { grid-template-columns: 1fr; }
+  html body main.admin-workspace .admin-email-composer-head,
+  html body main.admin-workspace .admin-email-action-row { align-items: stretch; flex-direction: column; }
+}
