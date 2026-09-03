@@ -12970,3 +12970,182 @@ html body main.admin-workspace .admin-email-action-row p {
   html body main.admin-workspace .admin-email-composer-head,
   html body main.admin-workspace .admin-email-action-row { align-items: stretch; flex-direction: column; }
 }
+
+/* Admin productivity layer */
+html body main.admin-workspace .admin-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+html body main.admin-workspace .admin-command-trigger {
+  min-height: 42px;
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 9px 8px 12px;
+  border: 1px solid rgba(17,20,23,.22);
+  border-radius: 9px;
+  background: #fffdf4;
+  color: var(--admin-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: .82rem;
+}
+
+html body main.admin-workspace .admin-command-trigger span { flex: 1; text-align: left; }
+html body main.admin-workspace .admin-command-trigger kbd {
+  padding: 4px 7px;
+  border: 1px solid var(--admin-line);
+  border-radius: 5px;
+  background: var(--admin-surface-muted);
+  color: var(--admin-text);
+  font-family: var(--rx-mono);
+  font-size: .69rem;
+}
+
+.admin-command-dialog {
+  width: min(620px,calc(100% - 24px));
+  max-height: min(720px,calc(100svh - 40px));
+  margin: auto;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #111923;
+  color: #fffdf4;
+  box-shadow: 0 32px 100px rgba(0,0,0,.42);
+}
+
+.admin-command-dialog::backdrop {
+  background: rgba(5,10,16,.66);
+  backdrop-filter: blur(8px);
+}
+
+.admin-command-dialog-panel { display: grid; }
+.admin-command-search {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 22px minmax(0,1fr) 36px;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255,255,255,.13);
+}
+
+.admin-command-search input {
+  min-height: 44px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: .95rem;
+}
+
+.admin-command-search input::placeholder { color: rgba(255,255,255,.42); }
+.admin-command-search button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  cursor: pointer;
+}
+
+.admin-command-results {
+  max-height: min(610px,calc(100svh - 130px));
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.admin-command-group-label {
+  padding: 8px 8px 4px;
+  color: rgba(255,255,255,.4);
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.admin-command-results a {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 38px minmax(0,1fr) auto;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 9px;
+  color: rgba(255,255,255,.8);
+}
+
+.admin-command-results a:hover,
+.admin-command-results a:focus-visible { background: #fff3d8; color: #111923; outline: none; }
+.admin-command-results a > span:nth-child(2) { min-width: 0; display: grid; gap: 2px; }
+.admin-command-results a small { color: inherit; opacity: .62; font-size: .74rem; }
+.admin-command-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 8px; background: rgba(255,255,255,.08); }
+.admin-command-results a:hover .admin-command-icon { background: rgba(17,25,35,.1); }
+.admin-command-empty { padding: 32px 12px; color: rgba(255,255,255,.55); text-align: center; }
+
+html body main.admin-workspace .admin-bulk-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 14px 0 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  background: var(--admin-surface-muted);
+}
+
+html body main.admin-workspace .admin-bulk-toolbar > div:first-child { display: grid; gap: 2px; }
+html body main.admin-workspace .admin-bulk-toolbar small { color: var(--admin-muted); font-size: .74rem; }
+html body main.admin-workspace .admin-row-checkbox { width: 18px; height: 18px; min-height: 18px; margin: 0; padding: 0; }
+html body main.admin-workspace .file-table th:first-child,
+html body main.admin-workspace .file-table td:first-child { width: 46px; text-align: center; }
+
+html body main.admin-workspace .readiness-item[href] {
+  grid-template-columns: 18px minmax(0,1fr) auto;
+  text-decoration: none;
+  transition: border-color .16s ease, transform .16s ease, box-shadow .16s ease;
+}
+
+html body main.admin-workspace .readiness-item[href]:hover {
+  border-color: rgba(17,20,23,.38);
+  box-shadow: 0 8px 20px rgba(17,20,23,.08);
+  transform: translateY(-1px);
+}
+
+html body main.admin-workspace .admin-item-arrow { font-size: 1rem; }
+
+html body main.admin-workspace .admin-page-header {
+  min-height: 118px;
+  padding: 22px 24px;
+}
+
+html body main.admin-workspace .admin-page-header h2 {
+  font-size: clamp(1.75rem,3vw,2.8rem);
+  line-height: 1;
+}
+
+html body main.admin-workspace .admin-page-header p,
+html body main.admin-workspace .field,
+html body main.admin-workspace .checkbox-field {
+  font-size: .875rem;
+}
+
+html body main.admin-workspace .manager-panel,
+html body main.admin-workspace .workflow-panel,
+html body main.admin-workspace .client-card,
+html body main.admin-workspace .request-card { content-visibility: auto; contain-intrinsic-size: 1px 320px; }
+
+@media (max-width: 720px) {
+  html body main.admin-workspace .admin-topbar-actions { width: 100%; align-items: stretch; flex-direction: column; }
+  html body main.admin-workspace .admin-command-trigger { width: 100%; min-width: 0; }
+  html body main.admin-workspace .admin-bulk-toolbar { align-items: stretch; flex-direction: column; }
+}

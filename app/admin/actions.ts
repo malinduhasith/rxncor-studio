@@ -96,6 +96,12 @@ const photoIdSchema = z.object({
   photo_id: z.string().uuid()
 });
 
+const bulkPhotoSelectionSchema = z.object({
+  album_id: z.string().uuid(),
+  photo_ids: z.array(z.string().uuid()).min(1).max(500),
+  operation: z.enum(["select", "unselect"])
+});
+
 const photoMetadataSchema = z.object({
   photo_id: z.string().uuid(),
   display_title: z.string().trim().max(120).optional().or(z.literal("")),
@@ -1119,6 +1125,44 @@ export async function togglePhotoSelectedAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/portfolio");
   redirect(`/admin?notice=photo-updated&album=${photo.album_id}#manager`);
+}
+
+export async function bulkPhotoSelectionAction(formData: FormData) {
+  const supabase = await requireAdmin();
+  const payload = bulkPhotoSelectionSchema.safeParse({
+    album_id: formData.get("album_id"),
+    photo_ids: formUuidList(formData, "photo_ids"),
+    operation: formData.get("operation")
+  });
+
+  if (!payload.success) {
+    redirect(`/admin?view=albums&notice=photo-error&album=${String(formData.get("album_id") ?? "")}#files`);
+  }
+
+  const isSelected = payload.data.operation === "select";
+  const { data: updatedPhotos, error } = await supabase
+    .from("photos")
+    .update({ is_selected: isSelected })
+    .eq("album_id", payload.data.album_id)
+    .in("id", payload.data.photo_ids)
+    .select("id");
+
+  if (error || !updatedPhotos?.length) {
+    redirect(`/admin?view=albums&notice=photo-error&album=${payload.data.album_id}#files`);
+  }
+
+  await logAdminAudit(supabase, {
+    action: isSelected ? "photo.selection.bulk_select" : "photo.selection.bulk_unselect",
+    entityType: "album",
+    entityId: payload.data.album_id,
+    summary: `${isSelected ? "Selected" : "Unselected"} ${updatedPhotos.length} portfolio photos`,
+    metadata: { photo_ids: updatedPhotos.map((photo) => photo.id) }
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+  revalidatePath("/portfolio");
+  redirect(`/admin?view=albums&notice=photo-updated&album=${payload.data.album_id}#files`);
 }
 
 export async function updatePhotoMetadataAction(formData: FormData) {

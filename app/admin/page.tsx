@@ -33,6 +33,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
+  bulkPhotoSelectionAction,
   createAboutBlockAction,
   createAlbumAction,
   createClientAction,
@@ -58,6 +59,7 @@ import {
   updateShootRequestAction,
 } from "./actions";
 import { AdminFileActionButton } from "@/components/admin/AdminFileActionButton";
+import { AdminCommandMenu } from "@/components/admin/AdminCommandMenu";
 import { AdminPasswordField } from "@/components/admin/AdminPasswordField";
 import { AdminPhotoUpload } from "@/components/admin/AdminPhotoUpload";
 import { AdminZipUpload } from "@/components/admin/AdminZipUpload";
@@ -1410,41 +1412,49 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       label: "New shoot requests",
       detail: `${newShootRequestCount} waiting for review`,
       attention: newShootRequestCount > 0,
+      href: adminHref("requests"),
     },
     {
       label: "New inquiries",
       detail: `${newInquiryCount} waiting for reply`,
       attention: newInquiryCount > 0,
+      href: adminHref("inquiries"),
     },
     {
       label: "Client passwords",
       detail: `${clientsWithoutPasswordCount} clients without a portal password`,
       attention: clientsWithoutPasswordCount > 0,
+      href: adminHref("clients"),
     },
     {
       label: "Private access",
       detail: `${privateUnassignedCount} private albums without assigned clients`,
       attention: privateUnassignedCount > 0,
+      href: adminHref("albums", { status: "private" }),
     },
     {
       label: "Album covers",
       detail: `${albumsMissingCoverCount} uploaded albums without a cover`,
       attention: albumsMissingCoverCount > 0,
+      href: adminHref("albums"),
     },
     {
       label: "Recent downloads",
       detail: `${recentDownloadCount} latest log entries loaded`,
       attention: false,
+      href: adminHref("downloads"),
     },
     {
       label: "Upload failures",
       detail: `${recentUploadFailures} failed upload events in the last 24 hours`,
       attention: recentUploadFailures > 0,
+      href: adminHref("monitoring"),
     },
     {
       label: "Email failures",
       detail: `${recentEmailFailures} failed email events in the last 24 hours`,
       attention: recentEmailFailures > 0,
+      href: adminHref("monitoring"),
     },
   ];
   const customSocialLinkRows = Array.from(
@@ -1539,11 +1549,19 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 {attentionCount ? `${attentionCount} items need attention` : "Everything is ready"}
               </p>
             </div>
-            <form action={signOutAction}>
-              <button className="button secondary" type="submit">
-                Sign out
-              </button>
-            </form>
+            <div className="admin-topbar-actions">
+              <AdminCommandMenu
+                albums={albums.map(({ id, title, slug }) => ({ id, title, slug }))}
+                clients={clients.map(({ id, name, email }) => ({ id, name, email }))}
+                selectedAlbumId={selectedAlbum?.id}
+                selectedAlbumSlug={selectedAlbum?.slug}
+              />
+              <form action={signOutAction}>
+                <button className="button secondary" type="submit">
+                  Sign out
+                </button>
+              </form>
+            </div>
           </div>
           <div className="admin-page-header">
             <div>
@@ -1691,8 +1709,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </div>
                 <div className="readiness-grid">
                   {operationalItems.map((item) => (
-                    <div
+                    <a
                       className={`readiness-item ${item.attention ? "attention" : "complete"}`}
+                      href={item.href}
                       key={item.label}
                     >
                       {item.attention ? (
@@ -1704,7 +1723,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         <strong>{item.label}</strong>
                         <small>{item.detail}</small>
                       </span>
-                    </div>
+                      <span className="admin-item-arrow" aria-hidden="true">→</span>
+                    </a>
                   ))}
                 </div>
               </section>
@@ -3110,7 +3130,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </div>
 
               {selectedAlbum ? (
-                <div className="manager-panel file-panel">
+                <div className="manager-panel file-panel" id="files">
                   <div className="panel-title-row">
                     <div>
                       <h3>Files in {selectedAlbum.title}</h3>
@@ -3127,10 +3147,32 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       Upload more
                     </a>
                   </div>
+                  {displayPhotos.length ? (
+                    <form
+                      action={bulkPhotoSelectionAction}
+                      className="admin-bulk-toolbar"
+                      id={`bulk-photo-form-${selectedAlbum.id}`}
+                    >
+                      <input name="album_id" type="hidden" value={selectedAlbum.id} />
+                      <div>
+                        <strong>Bulk portfolio selection</strong>
+                        <small>Tick photos below, then publish or remove them from Frames.</small>
+                      </div>
+                      <div className="inline-actions">
+                        <button className="button secondary small" name="operation" type="submit" value="unselect">
+                          Remove from Frames
+                        </button>
+                        <button className="button small" name="operation" type="submit" value="select">
+                          <Star size={15} /> Add to Frames
+                        </button>
+                      </div>
+                    </form>
+                  ) : null}
                   <div className="table-wrap">
                     <table className="table file-table">
                       <thead>
                         <tr>
+                          <th><span className="sr-only">Select</span></th>
                           <th>Preview</th>
                           <th>File</th>
                           <th>Data</th>
@@ -3141,6 +3183,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <tbody>
                         {displayPhotos.map((photo) => (
                           <tr key={photo.id}>
+                            <td>
+                              <input
+                                aria-label={`Select ${photo.filename}`}
+                                className="admin-row-checkbox"
+                                form={`bulk-photo-form-${selectedAlbum.id}`}
+                                name="photo_ids"
+                                type="checkbox"
+                                value={photo.id}
+                              />
+                            </td>
                             <td>
                               {photo.thumbnailDisplayUrl ? (
                                 // eslint-disable-next-line @next/next/no-img-element
@@ -3357,7 +3409,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         ))}
                         {!displayPhotos.length ? (
                           <tr>
-                            <td colSpan={5}>
+                            <td colSpan={6}>
                               No photos uploaded to this album yet.
                             </td>
                           </tr>
