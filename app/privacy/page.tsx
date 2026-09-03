@@ -40,6 +40,7 @@ export default async function PrivacyPage() {
           <li>gallery access settings, album names, dates, expiry dates, and passwords stored as secure hashes</li>
           <li>photos, previews, thumbnails, and album ZIP files uploaded for delivery</li>
           <li>download logs, including file, album, time, email if provided, and IP address</li>
+          <li>privacy-friendly page-view and visitor information collected through Vercel Web Analytics</li>
           <li>technical information needed for security, rate limits, sessions, and troubleshooting</li>
         </ul>
 
@@ -66,7 +67,7 @@ export default async function PrivacyPage() {
         <p>
           Personal information is not sold. Information is handled through trusted
           services used to run the website and gallery system, including Vercel for
-          hosting, Supabase for database and authentication, and Cloudflare R2 for
+          hosting and Web Analytics, Supabase for database and authentication, and Cloudflare R2 for
           photo and ZIP storage. These services may process or store information in
           Australia, the United States, or other locations where their systems
           operate.

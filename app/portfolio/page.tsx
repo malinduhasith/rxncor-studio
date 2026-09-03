@@ -69,7 +69,7 @@ function PortfolioImage({
 }
 
 export default async function PortfolioPage() {
-  const realPhotos = await getPublicPortfolioPhotos(18).catch(() => []);
+  const realPhotos = await getPublicPortfolioPhotos().catch(() => []);
   const portfolioCards: PortfolioCard[] = realPhotos.length
     ? realPhotos
     : portfolioFallbackCards();

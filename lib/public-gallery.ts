@@ -107,15 +107,13 @@ export async function getPublicPortfolioPhotos(limit?: number) {
   const supabase = createSupabaseAdminClient();
   const { data: selectedAlbumRows } = await supabase
     .from("albums")
-    .select("id, title, event_date, expires_at")
-    .eq("is_public", true)
+    .select("id, title, event_date")
     .order("event_date", { ascending: false });
   const selectedAlbums = ((selectedAlbumRows ?? []) as {
     id: string;
     title: string;
     event_date: string | null;
-    expires_at: string | null;
-  }[]).filter(activeAlbumFilter);
+  }[]);
   const selectedAlbumIds = selectedAlbums.map((album) => album.id);
 
   if (selectedAlbumIds.length) {

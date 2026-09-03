@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { Analytics } from "@vercel/analytics/next";
 import { CookieConsent, CookieSettingsButton } from "@/components/CookieConsent";
 import { MotionController } from "@/components/home/MotionController";
 import { CompositionMark } from "@/components/home/CompositionMark";
@@ -166,6 +167,7 @@ export default async function RootLayout({
             </div>
           </div>
         </footer>
+        <Analytics />
       </body>
     </html>
   );
