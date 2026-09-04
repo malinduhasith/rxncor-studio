@@ -69,7 +69,7 @@
 .app :global(.admin-topbar .eyebrow) { color: #4f5365; font-size: .72rem; }
 .app :global(.admin-topbar .muted) { margin: 0; color: var(--muted); font-size: .72rem; }
 .app :global(.admin-topbar-actions), .app :global(.inline-actions) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.app :global(.admin-page-header) { display: flex; align-items: center; justify-content: space-between; gap: 28px; padding: 28px 0 23px; }
+.app :global(.admin-page-header) { display: flex; align-items: center; justify-content: space-between; gap: 28px; margin: 0 !important; padding: 28px 0 23px; border: 0 !important; border-radius: 0 !important; background: #fff !important; background-image: none !important; box-shadow: none !important; }
 .app :global(.admin-page-header .label) { display: none; }
 .app :global(.admin-page-header h2) { margin: 0 0 5px; color: #151620; font-size: clamp(1.55rem,2.3vw,2.1rem); font-weight: 720; letter-spacing: -.035em; line-height: 1.15; }
 .app :global(.admin-page-header p) { max-width: 72ch; margin: 0; color: var(--muted); font-size: .84rem; line-height: 1.5; }
@@ -105,7 +105,11 @@
 .app :global(.stat strong) { margin-top: 10px; font-size: 1.55rem; font-weight: 700; letter-spacing: -.03em; }
 .app :global(.stat span) { color: var(--muted); font-size: .72rem; }
 .app :global(.readiness-grid), .app :global(.admin-quick-grid), .app :global(.detail-grid), .app :global(.delivery-summary-grid), .app :global(.feature-list) { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; margin-top: 13px; }
-.app :global(.readiness-item), .app :global(.admin-quick-card), .app :global(.detail-grid > div), .app :global(.delivery-summary-grid > div), .app :global(.feature) { min-width: 0; display: grid; grid-template-columns: 18px minmax(0,1fr) auto; align-items: center; gap: 10px; padding: 12px 13px; border: 1px solid var(--line); border-radius: 10px; background: #fafafd; }
+.app :global(.readiness-item), .app :global(.admin-quick-card), .app :global(.feature) { min-width: 0; display: grid; grid-template-columns: 18px minmax(0,1fr) auto; align-items: center; gap: 10px; padding: 12px 13px; border: 1px solid var(--line); border-radius: 10px; background: #fafafd; }
+.app :global(.detail-grid > div), .app :global(.delivery-summary-grid > div) { min-width: 0; display: block !important; padding: 13px 15px; border: 1px solid var(--line); border-radius: 10px; background: #fafafd; }
+.app :global(.detail-grid > div .label), .app :global(.delivery-summary-grid > div .label) { display: block; margin: 0 0 7px; color: #858899; font-size: .62rem; line-height: 1.25; }
+.app :global(.detail-grid > div strong), .app :global(.delivery-summary-grid > div strong) { display: block; margin: 0; color: #252733; font-size: .82rem; line-height: 1.35; overflow-wrap: anywhere; }
+.app :global(.detail-grid > div .code-line) { display: block; margin: 0; line-height: 1.45; }
 .app :global(.readiness-item strong), .app :global(.admin-quick-card strong) { font-size: .78rem; }
 .app :global(.readiness-item small), .app :global(.admin-quick-card span) { color: var(--muted); font-size: .7rem; line-height: 1.4; }
 .app :global(.readiness-item.attention) { border-color: #f0da96; background: #fffaf0; }
@@ -114,7 +118,7 @@
 
 .app :global(.manager-grid) { min-width: 0; display: grid; grid-template-columns: 280px minmax(0,1fr); gap: 18px; align-items: start; }
 .app :global(.manager-panel) { align-self: start; }
-.app :global(.manager-grid > .manager-panel:first-child) { position: sticky; top: 86px; max-height: calc(100svh - 110px); overflow-y: auto; }
+.app :global(.manager-grid > .manager-panel:first-child) { position: sticky; top: 86px; overflow: visible; }
 .app :global(.filter-bar), .app :global(.form-grid), .app :global(.photo-meta-form), .app :global(.client-card-body) { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 11px; }
 .app :global(.filter-bar) { grid-template-columns: 1fr; margin: 13px 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #fafafd; }
 .app :global(.field) { min-width: 0; display: grid; gap: 6px; color: #494d5f; font-size: .71rem; font-weight: 650; }
@@ -124,6 +128,7 @@
 .app :global(input:focus), .app :global(select:focus), .app :global(textarea:focus) { border-color: #927cf8; box-shadow: 0 0 0 3px #eeeaff; }
 .app :global(input[type="checkbox"]), .app :global(input[type="radio"]) { width: 17px; min-height: 17px; padding: 0; accent-color: var(--accent); box-shadow: none; }
 .app :global(.album-list), .app :global(.client-list) { display: grid; gap: 5px; }
+.app :global(.album-list) { max-height: calc(100svh - 355px); overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
 .app :global(.album-list-row) { min-width: 0; display: grid; gap: 8px; padding: 11px; border: 1px solid transparent; border-radius: 9px; background: #fff; }
 .app :global(.album-list-row:hover) { background: var(--subtle); }
 .app :global(.album-list-row.active) { border-color: #c9bbff; background: var(--accent-soft); }
