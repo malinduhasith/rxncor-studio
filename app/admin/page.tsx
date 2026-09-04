@@ -282,16 +282,6 @@ const adminViewIcons: Record<AdminView, typeof LayoutDashboard> = {
   backups: Archive,
 };
 
-const adminNavGroups: Array<{
-  label: string;
-  views: AdminView[];
-}> = [
-  { label: "Workspace", views: ["overview", "requests", "inquiries"] },
-  { label: "Gallery delivery", views: ["albums", "new-album", "clients", "uploads", "delivery"] },
-  { label: "Website", views: ["about", "contact"] },
-  { label: "Operations", views: ["monitoring", "downloads", "backups"] },
-];
-
 const adminViewCopy: Record<
   AdminView,
   { label: string; title: string; detail: string }
@@ -1467,61 +1457,51 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const attentionCount = operationalItems.filter((item) => item.attention).length;
 
   return (
-    <main className={styles.app}>
+    <main className={`${styles.app} admin-v3`}>
       <div className="admin-layout" data-view={activeView}>
-        <aside
-          className="sidebar admin-sidebar"
-          aria-label="Admin workspace navigation"
-        >
+        <aside className="admin-sidebar" aria-label="Admin workspace navigation">
           <div className="admin-sidebar-brand">
             <div className="admin-brand-mark" aria-hidden="true">R</div>
             <div>
               <strong className="admin-sidebar-title">RXNCOR</strong>
-              <span>Administration</span>
+              <span>Studio</span>
             </div>
           </div>
-          <a className="admin-create-shortcut" href={adminHref("new-album")}>
-            <Plus size={17} /> New album
-          </a>
-          {adminNavGroups.map((group) => (
-            <div className="admin-nav-group" key={group.label}>
-              <span className="admin-nav-group-label">{group.label}</span>
-              {group.views.map((viewName) => {
-                const ViewIcon = adminViewIcons[viewName];
-                return (
-                  <a
-                    className={activeView === viewName ? "active" : undefined}
-                    href={adminHref(viewName, {
-                      album: selectedAlbum?.id,
-                      q: viewName === "albums" ? albumQuery : undefined,
-                      status: viewName === "albums" ? albumStatusFilter : undefined,
-                    })}
-                    aria-current={activeView === viewName ? "page" : undefined}
-                    key={viewName}
-                  >
-                    <ViewIcon className="admin-nav-icon" size={18} />
-                    <span className="admin-nav-copy">
-                      <span>{adminViewCopy[viewName].label}</span>
-                    </span>
-                    {viewName === "overview" && attentionCount > 0 ? (
-                      <span className="admin-nav-count">{attentionCount}</span>
-                    ) : null}
-                    {viewName === "requests" && newShootRequestCount > 0 ? (
-                      <span className="admin-nav-count">{newShootRequestCount}</span>
-                    ) : null}
-                    {viewName === "inquiries" && newInquiryCount > 0 ? (
-                      <span className="admin-nav-count">{newInquiryCount}</span>
-                    ) : null}
-                  </a>
-                );
-              })}
-            </div>
-          ))}
+          <nav className="admin-primary-nav" aria-label="Primary admin pages">
+            {(["overview", "albums", "clients", "requests", "about", "monitoring"] as AdminView[]).map((viewName) => {
+              const ViewIcon = adminViewIcons[viewName];
+              const isInbox = viewName === "requests";
+              const count = viewName === "overview" ? attentionCount : isInbox ? newShootRequestCount + newInquiryCount : 0;
+              return (
+                <a
+                  className={activeView === viewName || (isInbox && activeView === "inquiries") ? "active" : undefined}
+                  href={adminHref(viewName, { album: viewName === "albums" ? selectedAlbum?.id : undefined })}
+                  aria-current={activeView === viewName ? "page" : undefined}
+                  key={viewName}
+                >
+                  <ViewIcon size={17} />
+                  <span>{isInbox ? "Inbox" : viewName === "about" ? "Website" : viewName === "monitoring" ? "Activity" : adminViewCopy[viewName].label}</span>
+                  {count > 0 ? <span className="admin-nav-count">{count}</span> : null}
+                </a>
+              );
+            })}
+            <details className="admin-more-menu">
+              <summary><Menu size={17} /> More</summary>
+              <div>
+                {(["new-album", "uploads", "delivery", "inquiries", "contact", "downloads", "backups"] as AdminView[]).map((viewName) => {
+                  const ViewIcon = adminViewIcons[viewName];
+                  return <a href={adminHref(viewName, { album: selectedAlbum?.id })} key={viewName}><ViewIcon size={16} />{adminViewCopy[viewName].label}</a>;
+                })}
+              </div>
+            </details>
+          </nav>
           <div className="admin-sidebar-footer">
-            <a href="/" target="_blank" rel="noreferrer">
-              <ExternalLink size={16} /> Open website
+            <a className="admin-create-shortcut" href={adminHref("new-album")}>
+              <Plus size={16} /> New album
             </a>
-            <small>{user.email}</small>
+            <a href="/" target="_blank" rel="noreferrer" aria-label="Open public website">
+              <ExternalLink size={17} />
+            </a>
           </div>
         </aside>
 
