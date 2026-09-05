@@ -239,6 +239,27 @@
 .app :global(.client-card-identity small), .app :global(.client-card-metric small) { overflow: hidden; color: var(--muted); font-size: .64rem; text-overflow: ellipsis; white-space: nowrap; }
 .app :global(.client-card-metric) { text-align: right; }
 .app :global(.client-card-body) { padding: 13px; background: var(--surface-subtle); }
+.app :global(.admin-client-editor) { display: grid; grid-template-columns: minmax(0,1fr); background: #fff; }
+.app :global(.admin-client-contact-form) { min-width: 0; display: grid; grid-template-columns: 130px minmax(150px,1fr) minmax(190px,1.2fr) minmax(130px,.8fr) 70px auto; align-items: end; gap: 10px; padding: 14px; border-bottom: 1px solid var(--line); }
+.app :global(.admin-client-editor-heading) { grid-column: 1 / -1; display: flex; align-items: end; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.app :global(.admin-client-editor-heading > div) { display: grid; gap: 2px; }
+.app :global(.admin-client-editor-heading strong) { font-size: .78rem; }
+.app :global(.admin-client-editor-heading small) { color: var(--muted); font-size: .65rem; text-align: right; }
+.app :global(.admin-client-stat) { min-height: 38px; display: grid; align-content: center; gap: 2px; }
+.app :global(.admin-client-stat strong) { font-size: .76rem; }
+.app :global(.admin-client-access-panel) { min-width: 0; display: grid; grid-template-columns: minmax(190px,.45fr) minmax(360px,1fr); gap: 0 18px; padding: 14px; border-bottom: 1px solid var(--line); background: var(--surface-subtle); }
+.app :global(.admin-client-access-head) { min-width: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-right: 18px; border-right: 1px solid var(--line); }
+.app :global(.admin-client-access-head > div) { min-width: 0; display: grid; gap: 3px; }
+.app :global(.admin-client-access-head strong) { font-size: .78rem; }
+.app :global(.admin-client-access-head small) { color: var(--muted); font-size: .65rem; line-height: 1.35; }
+.app :global(.admin-client-password-form) { min-width: 0; display: grid; grid-template-columns: minmax(240px,1fr) auto; align-items: end; gap: 9px; }
+.app :global(.admin-client-password-field) { min-width: 0; }
+.app :global(.admin-client-password-control) { position: relative; min-width: 0; }
+.app :global(.admin-client-password-control input) { padding-right: 40px; }
+.app :global(.admin-client-password-control .admin-icon-button) { position: absolute; top: 50%; right: 4px; transform: translateY(-50%); }
+.app :global(.admin-client-password-actions), .app :global(.admin-client-access-footer) { display: flex; align-items: center; gap: 7px; }
+.app :global(.admin-client-access-footer) { grid-column: 2; justify-content: flex-end; padding-top: 9px; }
+.app :global(.admin-client-delete-row) { display: flex; justify-content: flex-end; padding: 10px 14px; background: #fff; }
 .app :global(.request-list), .app :global(.shoot-request-list), .app :global(.backup-list), .app :global(.monitor-grid) { display: grid; gap: 0; }
 .app :global(.request-card) { border-bottom: 0; padding: 13px 14px; }
 .app :global(.request-card:last-child) { border-bottom: 1px solid var(--line); }
@@ -313,12 +334,27 @@
   .app :global(.admin-list-toolbar form) { min-width: 0; flex-direction: column; }
   .app :global(.client-card-summary) { grid-template-columns: 34px minmax(0,1fr) 18px; }
   .app :global(.client-card-metric), .app :global(.client-card-summary .admin-status-dot) { display: none; }
+  .app :global(.admin-client-contact-form), .app :global(.admin-client-password-form) { grid-template-columns: 1fr; }
+  .app :global(.admin-client-editor-heading) { align-items: start; flex-direction: column; }
+  .app :global(.admin-client-editor-heading small) { text-align: left; }
+  .app :global(.admin-client-access-panel) { grid-template-columns: 1fr; gap: 12px; }
+  .app :global(.admin-client-access-head) { padding: 0 0 12px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .app :global(.admin-client-access-footer) { grid-column: 1; }
+  .app :global(.admin-client-password-actions), .app :global(.admin-client-access-footer) { align-items: stretch; flex-direction: column; }
+  .app :global(.admin-client-password-actions .button), .app :global(.admin-client-access-footer .button) { width: 100%; justify-content: center; }
   .app :global(.admin-photo-card) { grid-template-columns: 82px minmax(0,1fr); }
   .app :global(.admin-photo-card-body) { grid-template-columns: 1fr; }
   .app :global(.admin-photo-primary-actions), .app :global(.admin-photo-card-body > p), .app :global(.admin-photo-more) { grid-column: 1; grid-row: auto; }
   .app :global(.admin-photo-primary-actions) { flex-wrap: wrap; }
   .app :global(.admin-photo-more dl) { grid-template-columns: 1fr; }
   .app :global(.admin-recipient-list) { margin-inline: 10px; }
+}
+
+@media (min-width: 721px) and (max-width: 1180px) {
+  .app :global(.admin-client-contact-form) { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .app :global(.admin-client-editor-heading), .app :global(.admin-client-contact-form > .button) { grid-column: 1 / -1; }
+  .app :global(.admin-client-access-panel) { grid-template-columns: minmax(180px,.4fr) minmax(0,1fr); }
+  .app :global(.admin-client-password-form) { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {

@@ -3635,13 +3635,20 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       </span>
                       <Settings2 className="client-card-settings" size={18} aria-hidden="true" />
                     </summary>
-                    <div className="client-card-body">
+                    <div className="admin-client-editor">
                     <form
                       action={updateClientAction}
-                      className="client-edit-row"
+                      className="admin-client-contact-form"
                     >
                       <input name="client_id" type="hidden" value={client.id} />
-                      <div>
+                      <div className="admin-client-editor-heading">
+                        <div>
+                          <span className="label">Client record</span>
+                          <strong>Contact details</strong>
+                        </div>
+                        <small>Update the client information used for gallery delivery and login.</small>
+                      </div>
+                      <div className="admin-client-stat">
                         <span className="label">Client login</span>
                         <strong>
                           {client.password_hash
@@ -3669,7 +3676,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         Phone
                         <input name="phone" defaultValue={client.phone ?? ""} />
                       </label>
-                      <div>
+                      <div className="admin-client-stat">
                         <span className="label">Albums</span>
                         <strong>{clientAlbumCounts.get(client.id) ?? 0}</strong>
                       </div>
@@ -3687,7 +3694,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       resetAction={resetClientPasswordAction}
                       removeAction={removeClientPasswordAction}
                     />
-                    <form action={deleteClientAction}>
+                    <form action={deleteClientAction} className="admin-client-delete-row">
                       <input name="client_id" type="hidden" value={client.id} />
                       <ConfirmSubmitButton
                         className="button danger small"

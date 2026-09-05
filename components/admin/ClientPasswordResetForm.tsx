@@ -61,21 +61,22 @@ export function ClientPasswordResetForm({
   }
 
   return (
-    <div className="password-reset-row admin-password-manager">
-      <div className="admin-password-manager-head">
+    <section className="admin-client-access-panel">
+      <div className="admin-client-access-head">
         <div>
-          <span className="label">Portal password</span>
-          <strong>{hasPassword ? "Active" : "Not set"}</strong>
+          <span className="label">Portal access</span>
+          <strong>Client login password</strong>
+          <small>{hasPassword ? "A password is active for this client." : "Create a password so this client can sign in."}</small>
         </div>
         <span className={`admin-status-dot ${hasPassword ? "is-ready" : "needs-action"}`}>
           {hasPassword ? "Client can sign in" : "Setup required"}
         </span>
       </div>
-      <form action={resetAction} className="password-inline-form">
+      <form action={resetAction} className="admin-client-password-form">
         <input name="client_id" type="hidden" value={clientId} />
-        <div className="field admin-password-field">
+        <div className="field admin-client-password-field">
           <span className="admin-field-label">Set or replace password</span>
-          <div className="admin-password-control">
+          <div className="admin-client-password-control">
             <input
               name="password"
               type={visible ? "text" : "password"}
@@ -91,35 +92,29 @@ export function ClientPasswordResetForm({
             </button>
           </div>
         </div>
-        <button className="button secondary small" onClick={generatePassword} type="button">
-          <RefreshCw size={16} /> Generate
-        </button>
-        <button className="button secondary small" type="submit" disabled={!password}>
-          <KeyRound size={16} />
-          Set password
-        </button>
+        <div className="admin-client-password-actions">
+          <button className="button secondary small" onClick={generatePassword} type="button">
+            <RefreshCw size={16} /> Generate
+          </button>
+          <button className="button small" type="submit" disabled={!password}>
+            <KeyRound size={16} /> Set password
+          </button>
+        </div>
       </form>
-      <button
-        className="button secondary small"
-        type="button"
-        disabled={!password}
-        onClick={copyLogin}
-      >
-        {copied ? <Check size={16} /> : <Copy size={16} />}
-        {copied ? "Copied" : "Copy with password"}
-      </button>
-      {hasPassword ? (
-        <form action={removeAction}>
-          <input name="client_id" type="hidden" value={clientId} />
-          <ConfirmSubmitButton
-            className="button danger small"
-            confirmMessage={`Remove the client login password for ${clientName}?`}
-          >
-            <Trash2 size={16} />
-            Remove password
-          </ConfirmSubmitButton>
-        </form>
-      ) : null}
-    </div>
+      <div className="admin-client-access-footer">
+        <button className="button secondary small" type="button" disabled={!password} onClick={copyLogin}>
+          {copied ? <Check size={16} /> : <Copy size={16} />}
+          {copied ? "Copied" : "Copy login details"}
+        </button>
+        {hasPassword ? (
+          <form action={removeAction}>
+            <input name="client_id" type="hidden" value={clientId} />
+            <ConfirmSubmitButton className="button danger small" confirmMessage={`Remove the client login password for ${clientName}?`}>
+              <Trash2 size={16} /> Remove password
+            </ConfirmSubmitButton>
+          </form>
+        ) : null}
+      </div>
+    </section>
   );
 }
