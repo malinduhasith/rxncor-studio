@@ -23,6 +23,7 @@ const unlockSchema = z.object({
 type UnlockAlbum = {
   id: string;
   slug: string;
+  client_id?: string | null;
   password_hash?: string | null;
   is_password_protected?: boolean;
   requires_email?: boolean;
@@ -82,16 +83,16 @@ export async function unlockGalleryAction(formData: FormData) {
     redirect(`/client/${payload.data.slug}?notice=wrong-password`);
   }
 
-  if (unlockAlbum.requires_email && !email) {
-    redirect(`/client/${payload.data.slug}?notice=email-required`);
-  }
-
   if (
     unlockAlbum.password_hash &&
     password &&
     verifyPassword(password, unlockAlbum.password_hash)
   ) {
     accessToken = createAlbumAccessToken(unlockAlbum.id, unlockAlbum.password_hash);
+  }
+
+  if (!accessToken && unlockAlbum.requires_email && !email) {
+    redirect(`/client/${payload.data.slug}?notice=email-required`);
   }
 
   if (
@@ -104,7 +105,12 @@ export async function unlockGalleryAction(formData: FormData) {
       .from("album_clients")
       .select("client_id")
       .eq("album_id", unlockAlbum.id);
-    const assignedClientIds = (assignments ?? []).map((row) => row.client_id);
+    const assignedClientIds = [
+      ...new Set([
+        ...(assignments ?? []).map((row) => row.client_id),
+        ...(unlockAlbum.client_id ? [unlockAlbum.client_id] : [])
+      ])
+    ];
     const { data: clients } = await supabase
       .from("clients")
       .select("id, email, password_hash")
