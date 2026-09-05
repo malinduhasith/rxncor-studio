@@ -11043,7 +11043,8 @@ body.rx-lightbox-open {
 }
 
 .rx-client-gallery .gallery-gate .access-options,
-.rx-client-gallery .gallery-gate form {
+.rx-client-gallery .gallery-gate form,
+.rx-client-gallery .gallery-gate .gallery-access-forms {
   grid-column: 2;
 }
 
@@ -11120,6 +11121,45 @@ body.rx-lightbox-open {
   font-size: 0.64rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+.rx-client-gallery .gallery-gate .gallery-access-forms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 22px;
+  margin-top: 35px;
+}
+
+.rx-client-gallery .gallery-gate .gallery-access-forms form {
+  grid-column: auto;
+  min-width: 0;
+  margin-top: 0;
+  padding: 18px;
+  border: 1px solid rgba(244, 242, 237, 0.55);
+}
+
+.rx-client-gallery .gallery-access-form-heading {
+  min-height: 74px;
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(244, 242, 237, 0.35);
+}
+
+.rx-client-gallery .gallery-access-form-heading span,
+.rx-client-gallery .gallery-access-form-heading small {
+  color: rgba(244, 242, 237, 0.58);
+  font-family: var(--rx-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.05em;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+
+.rx-client-gallery .gallery-access-form-heading strong {
+  font-family: var(--rx-sans);
+  font-size: 1rem;
 }
 
 .rx-client-gallery .gallery-delivery {
@@ -12029,7 +12069,8 @@ body.rx-lightbox-open {
 
   .rx-client-gallery .gallery-gate > .form-note,
   .rx-client-gallery .gallery-gate .access-options,
-  .rx-client-gallery .gallery-gate form {
+  .rx-client-gallery .gallery-gate form,
+  .rx-client-gallery .gallery-gate .gallery-access-forms {
     grid-column: 1;
   }
 
