@@ -15,6 +15,7 @@ type CookieReader = {
 
 export type AccessAlbum = {
   id: string;
+  client_id?: string | null;
   is_public?: boolean;
   is_password_protected: boolean;
   password_hash: string | null;
@@ -42,13 +43,19 @@ export function albumRequiresUnlock(album: AccessAlbum) {
 async function assignedClientByEmail(
   supabase: SupabaseClient,
   albumId: string,
-  email: string
+  email: string,
+  legacyClientId?: string | null
 ) {
   const { data: assignments } = await supabase
     .from("album_clients")
     .select("client_id")
     .eq("album_id", albumId);
-  const assignedClientIds = (assignments ?? []).map((row) => row.client_id);
+  const assignedClientIds = [
+    ...new Set([
+      ...(assignments ?? []).map((row) => row.client_id),
+      ...(legacyClientId ? [legacyClientId] : [])
+    ])
+  ];
 
   if (!assignedClientIds.length) {
     return null;
@@ -67,7 +74,8 @@ async function assignedClientByEmail(
 async function assignedClientBySession(
   supabase: SupabaseClient,
   albumId: string,
-  cookieStore: CookieReader
+  cookieStore: CookieReader,
+  legacyClientId?: string | null
 ) {
   const session = parseClientSessionCookie(
     cookieStore.get(clientSessionCookieName())?.value
@@ -98,7 +106,7 @@ async function assignedClientBySession(
     .eq("client_id", sessionClient.id)
     .maybeSingle();
 
-  return assignment ? sessionClient : null;
+  return assignment || legacyClientId === sessionClient.id ? sessionClient : null;
 }
 
 export async function getGalleryAccessForCookies({
@@ -133,7 +141,8 @@ export async function getGalleryAccessForCookies({
       const assignedClient = await assignedClientByEmail(
         supabase,
         album.id,
-        clientEmail
+        clientEmail,
+        album.client_id
       );
 
       if (assignedClient?.password_hash) {
@@ -152,7 +161,12 @@ export async function getGalleryAccessForCookies({
   }
 
   if (album.allow_client_password_access !== false) {
-    const sessionClient = await assignedClientBySession(supabase, album.id, cookieStore);
+    const sessionClient = await assignedClientBySession(
+      supabase,
+      album.id,
+      cookieStore,
+      album.client_id
+    );
 
     if (sessionClient) {
       return { canAccess: true, clientEmail: sessionClient.email };
