@@ -83,11 +83,22 @@ export default async function ClientPortalPage({
     redirect(`${siteConfig.routes.login}?error=session`);
   }
 
-  const { data: assignments } = await supabase
-    .from("album_clients")
-    .select("album_id")
-    .eq("client_id", portalClient.id);
-  const albumIds = (assignments ?? []).map((assignment) => assignment.album_id);
+  const [{ data: assignments }, { data: legacyAssignments }] = await Promise.all([
+    supabase
+      .from("album_clients")
+      .select("album_id")
+      .eq("client_id", portalClient.id),
+    supabase
+      .from("albums")
+      .select("id")
+      .eq("client_id", portalClient.id)
+  ]);
+  const albumIds = [
+    ...new Set([
+      ...(assignments ?? []).map((assignment) => assignment.album_id),
+      ...(legacyAssignments ?? []).map((album) => album.id)
+    ])
+  ];
   const { data: albumsData } = albumIds.length
     ? await supabase
         .from("albums")
