@@ -9,6 +9,7 @@ import { siteConfig } from "@/config/site";
 import { featuredAlbums } from "@/lib/sample-data";
 import { GalleryLightbox, type GalleryDisplayPhoto } from "@/components/gallery/GalleryLightbox";
 import { PhotoTile } from "@/components/PhotoTile";
+import { isAdminEmailAllowed } from "@/lib/admin-auth";
 import {
   albumRequiresUnlock,
   getGalleryAccessForCookies
@@ -105,17 +106,18 @@ export default async function ClientGalleryPage({
   }
 
   const cookieStore = await cookies();
+  const adminBypass = Boolean(user?.email && isAdminEmailAllowed(user.email));
   const galleryAccess = album
     ? await getGalleryAccessForCookies({
         supabase,
         album,
         cookieStore,
-        adminBypass: Boolean(user)
+        adminBypass
       })
     : { canAccess: false, clientEmail: null };
   const requiresUnlock = album ? albumRequiresUnlock(album) : false;
   const canViewPhotos =
-    Boolean(user) || !requiresUnlock || galleryAccess.canAccess;
+    adminBypass || !requiresUnlock || galleryAccess.canAccess;
   const photoBaseSelect = "id, filename, thumbnail_url, r2_object_key";
   const photoMetadataSelect = `${photoBaseSelect}, display_title, caption, camera_model, lens_model, focal_length, aperture, shutter_speed, iso, captured_at, location`;
   const { data: dbPhotos } =
@@ -154,12 +156,6 @@ export default async function ClientGalleryPage({
   const galleryLabel = album?.is_public ? "Public Gallery" : "Private Gallery";
   const canUseClientPassword =
     Boolean(album) && album?.allow_client_password_access !== false;
-  const needsClientEmail =
-    Boolean(album?.requires_email) ||
-    Boolean(album && !album.is_password_protected && canUseClientPassword);
-  const needsPassword =
-    Boolean(album?.is_password_protected) ||
-    Boolean(album && !album.is_password_protected && canUseClientPassword);
   const photoSummary = album
     ? canViewPhotos
       ? `${displayPhotos.length} photos`
@@ -282,7 +278,7 @@ export default async function ClientGalleryPage({
             {album?.is_password_protected ? (
               <div>
                 <strong>Gallery password</strong>
-                <span>Use the shared album password. Email is optional unless requested.</span>
+                <span>Use the shared album password. No client email is needed.</span>
               </div>
             ) : null}
             {canUseClientPassword ? (
@@ -291,35 +287,72 @@ export default async function ClientGalleryPage({
                 <span>Enter your client email and personal password to unlock assigned galleries.</span>
               </div>
             ) : null}
-            {!album?.is_password_protected && !canUseClientPassword ? (
+            {!album?.is_password_protected && !canUseClientPassword && album.requires_email ? (
+              <div>
+                <strong>Email access</strong>
+                <span>Confirm the email supplied for this gallery.</span>
+              </div>
+            ) : null}
+            {!album?.is_password_protected && !canUseClientPassword && !album.requires_email ? (
               <div>
                 <strong>Access not ready</strong>
                 <span>This private gallery needs an album password or assigned client access.</span>
               </div>
             ) : null}
           </div>
-          <form action={unlockGalleryAction}>
-            <input name="album_id" type="hidden" value={album.id} />
-            <input name="slug" type="hidden" value={album.slug} />
-            <label className="field">
-              Email
-              <input
-                name="client_email"
-                type="email"
-                placeholder="you@example.com"
-                required={needsClientEmail}
-              />
-            </label>
-            {needsPassword ? (
-              <label className="field">
-                {album?.is_password_protected ? "Gallery or client password" : "Client password"}
-                <input type="password" name="password" required />
-              </label>
+          <div className="gallery-access-forms">
+            {album.is_password_protected ? (
+              <form action={unlockGalleryAction}>
+                <input name="album_id" type="hidden" value={album.id} />
+                <input name="slug" type="hidden" value={album.slug} />
+                <div className="gallery-access-form-heading">
+                  <span>Option 01</span>
+                  <strong>Album password</strong>
+                  <small>Opens this gallery only. No client email is needed.</small>
+                </div>
+                <label className="field">
+                  Album password
+                  <input type="password" name="password" autoComplete="current-password" required />
+                </label>
+                <button className="button" type="submit">Unlock with album password</button>
+              </form>
             ) : null}
-            <button className="button" type="submit" disabled={!needsPassword && !needsClientEmail}>
-              Unlock gallery
-            </button>
-          </form>
+            {canUseClientPassword ? (
+              <form action={unlockGalleryAction}>
+                <input name="album_id" type="hidden" value={album.id} />
+                <input name="slug" type="hidden" value={album.slug} />
+                <div className="gallery-access-form-heading">
+                  <span>{album.is_password_protected ? "Option 02" : "Client access"}</span>
+                  <strong>Client login</strong>
+                  <small>Use the email assigned to this album and the client password.</small>
+                </div>
+                <label className="field">
+                  Client email
+                  <input name="client_email" type="email" autoComplete="email" placeholder="you@example.com" required />
+                </label>
+                <label className="field">
+                  Client password
+                  <input type="password" name="password" autoComplete="current-password" required />
+                </label>
+                <button className="button" type="submit">Unlock with client login</button>
+              </form>
+            ) : null}
+            {!album.is_password_protected && !canUseClientPassword && album.requires_email ? (
+              <form action={unlockGalleryAction}>
+                <input name="album_id" type="hidden" value={album.id} />
+                <input name="slug" type="hidden" value={album.slug} />
+                <div className="gallery-access-form-heading">
+                  <span>Email access</span>
+                  <strong>Confirm your email</strong>
+                </div>
+                <label className="field">
+                  Email
+                  <input name="client_email" type="email" autoComplete="email" placeholder="you@example.com" required />
+                </label>
+                <button className="button" type="submit">Continue</button>
+              </form>
+            ) : null}
+          </div>
         </section>
       ) : null}
 
