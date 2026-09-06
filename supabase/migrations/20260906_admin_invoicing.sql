@@ -1,6 +1,7 @@
 create table if not exists public.invoice_settings (
   id text primary key default 'main' check (id = 'main'), business_name text not null default 'RXNCOR Studio', issuer_name text not null default 'Malindu Herath',
-  email text, phone text, address text, abn text, pay_id text, currency text not null default 'AUD', invoice_prefix text not null default 'RX',
+  email text, phone text, address text, abn text, pay_id text, bank_name text, account_name text, bsb text, account_number text,
+  currency text not null default 'AUD', invoice_prefix text not null default 'RX',
   next_invoice_number integer not null default 1 check (next_invoice_number > 0), default_due_days integer not null default 14,
   default_gst_rate numeric(5,2) not null default 0, default_notes text, updated_at timestamptz not null default now()
 );
