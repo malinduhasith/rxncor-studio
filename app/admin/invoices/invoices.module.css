@@ -162,7 +162,9 @@
 .number { text-align: right !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .invoiceLink { color: #2458b7; font-weight: 720; }
 .rowActions { width: 1%; white-space: nowrap; }
-.rowActions a { display: inline-flex; align-items: center; gap: 5px; color: #4f5b6e; font-size: .65rem; font-weight: 650; }
+.rowActions { display: flex; align-items: center; gap: 8px; }
+.rowActions a,
+.rowActions button { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: none; color: #4f5b6e; cursor: pointer; font: inherit; font-size: .65rem; font-weight: 650; }
 .emptyRow { height: 120px; color: #7b8595 !important; text-align: center; }
 
 .status {
@@ -180,8 +182,13 @@
 }
 .draft { background: #f6f7f9; }
 .sent { border-color: #b8cff8; background: #eff5ff; color: #2453a1; }
+.viewed { border-color: #c8b9f3; background: #f5f1ff; color: #5b3aa8; }
 .overdue { border-color: #f1beb7; background: #fff2f0; color: #a33126; }
 .paid { border-color: #adddc4; background: #effaf4; color: #17673d; }
+.part-paid { border-color: #b7d8df; background: #eff9fb; color: #176472; }
+.accepted { border-color: #adddc4; background: #effaf4; color: #17673d; }
+.declined { border-color: #f1beb7; background: #fff2f0; color: #a33126; }
+.converted { border-color: #c8b9f3; background: #f5f1ff; color: #5b3aa8; }
 .void { background: #eef0f3; color: #707988; }
 
 .rateEditor {
@@ -235,6 +242,36 @@
 .detailLines small { color: #7b8596; font-size: .59rem; }
 .detailLines strong { color: #293448; font-variant-numeric: tabular-nums; }
 .invoiceActions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; padding: 11px 12px; background: #f8f9fb; }
+.invoiceActions form { display: inline-flex; }
+.detailColumns { display: grid; grid-template-columns: minmax(0,1fr) 410px; border-bottom: 1px solid #dfe3e8; }
+.detailColumns > div { min-width: 0; border-right: 1px solid #dfe3e8; }
+.detailColumns > aside { min-width: 0; padding: 12px; background: #fbfcfd; }
+.paymentForm { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; padding: 12px; border: 1px solid #dfe3e8; background: #fff; }
+.paymentForm > div,.paymentForm .wide,.paymentForm > button { grid-column: 1 / -1; }
+.paymentForm > div { display: grid; gap: 2px; padding-bottom: 8px; border-bottom: 1px solid #e1e5ea; }
+.paymentForm > div span,.paymentHistory > div:first-child span,.activity > div:first-child span { color: #7a8494; font-size: .58rem; font-weight: 750; letter-spacing: .07em; text-transform: uppercase; }
+.paymentForm > div strong,.paymentHistory > div:first-child strong,.activity > div:first-child strong { font-size: .75rem; }
+.paymentForm > div small { color: #687386; font-size: .63rem; }
+.paymentForm label { min-width: 0; display: grid; gap: 4px; color: #4b5668; font-size: .62rem; font-weight: 650; }
+.paymentHistory { display: grid; margin-top: 12px; border: 1px solid #dfe3e8; background: #fff; }
+.paymentHistory > div { min-width: 0; display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; gap: 10px; padding: 9px 10px; border-bottom: 1px solid #e4e7eb; font-size: .66rem; }
+.paymentHistory > div:first-child { display: grid; grid-template-columns: 1fr; gap: 2px; background: #f8f9fb; }
+.paymentHistory > div:last-child { border-bottom: 0; }
+.paymentHistory span { min-width: 0; display: grid; gap: 1px; }
+.paymentHistory small { overflow: hidden; color: #7b8596; font-size: .59rem; text-overflow: ellipsis; white-space: nowrap; }
+.paymentHistory b { font-variant-numeric: tabular-nums; }
+.paymentHistory button { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px; border: 1px solid #cbd2dc; border-radius: 4px; background: #fff; color: #5a6576; cursor: pointer; font: inherit; font-size: .58rem; font-weight: 650; }
+.reversedPayment { color: #8a93a1; text-decoration: line-through; }
+.activity { display: grid; }
+.activity > div { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 9px 12px; border-bottom: 1px solid #e4e7eb; color: #4c586a; font-size: .65rem; }
+.activity > div:first-child { display: grid; justify-content: start; gap: 2px; background: #f8f9fb; }
+.activity time { color: #7a8494; font-size: .6rem; white-space: nowrap; }
+.activity p { margin: 0; padding: 14px; color: #7a8494; font-size: .68rem; }
+.aging { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); }
+.aging > div { min-width: 0; display: grid; gap: 4px; padding: 14px; border-right: 1px solid #dfe3e8; }
+.aging > div:last-child { border-right: 0; }
+.aging span { color: #6b7586; font-size: .63rem; }
+.aging strong { overflow: hidden; font-size: .94rem; text-overflow: ellipsis; white-space: nowrap; }
 
 .srOnly {
   position: absolute;
@@ -294,6 +331,7 @@
 @media (max-width: 1180px) {
   .rateEditor { grid-template-columns: repeat(3, minmax(150px, 1fr)); }
   .workspace :global(.invoice-form-grid) { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+  .detailColumns { grid-template-columns: minmax(0,1fr) 360px; }
 }
 
 @media (max-width: 760px) {
@@ -319,6 +357,10 @@
   .workspace :global(.invoice-bottom .invoice-fieldset) { border-right: 0; border-bottom: 1px solid #dfe3e8; }
   .workspace :global(.invoice-submit-row) { align-items: stretch; flex-direction: column; }
   .workspace :global(.invoice-primary) { width: 100%; }
+  .detailColumns { grid-template-columns: 1fr; }
+  .detailColumns > div { border-right: 0; border-bottom: 1px solid #dfe3e8; }
+  .aging { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .aging > div { border-bottom: 1px solid #dfe3e8; }
 }
 
 @media (max-width: 480px) {
@@ -330,4 +372,9 @@
   .detailSummary { grid-template-columns: 1fr; }
   .detailSummary > div { border-right: 0; border-bottom: 1px solid #dfe3e8; }
   .invoiceActions { align-items: stretch; flex-direction: column; }
+  .invoiceActions form,.invoiceActions :global(.button) { width: 100%; }
+  .paymentForm { grid-template-columns: 1fr; }
+  .paymentForm > * { grid-column: 1 !important; }
+  .aging { grid-template-columns: 1fr; }
+  .aging > div { border-right: 0; }
 }

@@ -3,6 +3,7 @@
 import {
   Aperture,
   BookOpenText,
+  BriefcaseBusiness,
   CloudUpload,
   ContactRound,
   Download,
@@ -41,6 +42,7 @@ const destinations = [
   { label: "About builder", detail: "Edit the public About page", view: "about", icon: BookOpenText },
   { label: "Contact settings", detail: "Email, phone, and socials", view: "contact", icon: ContactRound },
   { label: "Invoices", detail: "Rates, billing, and payment tracking", view: "invoices", icon: ReceiptText },
+  { label: "Jobs pipeline", detail: "Leads, booked work, delivery, and billing", view: "pipeline", icon: BriefcaseBusiness },
 ] as const;
 
 export function AdminCommandMenu({

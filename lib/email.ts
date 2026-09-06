@@ -18,6 +18,8 @@ type EmailResult = {
 };
 
 type InvoiceEmailInput = {
+  documentKind: "invoice" | "estimate";
+  deliveryKind: "send" | "resend" | "reminder";
   invoiceId: string;
   invoiceNumber: string;
   clientName: string;
@@ -26,6 +28,8 @@ type InvoiceEmailInput = {
   issueDate: string;
   dueDate: string;
   total: string;
+  balance: string;
+  deposit?: string | null;
   invoiceUrl: string;
   payId?: string | null;
   bankName?: string | null;
@@ -187,19 +191,46 @@ function formatDuration(milliseconds: number | null | undefined) {
 }
 
 export async function sendInvoiceEmail(input: InvoiceEmailInput) {
-  const subject = `Invoice ${input.invoiceNumber}${input.projectTitle ? ` — ${input.projectTitle}` : ""}`;
+  const isEstimate = input.documentKind === "estimate";
+  const label = isEstimate ? "Estimate" : "Invoice";
+  const isReminder = input.deliveryKind === "reminder";
+  const subject = `${isReminder ? "Reminder — " : ""}${label} ${input.invoiceNumber}${input.projectTitle ? ` — ${input.projectTitle}` : ""}`;
   const bankTransfer = input.bsb && input.accountNumber
     ? `<br>Bank: ${escapeHtml(input.bankName || "Commonwealth Bank")}<br>Account name: ${escapeHtml(input.accountName || "Malindu Herath")}<br>BSB: ${escapeHtml(input.bsb)}<br>Account: ${escapeHtml(input.accountNumber)}`
     : "";
-  const payment = input.payId || bankTransfer
+  const payment = !isEstimate && (input.payId || bankTransfer)
     ? `<div style="margin:24px 0;padding:18px;border:1px solid #d9d9d9;background:#f7f7f5"><strong>Payment details</strong>${input.payId ? `<br>PayID: ${escapeHtml(input.payId)}` : ""}${bankTransfer}<br>Reference: ${escapeHtml(input.invoiceNumber)}</div>`
+    : "";
+  const dateLabel = isEstimate ? "Valid until" : "Due";
+  const heading = isReminder ? "A friendly payment reminder" : `${label} ready`;
+  const paymentText = !isEstimate
+    ? `${input.payId ? `\nPayID: ${input.payId}` : ""}${input.bsb && input.accountNumber ? `\nBank: ${input.bankName || "Commonwealth Bank"}\nAccount name: ${input.accountName || "Malindu Herath"}\nBSB: ${input.bsb}\nAccount: ${input.accountNumber}` : ""}\nReference: ${input.invoiceNumber}`
     : "";
   return sendEmail({
     to: input.clientEmail,
     subject,
-    text: `Hi ${input.clientName},\n\nYour invoice ${input.invoiceNumber} for ${input.total} is ready. It is due ${input.dueDate}.\n\nView invoice: ${input.invoiceUrl}${input.payId ? `\nPayID: ${input.payId}` : ""}${input.bsb && input.accountNumber ? `\nBank: ${input.bankName || "Commonwealth Bank"}\nAccount name: ${input.accountName || "Malindu Herath"}\nBSB: ${input.bsb}\nAccount: ${input.accountNumber}` : ""}\nReference: ${input.invoiceNumber}\n\nThank you,\nMalindu`,
-    html: `<!doctype html><html><body style="margin:0;background:#f2f2f0;color:#151515;font-family:Arial,sans-serif"><div style="max-width:620px;margin:auto;padding:40px 20px"><div style="background:#111827;color:white;padding:22px 26px"><strong style="font-size:20px">RXNCOR</strong><span style="float:right">${escapeHtml(input.invoiceNumber)}</span></div><div style="background:white;padding:32px 26px"><p>Hi ${escapeHtml(input.clientName)},</p><h1 style="font-size:30px;margin:18px 0 8px">Invoice ready</h1><p style="font-size:17px;line-height:1.6">${input.projectTitle ? `${escapeHtml(input.projectTitle)} · ` : ""}<strong>${escapeHtml(input.total)}</strong><br>Due ${escapeHtml(input.dueDate)}</p>${payment}<a href="${escapeHtml(input.invoiceUrl)}" style="display:inline-block;background:#6d3df5;color:white;text-decoration:none;padding:14px 20px;border-radius:8px;font-weight:700">View invoice</a><p style="margin-top:32px;color:#666">Thank you,<br>Malindu Herath</p></div></div></body></html>`,
-    event: { type: "invoice.sent", relatedType: "invoice", relatedId: input.invoiceId, metadata: { invoiceNumber: input.invoiceNumber } },
+    text: `Hi ${input.clientName},\n\n${isReminder ? `This is a friendly reminder that the remaining balance on ${input.invoiceNumber} is ${input.balance}.` : `Your ${label.toLowerCase()} ${input.invoiceNumber} for ${input.total} is ready.`}\n${dateLabel}: ${input.dueDate}${input.deposit ? `\nDeposit requested: ${input.deposit}` : ""}\n\nView ${label.toLowerCase()}: ${input.invoiceUrl}${paymentText}\n\nThank you,\nMalindu`,
+    html: `<!doctype html><html><body style="margin:0;background:#f3f5f7;color:#172033;font-family:Arial,Helvetica,sans-serif"><div style="max-width:640px;margin:auto;padding:36px 18px"><div style="border:1px solid #d9dee7;background:#fff"><div style="background:#172033;color:#fff;padding:22px 26px"><strong style="font-size:20px;letter-spacing:.04em">RXNCOR STUDIO</strong><span style="float:right;font-size:13px">${escapeHtml(input.invoiceNumber)}</span></div><div style="padding:32px 26px"><p style="margin:0 0 12px;color:#626d7e">Hi ${escapeHtml(input.clientName)},</p><h1 style="font-size:29px;line-height:1.15;margin:0 0 18px">${escapeHtml(heading)}</h1><div style="border-top:1px solid #dfe3e8;border-bottom:1px solid #dfe3e8;padding:17px 0;margin:0 0 22px"><strong style="display:block;font-size:24px">${escapeHtml(isReminder ? input.balance : input.total)}</strong><span style="display:block;margin-top:6px;color:#626d7e">${input.projectTitle ? `${escapeHtml(input.projectTitle)} · ` : ""}${dateLabel} ${escapeHtml(input.dueDate)}</span>${input.deposit ? `<span style="display:block;margin-top:5px;color:#626d7e">Deposit requested ${escapeHtml(input.deposit)}</span>` : ""}</div>${payment}<a href="${escapeHtml(input.invoiceUrl)}" style="display:inline-block;background:#5b3df5;color:#fff;text-decoration:none;padding:13px 18px;border-radius:5px;font-weight:700">View ${label.toLowerCase()}</a><p style="margin:30px 0 0;color:#626d7e;line-height:1.55">Thank you,<br>Malindu Herath<br>RXNCOR Studio</p></div></div><p style="margin:14px 0 0;color:#7a8391;font-size:12px;line-height:1.45">This is a secure document link from rxncor.studio. Reply to this email if you have a question.</p></div></body></html>`,
+    event: { type: `${input.documentKind}.${input.deliveryKind}`, relatedType: "invoice", relatedId: input.invoiceId, metadata: { invoiceNumber: input.invoiceNumber } },
+  });
+}
+
+export async function sendEstimateDecisionNotification(input: {
+  invoiceId: string;
+  invoiceNumber: string;
+  clientName: string;
+  clientEmail: string;
+  decision: "accepted" | "declined";
+  confirmedBy: string;
+}) {
+  const adminEmail = emailConfig().adminEmail;
+  const decisionLabel = input.decision === "accepted" ? "accepted" : "declined";
+  return sendEmail({
+    to: adminEmail,
+    subject: `${input.invoiceNumber} was ${decisionLabel}`,
+    text: `${input.clientName} (${input.clientEmail}) ${decisionLabel} estimate ${input.invoiceNumber}. Confirmed by: ${input.confirmedBy}.`,
+    html: `<!doctype html><html><body style="font-family:Arial,sans-serif;background:#f3f5f7;color:#172033;padding:30px"><div style="max-width:580px;margin:auto;background:white;border:1px solid #d9dee7;padding:28px"><small style="text-transform:uppercase;letter-spacing:.08em;color:#667085">Estimate decision</small><h1 style="margin:10px 0 18px">${escapeHtml(input.invoiceNumber)} was ${decisionLabel}</h1><p><strong>${escapeHtml(input.clientName)}</strong><br>${escapeHtml(input.clientEmail)}</p><p>Confirmed by ${escapeHtml(input.confirmedBy)}.</p></div></body></html>`,
+    event: { type: `estimate.${input.decision}`, relatedType: "invoice", relatedId: input.invoiceId, metadata: { invoiceNumber: input.invoiceNumber } },
   });
 }
 

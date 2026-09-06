@@ -315,6 +315,29 @@
 .app :global(.custom-link-row), .app :global(.copy-detail-row) { display: grid; gap: 7px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: #fff; }
 .app :global(.custom-link-row:last-child), .app :global(.copy-detail-row:last-child) { border-bottom: 0; }
 
+/* Connected studio operations */
+.app :global(.pipeline-metrics) { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border: 1px solid var(--line); border-bottom: 0; background: #fff; }
+.app :global(.pipeline-metrics > div) { min-width: 0; display: grid; gap: 2px; padding: 12px 14px; border-right: 1px solid var(--line); }
+.app :global(.pipeline-metrics > div:last-child) { border-right: 0; }
+.app :global(.pipeline-metrics span) { color: var(--muted); font-size: .64rem; }
+.app :global(.pipeline-metrics strong) { font-size: 1.08rem; }
+.app :global(.pipeline-table) { min-width: 1050px; }
+.app :global(.pipeline-table td:nth-child(2)) { max-width: 280px; }
+.app :global(.pipeline-table td:nth-child(2) strong), .app :global(.pipeline-table td:nth-child(2) small), .app :global(.pipeline-table td:nth-child(5) small) { display: block; }
+.app :global(.pipeline-table td:nth-child(2) small:last-child) { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app :global(.pipeline-stage) { display: inline-flex; padding: 3px 7px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface-subtle); color: #566174; font-size: .59rem; font-weight: 700; white-space: nowrap; }
+.app :global(.stage-lead), .app :global(.stage-qualified), .app :global(.stage-follow-up) { border-color: #c6d4ed; background: #f1f6ff; color: #315b9d; }
+.app :global(.stage-booked), .app :global(.stage-delivery) { border-color: #b9dac7; background: #eff9f3; color: #21643e; }
+.app :global(.admin-client-finance-row), .app :global(.request-finance-row) { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: #fff; }
+.app :global(.admin-client-finance-row > div:first-child) { display: grid; gap: 2px; }
+.app :global(.admin-client-finance-row > div:first-child strong) { font-size: .73rem; }
+.app :global(details.request-row) { padding: 0; border: 1px solid var(--line); background: #fff; }
+.app :global(details.request-row > summary) { cursor: pointer; list-style: none; }
+.app :global(details.request-row > summary::-webkit-details-marker) { display: none; }
+.app :global(details.request-row[open] > summary) { background: var(--surface-subtle); }
+.app :global(details.request-row > .table-message) { margin: 0; padding: 11px 14px; border-top: 1px solid var(--line); }
+.app :global(.request-finance-row > span) { color: var(--muted); font-size: .65rem; font-weight: 650; }
+
 @media (max-width: 1120px) {
   .app :global(.admin-sidebar) { gap: 14px; padding-inline: 20px; }
   .app :global(.admin-primary-nav > a), .app :global(.admin-more-menu > summary) { padding-inline: 8px; }
@@ -364,6 +387,10 @@
   .app :global(.admin-photo-primary-actions) { flex-wrap: wrap; }
   .app :global(.admin-photo-more dl) { grid-template-columns: 1fr; }
   .app :global(.admin-recipient-list) { margin-inline: 10px; }
+  .app :global(.pipeline-metrics) { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .app :global(.pipeline-metrics > div:nth-child(2)) { border-right: 0; }
+  .app :global(.pipeline-metrics > div:nth-child(-n+2)) { border-bottom: 1px solid var(--line); }
+  .app :global(.admin-client-finance-row), .app :global(.request-finance-row) { align-items: stretch; flex-direction: column; }
 }
 
 @media (min-width: 721px) and (max-width: 1180px) {

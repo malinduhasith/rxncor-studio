@@ -72,6 +72,7 @@ import {
   type AboutBlockSection,
 } from "@/lib/about-builder";
 import { isAdminEmailAllowed } from "@/lib/admin-auth";
+import { aud, billingDocumentKind } from "@/lib/invoices";
 import { adminNotices, type NoticeContent } from "@/lib/notices";
 import {
   photoDisplayLabel,
@@ -226,6 +227,19 @@ type ShootRequest = {
   ip_address: string | null;
 };
 
+type BillingSummary = {
+  id: string;
+  invoice_number: string;
+  client_id: string | null;
+  client_name: string;
+  client_email: string;
+  project_title: string | null;
+  status: "draft" | "sent" | "paid" | "void";
+  total_cents: number;
+  issuer_snapshot: unknown;
+  created_at: string;
+};
+
 type AdminPageProps = {
   searchParams: Promise<{
     notice?: string;
@@ -239,6 +253,7 @@ type AdminPageProps = {
 
 const adminViews = [
   "overview",
+  "pipeline",
   "about",
   "contact",
   "albums",
@@ -264,6 +279,12 @@ const adminViewCopy: Record<
     title: "Today in the studio",
     detail:
       "A quick read on delivery health, recent activity, and what needs attention.",
+  },
+  pipeline: {
+    label: "Jobs Pipeline",
+    title: "Studio jobs pipeline",
+    detail:
+      "Move leads through booking, production, delivery, and billing without losing the next action.",
   },
   about: {
     label: "About Builder",
@@ -820,6 +841,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     uploadEventsResult,
     emailEventsResult,
     auditLogsResult,
+    billingResult,
   ] = await Promise.all([
     supabase
       .from("clients")
@@ -875,6 +897,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       )
       .order("created_at", { ascending: false })
       .limit(20),
+    supabase
+      .from("invoices")
+      .select("id, invoice_number, client_id, client_name, client_email, project_title, status, total_cents, issuer_snapshot, created_at")
+      .order("created_at", { ascending: false })
+      .limit(500),
   ]);
 
   const clients = (clientsResult.data ?? []) as ClientOption[];
@@ -900,6 +927,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const uploadEvents = (uploadEventsResult.data ?? []) as UploadEvent[];
   const emailEvents = (emailEventsResult.data ?? []) as EmailEvent[];
   const auditLogs = (auditLogsResult.data ?? []) as AdminAuditLog[];
+  const billingDocuments = (billingResult.data ?? []) as BillingSummary[];
   // Supabase caps a regular select at 1,000 rows. Load deterministic pages so
   // every album count and storage total stays correct as the library grows.
   const photoMetricPageSize = 1_000;
@@ -1417,12 +1445,82 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     (_, index) => siteContactSettings.customLinks[index] ?? null,
   );
   const attentionCount = operationalItems.filter((item) => item.attention).length;
+  const latestBillingFor = (clientId: string | null, email: string) =>
+    billingDocuments.find(
+      (document) =>
+        document.status !== "void" &&
+        ((clientId && document.client_id === clientId) ||
+          document.client_email.toLowerCase() === email.toLowerCase()),
+    );
+  const pipelineRows = [
+    ...shootRequests.map((request) => {
+      const client = request.client_id
+        ? clientById.get(request.client_id)
+        : clients.find((candidate) => candidate.email?.toLowerCase() === request.email.toLowerCase());
+      const album = request.album_id ? albumById.get(request.album_id) : null;
+      const billing = latestBillingFor(client?.id ?? request.client_id, request.email);
+      const stage = request.status === "new"
+        ? "Lead"
+        : request.status === "reviewing"
+          ? "Qualified"
+          : request.status === "accepted" && album
+            ? "Delivery"
+            : request.status === "accepted"
+              ? "Booked"
+              : request.status === "declined"
+                ? "Declined"
+                : "Archived";
+      return {
+        id: `request-${request.id}`,
+        sortDate: request.updated_at,
+        clientName: request.name,
+        clientId: client?.id ?? null,
+        email: request.email,
+        source: "Shoot request",
+        sourceDetail: request.shoot_type,
+        stage,
+        schedule: formatDateTime(request.preferred_start_at),
+        album,
+        billing,
+        actionHref: billing
+          ? `/admin/invoices?invoice=${billing.id}`
+          : `/admin/invoices?tab=new&kind=estimate&client=${client?.id ?? ""}&leadName=${encodeURIComponent(request.name)}&leadEmail=${encodeURIComponent(request.email)}&leadPhone=${encodeURIComponent(request.phone ?? "")}&project=${encodeURIComponent(request.shoot_type)}`,
+        actionLabel: billing ? "Open billing" : "Create estimate",
+      };
+    }),
+    ...inquiries.map((inquiry) => {
+      const client = clients.find((candidate) => candidate.email?.toLowerCase() === inquiry.email.toLowerCase());
+      const billing = latestBillingFor(client?.id ?? null, inquiry.email);
+      return {
+        id: `inquiry-${inquiry.id}`,
+        sortDate: inquiry.created_at,
+        clientName: inquiry.name,
+        clientId: client?.id ?? null,
+        email: inquiry.email,
+        source: "Inquiry",
+        sourceDetail: inquiry.message,
+        stage: inquiry.status === "new" ? "Lead" : inquiry.status === "replied" ? "Follow-up" : "Archived",
+        schedule: "Not scheduled",
+        album: null,
+        billing,
+        actionHref: billing
+          ? `/admin/invoices?invoice=${billing.id}`
+          : `/admin/invoices?tab=new&kind=estimate&client=${client?.id ?? ""}&leadName=${encodeURIComponent(inquiry.name)}&leadEmail=${encodeURIComponent(inquiry.email)}&leadPhone=${encodeURIComponent(inquiry.phone ?? "")}&project=${encodeURIComponent("Inquiry follow-up")}`,
+        actionLabel: billing ? "Open billing" : "Create estimate",
+      };
+    }),
+  ].sort((a, b) => b.sortDate.localeCompare(a.sortDate));
+  const bookedJobs = pipelineRows.filter((row) => ["Booked", "Delivery"].includes(row.stage));
+  const unbilledJobs = bookedJobs.filter((row) => !row.billing);
+  const activeLeads = pipelineRows.filter((row) => ["Lead", "Qualified", "Follow-up"].includes(row.stage));
+  const deliveryJobs = pipelineRows.filter((row) => row.stage === "Delivery");
 
   return (
     <AdminWorkspaceShell
       activeView={activeView}
       counts={{
         overview: attentionCount,
+        pipeline: activeLeads.length + unbilledJobs.length,
         requests: newShootRequestCount,
         inquiries: newInquiryCount,
       }}
@@ -1728,6 +1826,45 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </a>
               </div>
             </>
+          ) : null}
+
+          {activeView === "pipeline" ? (
+            <section id="jobs-pipeline" className="admin-section">
+              <div className="pipeline-metrics" aria-label="Jobs pipeline summary">
+                <div><span>Active leads</span><strong>{activeLeads.length}</strong></div>
+                <div><span>Booked work</span><strong>{bookedJobs.length}</strong></div>
+                <div><span>In delivery</span><strong>{deliveryJobs.length}</strong></div>
+                <div><span>Booked, unbilled</span><strong>{unbilledJobs.length}</strong></div>
+              </div>
+              <div className="panel-title-row">
+                <div>
+                  <h2 className="section-title">Lead-to-payment workflow</h2>
+                  <p className="muted">One operational list connecting enquiries, shoot requests, client records, galleries, and billing.</p>
+                </div>
+                <div className="inline-actions">
+                  <Link className="button secondary small" href="/admin/invoices?tab=new&kind=estimate">New estimate</Link>
+                  <Link className="button small" href="/admin/invoices?tab=new&kind=invoice">New invoice</Link>
+                </div>
+              </div>
+              <div className="table-wrap pipeline-table-wrap">
+                <table className="table pipeline-table">
+                  <thead><tr><th>Stage</th><th>Client / source</th><th>Schedule</th><th>Delivery</th><th>Billing</th><th>Next action</th></tr></thead>
+                  <tbody>
+                    {pipelineRows.map((row) => (
+                      <tr key={row.id}>
+                        <td><span className={`pipeline-stage stage-${row.stage.toLowerCase().replaceAll(" ", "-")}`}>{row.stage}</span></td>
+                        <td><strong>{row.clientName}</strong><small>{row.email}</small><small>{row.source} · {row.sourceDetail}</small></td>
+                        <td>{row.schedule}</td>
+                        <td>{row.album ? <Link href={adminHref("albums", { album: row.album.id })}>{row.album.title}</Link> : <span className="muted">Not created</span>}</td>
+                        <td>{row.billing ? <><Link href={`/admin/invoices?invoice=${row.billing.id}`}>{row.billing.invoice_number}</Link><small>{billingDocumentKind(row.billing)} · {row.billing.status} · {aud(row.billing.total_cents)}</small></> : <span className="muted">Not started</span>}</td>
+                        <td><div className="table-actions"><Link className="button secondary small" href={row.actionHref}>{row.actionLabel}</Link>{row.clientId ? <Link className="button secondary small" href={adminHref("clients", { clientQ: row.email })}>Client</Link> : null}</div></td>
+                      </tr>
+                    ))}
+                    {!pipelineRows.length ? <tr><td colSpan={6}>No leads or jobs yet.</td></tr> : null}
+                  </tbody>
+                </table>
+              </div>
+            </section>
           ) : null}
 
           {activeView === "about" ? (
@@ -3595,6 +3732,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         Save
                       </button>
                     </form>
+                    <div className="admin-client-finance-row">
+                      <div><span className="label">Finance</span><strong>Start from this client</strong></div>
+                      <div className="inline-actions">
+                        <Link className="button secondary small" href={`/admin/invoices?tab=new&kind=estimate&client=${client.id}`}>New estimate</Link>
+                        <Link className="button secondary small" href={`/admin/invoices?tab=new&kind=invoice&client=${client.id}`}>New invoice</Link>
+                      </div>
+                    </div>
                     <ClientPasswordResetForm
                       clientId={client.id}
                       clientEmail={client.email}
@@ -4274,8 +4418,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     : null;
 
                   return (
-                    <article className="request-card" key={request.id}>
-                      <div className="panel-title-row">
+                    <details className="request-card request-row" key={request.id}>
+                      <summary className="panel-title-row">
                         <div>
                           <p className="eyebrow">{request.status}</p>
                           <h3>{request.name}</h3>
@@ -4298,10 +4442,17 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                             <span>Album: {linkedAlbum.title}</span>
                           ) : null}
                         </div>
-                      </div>
+                      </summary>
                       {request.message ? (
                         <p className="table-message">{request.message}</p>
                       ) : null}
+                      <div className="request-finance-row">
+                        <span>Finance follow-up</span>
+                        <div className="inline-actions">
+                          <Link className="button secondary small" href={`/admin/invoices?tab=new&kind=estimate&client=${linkedClient?.id ?? ""}&leadName=${encodeURIComponent(request.name)}&leadEmail=${encodeURIComponent(request.email)}&leadPhone=${encodeURIComponent(request.phone ?? "")}&project=${encodeURIComponent(request.shoot_type)}`}>Create estimate</Link>
+                          <Link className="button secondary small" href={`/admin/invoices?tab=new&kind=invoice&client=${linkedClient?.id ?? ""}&leadName=${encodeURIComponent(request.name)}&leadEmail=${encodeURIComponent(request.email)}&leadPhone=${encodeURIComponent(request.phone ?? "")}&project=${encodeURIComponent(request.shoot_type)}`}>Create invoice</Link>
+                        </div>
+                      </div>
                       <form
                         action={updateShootRequestAction}
                         className="request-edit-form"
@@ -4437,7 +4588,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                           Delete request
                         </ConfirmSubmitButton>
                       </form>
-                    </article>
+                    </details>
                   );
                 })}
                 {!shootRequests.length ? (
@@ -4477,6 +4628,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <th>Client</th>
                       <th>Message</th>
                       <th>Status</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -4519,11 +4671,17 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                             </button>
                           </form>
                         </td>
+                        <td>
+                          <div className="table-actions">
+                            <a className="button secondary small" href={`mailto:${inquiry.email}`}>Reply</a>
+                            <Link className="button secondary small" href={`/admin/invoices?tab=new&kind=estimate&leadName=${encodeURIComponent(inquiry.name)}&leadEmail=${encodeURIComponent(inquiry.email)}&leadPhone=${encodeURIComponent(inquiry.phone ?? "")}&project=${encodeURIComponent("Inquiry follow-up")}`}>Estimate</Link>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                     {!inquiries.length ? (
                       <tr>
-                        <td colSpan={4}>No booking inquiries yet.</td>
+                        <td colSpan={5}>No booking inquiries yet.</td>
                       </tr>
                     ) : null}
                   </tbody>

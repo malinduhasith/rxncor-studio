@@ -2,6 +2,7 @@ import {
   Aperture,
   Archive,
   BookOpenText,
+  BriefcaseBusiness,
   CloudUpload,
   ContactRound,
   Download,
@@ -26,6 +27,7 @@ export type AdminWorkspaceView =
   | "albums"
   | "clients"
   | "invoices"
+  | "pipeline"
   | "requests"
   | "inquiries"
   | "delivery"
@@ -56,6 +58,7 @@ const navigationGroups: { label: string; items: NavigationItem[] }[] = [
   {
     label: "Jobs & delivery",
     items: [
+      { view: "pipeline", label: "Jobs pipeline", icon: BriefcaseBusiness },
       { view: "requests", label: "Shoot requests", icon: Aperture },
       { view: "inquiries", label: "Inquiries", icon: MessageSquareText },
       { view: "uploads", label: "Uploads", icon: CloudUpload },
