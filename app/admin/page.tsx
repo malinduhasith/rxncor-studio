@@ -1,27 +1,15 @@
 import {
-  Aperture,
-  Archive,
-  BookOpenText,
   CalendarDays,
   CircleAlert,
   CircleCheck,
-  CloudUpload,
-  ContactRound,
   DatabaseBackup,
-  Download,
   ExternalLink,
   FileArchive,
-  FolderKanban,
-  Gauge,
   ImageUp,
-  LayoutDashboard,
   Link as LinkIcon,
   LockKeyhole,
   Mail,
-  Menu,
-  MessageSquareText,
   Plus,
-  ReceiptText,
   Save,
   Search,
   Settings2,
@@ -61,6 +49,7 @@ import {
 } from "./actions";
 import { AdminFileActionButton } from "@/components/admin/AdminFileActionButton";
 import { AdminCommandMenu } from "@/components/admin/AdminCommandMenu";
+import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
 import { AdminPasswordField } from "@/components/admin/AdminPasswordField";
 import { AdminPhotoUpload } from "@/components/admin/AdminPhotoUpload";
 import { AdminZipUpload } from "@/components/admin/AdminZipUpload";
@@ -91,7 +80,6 @@ import {
 import { createDownloadUrl, objectKeyFromPublicUrl } from "@/lib/r2";
 import { getSiteContactSettings } from "@/lib/site-settings";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import styles from "./admin.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -266,22 +254,6 @@ const adminViews = [
 ] as const;
 
 type AdminView = (typeof adminViews)[number];
-
-const adminViewIcons: Record<AdminView, typeof LayoutDashboard> = {
-  overview: LayoutDashboard,
-  about: BookOpenText,
-  contact: ContactRound,
-  albums: FolderKanban,
-  clients: UsersRound,
-  "new-album": Plus,
-  uploads: CloudUpload,
-  monitoring: Gauge,
-  delivery: Mail,
-  downloads: Download,
-  requests: Aperture,
-  inquiries: MessageSquareText,
-  backups: Archive,
-};
 
 const adminViewCopy: Record<
   AdminView,
@@ -928,37 +900,30 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const uploadEvents = (uploadEventsResult.data ?? []) as UploadEvent[];
   const emailEvents = (emailEventsResult.data ?? []) as EmailEvent[];
   const auditLogs = (auditLogsResult.data ?? []) as AdminAuditLog[];
-  const albumPhotoResult = albums.length
-    ? await supabase
-        .from("photos")
-        .select("album_id")
-        .in(
-          "album_id",
-          albums.map((album) => album.id),
-        )
-    : { data: [], error: null };
-  const photoStorageResult = albums.length
-    ? await supabase
+  // Supabase caps a regular select at 1,000 rows. Load deterministic pages so
+  // every album count and storage total stays correct as the library grows.
+  const photoMetricPageSize = 1_000;
+  const photoMetricPageCount = albums.length
+    ? Math.max(1, Math.ceil(photoCount / photoMetricPageSize))
+    : 0;
+  const photoMetricResults = await Promise.all(
+    Array.from({ length: photoMetricPageCount }, (_, page) =>
+      supabase
         .from("photos")
         .select(
-          "album_id, thumbnail_size_bytes, preview_size_bytes, full_size_bytes, file_size_bytes, generated_thumbnail, generated_preview",
+          "id, album_id, thumbnail_size_bytes, preview_size_bytes, full_size_bytes, file_size_bytes, generated_thumbnail, generated_preview",
         )
-        .in(
-          "album_id",
-          albums.map((album) => album.id),
-        )
-    : { data: [], error: null };
+        .order("id", { ascending: true })
+        .range(page * photoMetricPageSize, (page + 1) * photoMetricPageSize - 1),
+    ),
+  );
+  const photoMetricRows = photoMetricResults.flatMap((result) => result.data ?? []);
+  const photoMetricError = photoMetricResults.find((result) => result.error)?.error ?? null;
   const albumPhotoCounts = new Map<string, number>();
   const albumStorageBytes = new Map<string, number>();
   const albumGeneratedCounts = new Map<string, number>();
 
-  for (const row of (albumPhotoResult.data ?? []) as { album_id: string }[]) {
-    albumPhotoCounts.set(
-      row.album_id,
-      (albumPhotoCounts.get(row.album_id) ?? 0) + 1,
-    );
-  }
-  for (const row of (photoStorageResult.data ?? []) as {
+  for (const row of photoMetricRows as {
     album_id: string;
     thumbnail_size_bytes: number | null;
     preview_size_bytes: number | null;
@@ -967,6 +932,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     generated_thumbnail: boolean | null;
     generated_preview: boolean | null;
   }[]) {
+    albumPhotoCounts.set(
+      row.album_id,
+      (albumPhotoCounts.get(row.album_id) ?? 0) + 1,
+    );
     const bytes =
       row.file_size_bytes ??
       (row.thumbnail_size_bytes ?? 0) +
@@ -1181,20 +1150,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             "One or more summary counts could not be loaded. The lists may still work, but headline numbers may be lower than expected.",
         }
       : null,
-    albumPhotoResult.error
+    photoMetricError
       ? {
           tone: "warning",
-          title: "Album photo counts unavailable",
+          title: "Album photo metrics unavailable",
           message:
-            "Per-album photo counts could not be loaded. Album readiness and filters may be incomplete.",
-        }
-      : null,
-    photoStorageResult.error
-      ? {
-          tone: "warning",
-          title: "Storage tracking needs setup",
-          message:
-            "Run the upload monitoring Supabase migration to show tracked storage and generated-image counts.",
+            "Per-album photo counts and storage totals could not be loaded. Album readiness may be incomplete.",
         }
       : null,
     uploadEventsResult.error
@@ -1458,74 +1419,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const attentionCount = operationalItems.filter((item) => item.attention).length;
 
   return (
-    <main className={`${styles.app} admin-v3`}>
-      <div className="admin-layout" data-view={activeView}>
-        <aside className="admin-sidebar" aria-label="Admin workspace navigation">
-          <div className="admin-sidebar-brand">
-            <div className="admin-brand-mark" aria-hidden="true">R</div>
-            <div>
-              <strong className="admin-sidebar-title">RXNCOR</strong>
-              <span>Studio</span>
-            </div>
-          </div>
-          <nav className="admin-primary-nav" aria-label="Primary admin pages">
-            {(["overview", "albums", "clients", "requests", "about", "monitoring"] as AdminView[]).map((viewName) => {
-              const ViewIcon = adminViewIcons[viewName];
-              const isInbox = viewName === "requests";
-              const count = viewName === "overview" ? attentionCount : isInbox ? newShootRequestCount + newInquiryCount : 0;
-              return (
-                <a
-                  className={activeView === viewName || (isInbox && activeView === "inquiries") ? "active" : undefined}
-                  href={adminHref(viewName, { album: viewName === "albums" ? selectedAlbum?.id : undefined })}
-                  aria-current={activeView === viewName ? "page" : undefined}
-                  key={viewName}
-                >
-                  <ViewIcon size={17} />
-                  <span>{isInbox ? "Inbox" : viewName === "about" ? "Website" : viewName === "monitoring" ? "Activity" : adminViewCopy[viewName].label}</span>
-                  {count > 0 ? <span className="admin-nav-count">{count}</span> : null}
-                </a>
-              );
-            })}
-            <a href="/admin/invoices"><ReceiptText size={17} /><span>Invoices</span></a>
-            <details className="admin-more-menu">
-              <summary><Menu size={17} /> More</summary>
-              <div>
-                {(["new-album", "uploads", "delivery", "inquiries", "contact", "downloads", "backups"] as AdminView[]).map((viewName) => {
-                  const ViewIcon = adminViewIcons[viewName];
-                  return <a href={adminHref(viewName, { album: selectedAlbum?.id })} key={viewName}><ViewIcon size={16} />{adminViewCopy[viewName].label}</a>;
-                })}
-              </div>
-            </details>
-          </nav>
-          <div className="admin-sidebar-footer">
-            <a className="admin-create-shortcut" href={adminHref("new-album")}>
-              <Plus size={16} /> New album
-            </a>
-            <a href="/" target="_blank" rel="noreferrer" aria-label="Open public website">
-              <ExternalLink size={17} />
-            </a>
-          </div>
-        </aside>
-
-        <section className="dashboard-panel admin-main-panel">
-          <details className="admin-mobile-nav">
-            <summary><Menu size={18} /> Navigate admin</summary>
-            <div className="admin-mobile-nav-grid">
-              <a href="/admin/invoices"><ReceiptText size={17} /> Invoices</a>
-              {adminViews.map((viewName) => {
-                const ViewIcon = adminViewIcons[viewName];
-                return (
-                  <a
-                    className={activeView === viewName ? "active" : undefined}
-                    href={adminHref(viewName, { album: selectedAlbum?.id })}
-                    key={viewName}
-                  >
-                    <ViewIcon size={17} /> {adminViewCopy[viewName].label}
-                  </a>
-                );
-              })}
-            </div>
-          </details>
+    <AdminWorkspaceShell
+      activeView={activeView}
+      counts={{
+        overview: attentionCount,
+        requests: newShootRequestCount,
+        inquiries: newInquiryCount,
+      }}
+      selectedAlbumId={selectedAlbum?.id}
+    >
           <div className="admin-topbar">
             <div>
               <p className="eyebrow">Admin / {activeViewCopy.label}</p>
@@ -1564,7 +1466,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   <ExternalLink size={16} />
                   View contact section
                 </Link>
-              ) : (
+              ) : activeView === "clients" ? (
+                <a className="button small" href="#new-client">
+                  <Plus size={16} />
+                  Add client
+                </a>
+              ) : ["overview", "albums", "uploads", "delivery"].includes(activeView) ? (
                 <>
                   <a
                     className="button secondary small"
@@ -1588,7 +1495,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     </a>
                   ) : null}
                 </>
-              )}
+              ) : null}
             </div>
           </div>
           <nav className="admin-command-bar" aria-label="Primary admin actions">
@@ -3567,7 +3474,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </div>
                 <p>Client passwords open the portal and every assigned album. Gallery passwords protect only one shared gallery.</p>
               </div>
-              <details className="admin-create-panel" open={!clients.length}>
+              <details className="admin-create-panel" id="new-client" open={!clients.length}>
                 <summary><Plus size={18} /> Add a new client</summary>
               <form action={createClientAction}>
                 <label className="field">
@@ -4696,8 +4603,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </div>
             </section>
           ) : null}
-        </section>
-      </div>
-    </main>
+    </AdminWorkspaceShell>
   );
 }

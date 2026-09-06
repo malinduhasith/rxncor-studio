@@ -1,28 +1,38 @@
-:global(body:has(.admin-v3) .rx-nav),
-:global(body:has(.admin-v3) .rx-footer),
-:global(body:has(.admin-v3) .rr-cursor-orb),
-:global(body:has(.admin-v3) .rr-site-noise),
-:global(body:has(.admin-v3) .rr-scroll-transition) { display: none !important; }
+:global(body):has(.app) :global(.rx-nav),
+:global(body):has(.app) :global(.rx-footer),
+:global(body):has(.app) :global(.rr-cursor-orb),
+:global(body):has(.app) :global(.rr-site-noise),
+:global(body):has(.app) :global(.rr-scroll-transition) { display: none !important; }
 
-:global(html.rr-motion-ready:has(.admin-v3)),
-:global(html.rr-motion-ready:has(.admin-v3) body),
-:global(html.rr-motion-ready:has(.admin-v3) a),
-:global(html.rr-motion-ready:has(.admin-v3) button),
-:global(html.rr-motion-ready:has(.admin-v3) input),
-:global(html.rr-motion-ready:has(.admin-v3) textarea),
-:global(html.rr-motion-ready:has(.admin-v3) select) { cursor: auto !important; }
+:global(html):has(.app),
+:global(body):has(.app) {
+  min-width: 320px;
+  margin: 0;
+  overflow-x: clip;
+  background: #f6f7f9 !important;
+  color-scheme: light;
+  scroll-behavior: auto !important;
+}
+
+:global(html.rr-motion-ready):has(.app),
+:global(html.rr-motion-ready):has(.app) :global(body),
+:global(html.rr-motion-ready):has(.app) :global(a),
+:global(html.rr-motion-ready):has(.app) :global(button),
+:global(html.rr-motion-ready):has(.app) :global(input),
+:global(html.rr-motion-ready):has(.app) :global(textarea),
+:global(html.rr-motion-ready):has(.app) :global(select) { cursor: auto !important; }
 
 .app {
-  --admin-bg: #f4f6f8;
+  --admin-bg: #f6f7f9;
   --surface: #fff;
   --surface-subtle: #f8f9fb;
   --text: #172033;
   --muted: #687386;
   --line: #dfe3e8;
   --line-strong: #c9d0d9;
-  --accent: #5d45e8;
-  --accent-hover: #4932cf;
-  --accent-soft: #f0edff;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-soft: #eff6ff;
   --success: #16834b;
   --warning: #b67600;
   --danger: #c83c32;
@@ -41,18 +51,23 @@
 .app h1, .app h2, .app h3, .app h4, .app p { font-family: inherit; }
 
 /* Application shell */
-.app :global(.admin-layout) { width: 100%; min-height: 100svh; display: grid; grid-template-columns: minmax(0,1fr); grid-template-rows: auto 1fr; gap: 0; align-items: stretch; margin: 0; overflow: visible; border: 0; border-radius: 0; background: var(--admin-bg); box-shadow: none; }
-.app :global(.admin-sidebar) { position: sticky; top: 0; z-index: 40; width: 100%; min-width: 0; min-height: 64px; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 28px; padding: 0 32px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: rgba(255,255,255,.98); box-shadow: none; backdrop-filter: blur(14px); }
-.app :global(.admin-sidebar-brand) { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
-.app :global(.admin-brand-mark) { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 5px; background: #202534; color: #fff; font-size: .78rem; font-weight: 800; }
-.app :global(.admin-sidebar-brand > div:last-child) { display: grid; gap: 0; }
-.app :global(.admin-sidebar-title) { color: var(--text); font-size: .82rem; font-weight: 760; letter-spacing: .025em; line-height: 1.1; }
-.app :global(.admin-sidebar-brand span) { color: var(--muted); font-size: .65rem; }
-.app :global(.admin-primary-nav) { min-width: 0; display: flex; align-items: center; justify-content: center; gap: 2px; overflow-x: auto; scrollbar-width: none; }
-.app :global(.admin-primary-nav::-webkit-scrollbar) { display: none; }
-.app :global(.admin-primary-nav > a), .app :global(.admin-more-menu > summary) { min-height: 36px; display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border: 0; border-radius: 5px; color: #657083; font-size: .75rem; font-weight: 600; white-space: nowrap; }
-.app :global(.admin-primary-nav > a:hover), .app :global(.admin-more-menu > summary:hover) { background: var(--surface-subtle); color: var(--text); }
-.app :global(.admin-primary-nav > a.active) { background: var(--accent-soft); color: var(--accent); }
+.app :global(.admin-layout) { width: 100%; min-height: 100svh; display: grid; grid-template-columns: 244px minmax(0,1fr); align-items: stretch; margin: 0; overflow: visible; border: 0; border-radius: 0; background: var(--admin-bg); box-shadow: none; }
+.app :global(.admin-sidebar) { position: sticky; top: 0; z-index: 40; width: 244px; min-width: 0; height: 100svh; display: flex; flex-direction: column; align-items: stretch; gap: 0; overflow-y: auto; padding: 18px 14px 14px; border: 0; border-right: 1px solid #263244; border-radius: 0; background: #111827; color: #d7deea; box-shadow: none; }
+.app :global(.admin-sidebar-brand) { min-height: 54px; display: flex; align-items: center; gap: 11px; padding: 0 8px 16px; border-bottom: 1px solid #2a3547; color: #fff; white-space: nowrap; }
+.app :global(.admin-signature-mark) { width: 86px; height: 32px; display: flex; align-items: center; overflow: hidden; }
+.app :global(.admin-signature-mark img) { width: 86px; height: auto; max-height: 32px; object-fit: contain; object-position: left center; filter: brightness(0) invert(1); }
+.app :global(.admin-brand-copy) { min-width: 0; display: grid; gap: 2px; }
+.app :global(.admin-brand-copy strong) { color: #fff; font-size: .73rem; font-weight: 700; letter-spacing: .01em; }
+.app :global(.admin-brand-copy small) { overflow: hidden; color: #8e9aae; font-size: .58rem; text-overflow: ellipsis; }
+.app :global(.admin-create-shortcut) { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin: 16px 4px 13px; padding: 8px 11px; border: 1px solid #3974ed; border-radius: 5px; background: #2563eb; color: #fff; font-size: .72rem; font-weight: 700; }
+.app :global(.admin-create-shortcut:hover) { border-color: #4c82f1; background: #2f6cec; }
+.app :global(.admin-primary-nav) { min-width: 0; display: grid; gap: 17px; padding: 2px 0 18px; overflow: visible; }
+.app :global(.admin-nav-group) { display: grid; gap: 3px; }
+.app :global(.admin-nav-group-label) { padding: 0 10px 5px; color: #66758c; font-size: .57rem; font-weight: 760; letter-spacing: .08em; text-transform: uppercase; }
+.app :global(.admin-primary-nav a) { min-height: 35px; display: grid; grid-template-columns: 18px minmax(0,1fr) auto; align-items: center; gap: 8px; padding: 7px 9px; border: 1px solid transparent; border-radius: 5px; color: #adb8c8; font-size: .71rem; font-weight: 600; white-space: nowrap; }
+.app :global(.admin-primary-nav a:hover) { background: #192235; color: #fff; }
+.app :global(.admin-primary-nav a.active) { border-color: #2d3b50; background: #202b3e; color: #fff; }
+.app :global(.admin-primary-nav a.active svg) { color: #6ea0ff; }
 .app :global(.admin-nav-count) { min-width: 18px; height: 18px; display: grid; place-items: center; padding: 0 5px; border-radius: 999px; background: #fff0cf; color: #8a5d00; font-size: .6rem; font-weight: 800; }
 .app :global(.admin-more-menu) { position: relative; }
 .app :global(.admin-more-menu > summary) { cursor: pointer; list-style: none; }
@@ -60,13 +75,13 @@
 .app :global(.admin-more-menu > div) { position: absolute; top: calc(100% + 7px); right: 0; width: 220px; display: grid; padding: 5px; border: 1px solid var(--line); border-radius: 6px; background: #fff; box-shadow: 0 12px 30px rgba(25,34,50,.14); }
 .app :global(.admin-more-menu > div a) { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 4px; color: #505b6d; font-size: .75rem; }
 .app :global(.admin-more-menu > div a:hover) { background: var(--surface-subtle); color: var(--accent); }
-.app :global(.admin-sidebar-footer) { display: flex; align-items: center; gap: 7px; }
-.app :global(.admin-create-shortcut), .app :global(.admin-sidebar-footer > a:last-child) { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 11px; border: 1px solid var(--line-strong); border-radius: 5px; background: #fff; color: #465166; font-size: .73rem; font-weight: 650; }
-.app :global(.admin-create-shortcut) { border-color: var(--accent); background: var(--accent); color: #fff; }
-.app :global(.admin-create-shortcut:hover) { border-color: var(--accent-hover); background: var(--accent-hover); }
-.app :global(.admin-sidebar-footer > a:last-child) { width: 36px; padding: 0; }
+.app :global(.admin-sidebar-footer) { display: grid; gap: 9px; margin-top: auto; padding: 14px 8px 2px; border-top: 1px solid #2a3547; }
+.app :global(.admin-environment) { display: flex; align-items: center; gap: 7px; color: #8e9aae; font-size: .61rem; font-weight: 600; }
+.app :global(.admin-environment i) { width: 7px; height: 7px; border-radius: 999px; background: #31c47c; box-shadow: 0 0 0 3px rgba(49,196,124,.12); }
+.app :global(.admin-sidebar-footer a) { display: flex; align-items: center; justify-content: space-between; gap: 7px; color: #c3ccda; font-size: .67rem; font-weight: 600; }
+.app :global(.admin-sidebar-footer a:hover) { color: #fff; }
 
-.app :global(.admin-main-panel) { width: min(1600px,100%); min-width: 0; display: block; margin: 0 auto; padding: 24px 32px 52px; background: transparent; }
+.app :global(.admin-main-panel) { width: min(1540px,100%); min-width: 0; display: block; margin: 0 auto; padding: 22px 30px 52px; background: transparent; }
 .app :global(.admin-mobile-nav) { display: none; }
 .app :global(.admin-topbar) { min-height: 42px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
 .app :global(.admin-topbar > div:first-child) { display: grid; gap: 2px; }
@@ -311,6 +326,7 @@
   .app :global(.admin-main-panel) { padding: 0 18px 36px; }
   .app :global(.admin-mobile-nav) { position: sticky; top: 0; z-index: 30; display: block; margin: 0 -18px 14px; border-bottom: 1px solid var(--line); background: #fff; }
   .app :global(.admin-mobile-nav > summary) { min-height: 50px; display: flex; align-items: center; gap: 7px; padding: 9px 18px; cursor: pointer !important; list-style: none; font-size: .75rem; font-weight: 700; }
+  .app :global(.admin-mobile-nav > summary strong) { margin-left: auto; color: var(--muted); font-size: .66rem; font-weight: 650; }
   .app :global(.admin-mobile-nav-grid) { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 4px; padding: 0 12px 12px; }
   .app :global(.admin-mobile-nav-grid a) { display: flex; align-items: center; gap: 6px; padding: 8px; border-radius: 4px; color: #606b7d; font-size: .67rem; }
   .app :global(.admin-mobile-nav-grid a.active) { background: var(--accent-soft); color: var(--accent); }

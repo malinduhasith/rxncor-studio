@@ -56,5 +56,72 @@ export async function invoiceStatusAction(formData: FormData) {
   revalidatePath("/admin/invoices"); revalidatePath(`/invoice/${invoice.public_token}`); redirect(`/admin/invoices?invoice=${id}&notice=${action}`);
 }
 
-export async function saveRateAction(formData:FormData){const supabase=await admin();const id=String(formData.get("id")||"");const row={client_id:String(formData.get("client_id")||"")||null,service_name:String(formData.get("service_name")||""),category:String(formData.get("category")||"Other"),work_context:String(formData.get("work_context")||"Any"),unit:String(formData.get("unit")||"hour"),rate_cents:Math.round(Number(formData.get("rate"))*100),is_active:true};if(id)await supabase.from("client_rates").update(row).eq("id",id);else await supabase.from("client_rates").insert(row);revalidatePath("/admin/invoices");redirect("/admin/invoices?tab=rates&notice=rate-saved");}
+const rateSchema = z.object({
+  id: z.union([z.string().uuid(), z.literal("")]),
+  client_id: z.union([z.string().uuid(), z.literal("")]),
+  service_name: z.string().trim().min(1).max(120),
+  category: z.string().trim().min(1).max(60),
+  work_context: z.string().trim().min(1).max(60),
+  unit: z.string().trim().min(1).max(40),
+  rate: z.coerce.number().finite().min(0).max(1_000_000),
+});
+
+export async function saveRateAction(formData: FormData) {
+  const supabase = await admin();
+  const parsed = rateSchema.safeParse({
+    id: String(formData.get("id") || ""),
+    client_id: String(formData.get("client_id") || ""),
+    service_name: String(formData.get("service_name") || ""),
+    category: String(formData.get("category") || "Other"),
+    work_context: String(formData.get("work_context") || "Any"),
+    unit: String(formData.get("unit") || "hour"),
+    rate: formData.get("rate"),
+  });
+
+  if (!parsed.success) redirect("/admin/invoices?tab=rates&notice=invalid");
+  const { id, client_id, rate, ...details } = parsed.data;
+  const row = {
+    ...details,
+    client_id: client_id || null,
+    rate_cents: Math.round(rate * 100),
+    is_active: true,
+  };
+  const result = id
+    ? await supabase.from("client_rates").update(row).eq("id", id)
+    : await supabase.from("client_rates").insert(row);
+
+  if (result.error) redirect("/admin/invoices?tab=rates&notice=error");
+  await logAdminAudit(supabase, {
+    action: id ? "invoice_rate.update" : "invoice_rate.create",
+    entityType: "client_rate",
+    entityId: id || undefined,
+    summary: `${id ? "Updated" : "Created"} ${details.service_name}`,
+  });
+  revalidatePath("/admin/invoices");
+  redirect("/admin/invoices?tab=rates&notice=rate-saved");
+}
+
+export async function deleteRateAction(formData: FormData) {
+  const supabase = await admin();
+  const id = String(formData.get("id") || "");
+  if (!z.string().uuid().safeParse(id).success) {
+    redirect("/admin/invoices?tab=rates&notice=invalid");
+  }
+
+  const { data: rate } = await supabase
+    .from("client_rates")
+    .select("service_name")
+    .eq("id", id)
+    .maybeSingle();
+  const { error } = await supabase.from("client_rates").delete().eq("id", id);
+  if (error) redirect("/admin/invoices?tab=rates&notice=error");
+  await logAdminAudit(supabase, {
+    action: "invoice_rate.delete",
+    entityType: "client_rate",
+    entityId: id,
+    summary: `Deleted ${rate?.service_name || "invoice rate"}`,
+  });
+  revalidatePath("/admin/invoices");
+  redirect("/admin/invoices?tab=rates&notice=rate-deleted");
+}
 export async function saveSettingsAction(formData:FormData){const supabase=await admin();await supabase.from("invoice_settings").upsert({id:"main",business_name:String(formData.get("business_name")),issuer_name:String(formData.get("issuer_name")),email:String(formData.get("email")||"")||null,phone:String(formData.get("phone")||"")||null,address:String(formData.get("address")||"")||null,abn:String(formData.get("abn")||"")||null,pay_id:String(formData.get("pay_id")||"")||null,bank_name:String(formData.get("bank_name")||"")||null,account_name:String(formData.get("account_name")||"")||null,bsb:String(formData.get("bsb")||"")||null,account_number:String(formData.get("account_number")||"")||null,invoice_prefix:String(formData.get("invoice_prefix")||"RX"),default_due_days:Number(formData.get("default_due_days")||14),default_gst_rate:Number(formData.get("default_gst_rate")||0),default_notes:String(formData.get("default_notes")||"")||null,updated_at:new Date().toISOString()});revalidatePath("/admin/invoices");redirect("/admin/invoices?tab=settings&notice=settings-saved");}
