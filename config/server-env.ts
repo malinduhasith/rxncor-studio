@@ -14,6 +14,7 @@ type EnvName =
   | "EMAIL_FROM"
   | "EMAIL_REPLY_TO"
   | "ADMIN_NOTIFICATION_EMAIL"
+  | "INVOICE_PAYID"
   | "ADMIN_EMAILS";
 
 export function requiredEnv(name: EnvName) {

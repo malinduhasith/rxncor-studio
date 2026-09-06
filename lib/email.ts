@@ -17,6 +17,23 @@ type EmailResult = {
   skipped: boolean;
 };
 
+type InvoiceEmailInput = {
+  invoiceId: string;
+  invoiceNumber: string;
+  clientName: string;
+  clientEmail: string;
+  projectTitle?: string | null;
+  issueDate: string;
+  dueDate: string;
+  total: string;
+  invoiceUrl: string;
+  payId?: string | null;
+  bankName?: string | null;
+  accountName?: string | null;
+  bsb?: string | null;
+  accountNumber?: string | null;
+};
+
 type ContactEmailInput = {
   name: string;
   email: string;
@@ -167,6 +184,23 @@ function formatDuration(milliseconds: number | null | undefined) {
   const remainingSeconds = seconds % 60;
 
   return remainingSeconds ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+}
+
+export async function sendInvoiceEmail(input: InvoiceEmailInput) {
+  const subject = `Invoice ${input.invoiceNumber}${input.projectTitle ? ` — ${input.projectTitle}` : ""}`;
+  const bankTransfer = input.bsb && input.accountNumber
+    ? `<br>Bank: ${escapeHtml(input.bankName || "Commonwealth Bank")}<br>Account name: ${escapeHtml(input.accountName || "Malindu Herath")}<br>BSB: ${escapeHtml(input.bsb)}<br>Account: ${escapeHtml(input.accountNumber)}`
+    : "";
+  const payment = input.payId || bankTransfer
+    ? `<div style="margin:24px 0;padding:18px;border:1px solid #d9d9d9;background:#f7f7f5"><strong>Payment details</strong>${input.payId ? `<br>PayID: ${escapeHtml(input.payId)}` : ""}${bankTransfer}<br>Reference: ${escapeHtml(input.invoiceNumber)}</div>`
+    : "";
+  return sendEmail({
+    to: input.clientEmail,
+    subject,
+    text: `Hi ${input.clientName},\n\nYour invoice ${input.invoiceNumber} for ${input.total} is ready. It is due ${input.dueDate}.\n\nView invoice: ${input.invoiceUrl}${input.payId ? `\nPayID: ${input.payId}` : ""}${input.bsb && input.accountNumber ? `\nBank: ${input.bankName || "Commonwealth Bank"}\nAccount name: ${input.accountName || "Malindu Herath"}\nBSB: ${input.bsb}\nAccount: ${input.accountNumber}` : ""}\nReference: ${input.invoiceNumber}\n\nThank you,\nMalindu`,
+    html: `<!doctype html><html><body style="margin:0;background:#f2f2f0;color:#151515;font-family:Arial,sans-serif"><div style="max-width:620px;margin:auto;padding:40px 20px"><div style="background:#111827;color:white;padding:22px 26px"><strong style="font-size:20px">RXNCOR</strong><span style="float:right">${escapeHtml(input.invoiceNumber)}</span></div><div style="background:white;padding:32px 26px"><p>Hi ${escapeHtml(input.clientName)},</p><h1 style="font-size:30px;margin:18px 0 8px">Invoice ready</h1><p style="font-size:17px;line-height:1.6">${input.projectTitle ? `${escapeHtml(input.projectTitle)} · ` : ""}<strong>${escapeHtml(input.total)}</strong><br>Due ${escapeHtml(input.dueDate)}</p>${payment}<a href="${escapeHtml(input.invoiceUrl)}" style="display:inline-block;background:#6d3df5;color:white;text-decoration:none;padding:14px 20px;border-radius:8px;font-weight:700">View invoice</a><p style="margin-top:32px;color:#666">Thank you,<br>Malindu Herath</p></div></div></body></html>`,
+    event: { type: "invoice.sent", relatedType: "invoice", relatedId: input.invoiceId, metadata: { invoiceNumber: input.invoiceNumber } },
+  });
 }
 
 function textRows(rows: Array<[string, string | null | undefined]>) {

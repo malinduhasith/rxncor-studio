@@ -21,6 +21,7 @@ import {
   Menu,
   MessageSquareText,
   Plus,
+  ReceiptText,
   Save,
   Search,
   Settings2,
@@ -1485,6 +1486,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </a>
               );
             })}
+            <a href="/admin/invoices"><ReceiptText size={17} /><span>Invoices</span></a>
             <details className="admin-more-menu">
               <summary><Menu size={17} /> More</summary>
               <div>
@@ -1509,6 +1511,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <details className="admin-mobile-nav">
             <summary><Menu size={18} /> Navigate admin</summary>
             <div className="admin-mobile-nav-grid">
+              <a href="/admin/invoices"><ReceiptText size={17} /> Invoices</a>
               {adminViews.map((viewName) => {
                 const ViewIcon = adminViewIcons[viewName];
                 return (

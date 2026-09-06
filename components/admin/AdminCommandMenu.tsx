@@ -13,6 +13,7 @@ import {
   Mail,
   MessageSquareText,
   Plus,
+  ReceiptText,
   Search,
   UsersRound,
   X,
@@ -39,6 +40,7 @@ const destinations = [
   { label: "Downloads", detail: "Client download history", view: "downloads", icon: Download },
   { label: "About builder", detail: "Edit the public About page", view: "about", icon: BookOpenText },
   { label: "Contact settings", detail: "Email, phone, and socials", view: "contact", icon: ContactRound },
+  { label: "Invoices", detail: "Rates, billing, and payment tracking", view: "invoices", icon: ReceiptText },
 ] as const;
 
 export function AdminCommandMenu({
@@ -129,7 +131,7 @@ export function AdminCommandMenu({
             <span className="admin-command-group-label">Navigate</span>
             {filtered.map(({ label, detail, view, icon: Icon }) => (
               <a
-                href={`/admin?view=${view}${selectedAlbumId && ["albums", "uploads"].includes(view) ? `&album=${selectedAlbumId}` : ""}`}
+                href={view === "invoices" ? "/admin/invoices" : `/admin?view=${view}${selectedAlbumId && ["albums", "uploads"].includes(view) ? `&album=${selectedAlbumId}` : ""}`}
                 key={view}
               >
                 <span className="admin-command-icon"><Icon size={18} /></span>
