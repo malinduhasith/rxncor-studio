@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { siteConfig } from "@/config/site";
 import { AdminCommandMenu } from "@/components/admin/AdminCommandMenu";
 import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
 import { ConfirmSubmitButton } from "@/components/admin/ConfirmSubmitButton";
@@ -28,6 +29,7 @@ import {
   estimateDecision,
   invoiceCategories,
   invoiceContexts,
+  invoiceDate,
   invoiceUnits,
   paymentEntries,
   paymentMethods,
@@ -37,6 +39,7 @@ import {
   type InvoiceLedgerEvent,
 } from "@/lib/invoices";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { readInvoiceLedger } from "@/lib/invoice-ledger";
 import { signOutAction } from "../actions";
 import {
   convertEstimateAction,
@@ -85,7 +88,8 @@ const noticeMessages: Record<string, string> = {
   updated: "Draft changes saved.",
   duplicated: "A new draft copy was created.",
   converted: "Estimate converted into a new draft invoice.",
-  sent: "Document email sent and delivery status updated.",
+  send: "Document email accepted by the email provider. Check delivery monitoring for its status.",
+  sent: "Document email accepted by the email provider.",
   resend: "Document email sent again.",
   reminder: "Payment reminder sent.",
   void: "Document voided.",
@@ -107,8 +111,8 @@ const noticeMessages: Record<string, string> = {
   "rate-saved": "Rate saved.",
   "rate-deleted": "Rate deleted.",
   "settings-saved": "Billing settings saved.",
-  "email-error": "Email was not delivered. Check email monitoring before retrying.",
-  "email-status-error": "Email was delivered, but the document status could not be updated. Check email monitoring before sending again.",
+  "email-error": "Email could not be sent. Check email monitoring before retrying.",
+  "email-status-error": "The email provider accepted the email, but the document status could not be updated. Check email monitoring before sending again.",
   invalid: "Some required information is missing or invalid.",
   setup: "Invoice database setup is incomplete.",
   error: "The action could not be completed. Nothing was intentionally sent.",
@@ -135,8 +139,8 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
   const params = await searchParams;
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/admin/login");
-  if (!isAdminEmailAllowed(user.email)) redirect("/admin/login?error=unauthorized");
+  if (!user) redirect(siteConfig.routes.adminLogin);
+  if (!isAdminEmailAllowed(user.email)) redirect(`${siteConfig.routes.adminLogin}?error=unauthorized`);
 
   const [invoicesResult, clientsResult, ratesResult, settingsResult, albumsResult, auditResult] = await Promise.all([
     supabase.from("invoices").select("*").order("created_at", { ascending: false }),
@@ -144,7 +148,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
     supabase.from("client_rates").select("*").order("sort_order").order("service_name"),
     supabase.from("invoice_settings").select("*").eq("id", "main").maybeSingle(),
     supabase.from("albums").select("id,title,slug").order("created_at", { ascending: false }),
-    supabase.from("admin_audit_logs").select("id,action,entity_id,summary,metadata,created_at").eq("entity_type", "invoice").order("created_at", { ascending: false }).limit(2000),
+    readInvoiceLedger(supabase),
   ]);
 
   const setupMissing = Boolean(invoicesResult.error || ratesResult.error || settingsResult.error || auditResult.error);
@@ -170,7 +174,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
   const editingRate = rates.find((rate) => rate.id === params.rate);
   const showRateEditor = params.edit === "new" || Boolean(editingRate);
   const activeTab = params.edit === "document" && selectedInvoice ? "new" : currentTab(params.tab);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = invoiceDate();
   const defaultDueDate = plusDays(today, Number(settings?.default_due_days ?? 14));
   const prefillClient = clients.find((client) => client.id === params.client);
 

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { sendEstimateDecisionNotification } from "@/lib/email";
-import { billingDocumentKind, estimateDecision, type InvoiceLedgerEvent } from "@/lib/invoices";
+import { billingDocumentKind, estimateDecision, estimateExpired, type InvoiceLedgerEvent } from "@/lib/invoices";
 import { checkRateLimit, clientIpFromHeaders } from "@/lib/rate-limit";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -32,7 +32,7 @@ export async function estimateDecisionAction(formData: FormData) {
 
   const db = createSupabaseAdminClient();
   const { data: invoice } = await db.from("invoices").select("*").eq("public_token", parsed.data.token).maybeSingle();
-  if (!invoice || billingDocumentKind(invoice) !== "estimate" || invoice.status !== "sent") redirect(`/invoice/${parsed.data.token}?decision=unavailable`);
+  if (!invoice || billingDocumentKind(invoice) !== "estimate" || invoice.status !== "sent" || estimateExpired(invoice)) redirect(`/invoice/${parsed.data.token}?decision=unavailable`);
   const { data: events, error: eventError } = await db
     .from("admin_audit_logs")
     .select("id,action,entity_id,summary,metadata,created_at")

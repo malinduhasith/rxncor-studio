@@ -132,7 +132,7 @@ export async function getGalleryAccessForCookies({
   if (accessCookie) {
     const possibleTokens = [
       album.password_hash ? createAlbumAccessToken(album.id, album.password_hash) : null,
-      clientEmail && album.requires_email
+      clientEmail && album.requires_email && !album.is_password_protected
         ? createEmailAccessToken(album.id, clientEmail)
         : null
     ];

@@ -1,17 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { CheckCircle2, CircleAlert, Clock3 } from "lucide-react";
 import { notFound } from "next/navigation";
+import { z } from "zod";
 import { DocumentViewTracker } from "@/components/DocumentViewTracker";
 import { PrintInvoiceButton } from "@/components/PrintInvoiceButton";
 import {
   aud,
   billingDocumentKind,
   estimateDecision,
+  estimateExpired,
+  invoiceDate,
   paymentTotals,
   snapshotValue,
   type InvoiceLedgerEvent,
 } from "@/lib/invoices";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isAdminEmailAllowed } from "@/lib/admin-auth";
+import { readInvoiceLedger } from "@/lib/invoice-ledger";
 import { estimateDecisionAction } from "./actions";
 import styles from "./invoice.module.css";
 
@@ -40,13 +46,19 @@ export default async function InvoicePage({
   searchParams: Promise<{ decision?: string }>;
 }) {
   const [{ token }, query] = await Promise.all([params, searchParams]);
+  if (!z.string().uuid().safeParse(token).success) notFound();
   const db = createSupabaseAdminClient();
   const { data: invoice } = await db.from("invoices").select("*").eq("public_token", token).maybeSingle();
   if (!invoice) notFound();
-  const [{ data: items }, { data: auditRows }] = await Promise.all([
+  const auth = await createSupabaseServerClient();
+  const { data: { user } } = await auth.auth.getUser();
+  const isAdmin = Boolean(user && isAdminEmailAllowed(user.email));
+  if (invoice.status === "draft" && !isAdmin) notFound();
+  const [{ data: items, error: itemsError }, { data: auditRows, error: ledgerError }] = await Promise.all([
     db.from("invoice_items").select("*").eq("invoice_id", invoice.id).order("sort_order"),
-    db.from("admin_audit_logs").select("id,action,entity_id,summary,metadata,created_at").eq("entity_type", "invoice").eq("entity_id", invoice.id).order("created_at", { ascending: false }),
+    readInvoiceLedger(db, invoice.id),
   ]);
+  if (itemsError || ledgerError) throw new Error("Billing document is temporarily unavailable. Please try again.");
   const events = (auditRows ?? []) as InvoiceLedgerEvent[];
   const kind = billingDocumentKind(invoice);
   const isEstimate = kind === "estimate";
@@ -60,13 +72,17 @@ export default async function InvoicePage({
   const depositCents = Math.round(invoice.total_cents * depositPercent / 100);
   const purchaseOrder = snapshotValue<string>(invoice, "purchase_order", "");
   const finalDate = isEstimate ? snapshotValue(invoice, "valid_until", invoice.due_date) : invoice.due_date;
-  const isOverdue = !isEstimate && totals.balance > 0 && invoice.status === "sent" && invoice.due_date < new Date().toISOString().slice(0, 10);
+  const isOverdue = !isEstimate && totals.balance > 0 && invoice.status === "sent" && invoice.due_date < invoiceDate();
+  const expired = isEstimate && estimateExpired(invoice);
+  const canDecide = isEstimate && !decision && invoice.status === "sent" && !expired;
   const hasPaymentDetails = !isEstimate && (payment.pay_id || (payment.bsb && payment.account_number));
 
   return (
     <main className={styles.shell}>
-      <DocumentViewTracker token={token} />
+      {!isAdmin && invoice.status !== "draft" && invoice.status !== "void" ? <DocumentViewTracker token={token} /> : null}
       <div className={styles.tools}><span>Secure client document</span><PrintInvoiceButton /></div>
+      {invoice.status === "draft" ? <div className={styles.message}>Draft preview — visible only to the studio. This document has not been sent.</div> : null}
+      {expired && !decision && invoice.status === "sent" ? <div className={styles.message}>This estimate has expired. Contact RXNCOR for an updated estimate.</div> : null}
       {query.decision && decisionMessages[query.decision] ? <div className={styles.message} role="status">{decisionMessages[query.decision]}</div> : null}
       <article className={styles.invoice}>
         {invoice.status === "void" ? <div className={styles.void}>VOID</div> : null}
@@ -104,7 +120,7 @@ export default async function InvoicePage({
           <section className={styles.payments}><small>PAYMENT HISTORY</small><div>{totals.entries.map((entry) => <div className={entry.reversed ? styles.reversed : undefined} key={entry.paymentId}><span><strong>{entry.receivedOn}</strong><small>{entry.method}{entry.reference ? ` · ${entry.reference}` : ""}{entry.reversed ? " · Reversed" : ""}</small></span><b>{aud(entry.amountCents)}</b></div>)}</div></section>
         ) : null}
 
-        {isEstimate && !decision && invoice.status !== "void" ? (
+        {canDecide ? (
           <section className={styles.decision}>
             <div><small>CLIENT DECISION</small><h2>Approve this estimate</h2><p>Confirm your name, then accept or decline. RXNCOR will receive a time-stamped record.</p></div>
             <form action={estimateDecisionAction}>
@@ -117,7 +133,7 @@ export default async function InvoicePage({
         ) : null}
 
         <footer className={styles.footer}>
-          <div><small>{isEstimate ? "NEXT STEP" : "PAYMENT"}</small>{isEstimate ? <span>Accept the estimate above or reply to the email with any questions.</span> : hasPaymentDetails ? <>{payment.pay_id ? <strong>PayID {payment.pay_id}</strong> : null}{payment.bsb && payment.account_number ? <><span>{payment.bank_name || "Bank transfer"}</span><span>Account name {payment.account_name || issuer.issuer_name}</span><span>BSB {payment.bsb} · Account {payment.account_number}</span></> : null}<span>Reference {invoice.invoice_number}</span></> : <span>Contact RXNCOR for payment details.</span>}</div>
+          <div><small>{isEstimate ? "NEXT STEP" : "PAYMENT"}</small>{invoice.status === "void" ? <span>This document is void. No payment is required.</span> : invoice.status === "draft" ? <span>Draft for review. No payment is requested.</span> : isEstimate ? <span>{canDecide ? "Accept the estimate above or reply to the email with any questions." : "Contact RXNCOR with any questions about this estimate."}</span> : hasPaymentDetails ? <>{payment.pay_id ? <strong>PayID {payment.pay_id}</strong> : null}{payment.bsb && payment.account_number ? <><span>{payment.bank_name || "Bank transfer"}</span><span>Account name {payment.account_name || issuer.issuer_name}</span><span>BSB {payment.bsb} · Account {payment.account_number}</span></> : null}<span>Reference {invoice.invoice_number}</span></> : <span>Contact RXNCOR for payment details.</span>}</div>
           <div><small>QUESTIONS</small><span>Reply to the delivery email or contact {issuer.email || "RXNCOR Studio"}.</span></div>
         </footer>
       </article>

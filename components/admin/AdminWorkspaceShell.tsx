@@ -155,7 +155,7 @@ export function AdminWorkspaceShell({
           </nav>
 
           <div className="admin-sidebar-footer">
-            <span className="admin-environment"><i aria-hidden="true" /> Production</span>
+            <span className="admin-environment"><i aria-hidden="true" /> {process.env.VERCEL_ENV === "production" ? "Production" : process.env.VERCEL_ENV === "preview" ? "Preview" : "Development"}</span>
             <Link href="/" target="_blank" rel="noreferrer">
               Open site <ExternalLink size={15} aria-hidden="true" />
             </Link>

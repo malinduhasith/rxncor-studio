@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import { isAdminEmailAllowed } from "@/lib/admin-auth";
 import { billingDocumentKind, documentDisplayStatus, paymentTotals, type InvoiceLedgerEvent } from "@/lib/invoices";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { readInvoiceLedger } from "@/lib/invoice-ledger";
 
 function csvCell(value: unknown) {
-  return `"${String(value ?? "").replaceAll('"', '""')}"`;
+  const text = String(value ?? "");
+  const safe = /^[=+@\-\t\r\n]/.test(text) ? `'${text}` : text;
+  return `"${safe.replaceAll('"', '""')}"`;
 }
 
 export async function GET() {
@@ -13,11 +16,11 @@ export async function GET() {
   if (!user || !isAdminEmailAllowed(user.email)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: { "Cache-Control": "no-store" } });
   }
-  const [{ data: invoices, error }, { data: events }] = await Promise.all([
+  const [{ data: invoices, error }, { data: events, error: ledgerError }] = await Promise.all([
     db.from("invoices").select("*").order("created_at", { ascending: false }),
-    db.from("admin_audit_logs").select("id,action,entity_id,summary,metadata,created_at").eq("entity_type", "invoice").order("created_at", { ascending: false }).limit(5000),
+    readInvoiceLedger(db),
   ]);
-  if (error) return NextResponse.json({ error: "Billing register unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  if (error || ledgerError) return NextResponse.json({ error: "Billing register unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
   const eventRows = (events ?? []) as InvoiceLedgerEvent[];
   const header = ["Document", "Type", "Status", "Client", "Email", "Project", "Issue date", "Due date", "Subtotal AUD", "GST AUD", "Total AUD", "Paid AUD", "Balance AUD"];
   const rows = (invoices ?? []).map((invoice) => {

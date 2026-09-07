@@ -2,6 +2,7 @@
 
 import { Plus, Trash2 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import { useFormStatus } from "react-dom";
 import {
   aud,
   invoiceCategories,
@@ -94,6 +95,7 @@ export function InvoiceComposer({
   submitLabel = "Create draft",
   lockDocumentKind = false,
 }: InvoiceComposerProps) {
+  const { pending } = useFormStatus();
   const nextLineId = useRef((initial.lines?.length ?? 0) + 1);
   const [documentKind, setDocumentKind] = useState<BillingDocumentKind>(initial.documentKind ?? "invoice");
   const [clientId, setClientId] = useState(initial.clientId ?? "");
@@ -139,10 +141,10 @@ export function InvoiceComposer({
     setClientId(value);
     setSelectedRateId("");
     const client = clients.find((candidate) => candidate.id === value);
-    if (!client) return;
-    setName(client.name);
-    setEmail(client.email || "");
-    setPhone(client.phone || "");
+    setName(client?.name || "");
+    setEmail(client?.email || "");
+    setPhone(client?.phone || "");
+    setAddress("");
   }
 
   function patchLine(id: string, patch: Partial<Line>) {
@@ -269,7 +271,7 @@ export function InvoiceComposer({
                 <label><span>Service</span><input aria-label="Service" value={line.description} onChange={(event) => patchLine(line.id, { description: event.target.value })} /></label>
                 <label><span>Type</span><select aria-label="Type" value={line.category} onChange={(event) => patchLine(line.id, { category: event.target.value })}>{invoiceCategories.map((category) => <option key={category}>{category}</option>)}</select></label>
                 <label><span>Setting</span><select aria-label="Setting" value={line.work_context} onChange={(event) => patchLine(line.id, { work_context: event.target.value })}>{invoiceContexts.map((context) => <option key={context}>{context}</option>)}</select></label>
-                <label><span>Quantity</span><input aria-label="Quantity" type="number" min="0.01" step="0.25" value={line.quantity} onChange={(event) => patchLine(line.id, { quantity: Number(event.target.value) })} /></label>
+                <label><span>Quantity</span><input aria-label="Quantity" type="number" min="0.01" step="0.01" required value={line.quantity} onChange={(event) => patchLine(line.id, { quantity: Number(event.target.value) })} /></label>
                 <label><span>Unit</span><select aria-label="Unit" value={line.unit} onChange={(event) => patchLine(line.id, { unit: event.target.value })}>{invoiceUnits.map((unit) => <option key={unit}>{unit}</option>)}</select></label>
                 <label><span>Rate in AUD</span><input aria-label="Rate in AUD" type="number" min="0" step="0.01" value={line.unit_price_cents / 100} onChange={(event) => patchLine(line.id, { unit_price_cents: Math.round(Number(event.target.value) * 100) })} /></label>
                 <output aria-label="Line total">{aud(Math.round(line.quantity * line.unit_price_cents))}</output>
@@ -307,7 +309,7 @@ export function InvoiceComposer({
       <input type="hidden" name="payload" value={JSON.stringify(payload)} />
       <div className="invoice-submit-row">
         <span>This saves a private draft. Nothing is emailed until you review and send it.</span>
-        <button className="invoice-primary" type="submit" disabled={!canSubmit}>{submitLabel}</button>
+        <button className="invoice-primary" type="submit" disabled={!canSubmit || pending}>{pending ? "Saving…" : submitLabel}</button>
       </div>
     </div>
   );

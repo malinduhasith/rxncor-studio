@@ -115,7 +115,7 @@ export function invoiceTotals(
 }
 
 export function invoiceDisplayStatus(status: InvoiceStatus, dueDate: string) {
-  if (status === "sent" && dueDate < new Date().toISOString().slice(0, 10)) {
+  if (status === "sent" && dueDate < invoiceDate()) {
     return "overdue";
   }
   return status;
@@ -197,6 +197,7 @@ export function documentDisplayStatus(
   invoice: Pick<InvoiceRecord, "status" | "due_date" | "total_cents"> & { issuer_snapshot?: unknown },
   events: InvoiceLedgerEvent[],
 ) {
+  if (invoice.status === "void") return "void";
   if (billingDocumentKind(invoice) === "estimate") {
     return estimateDecision(events) ?? invoice.status;
   }
@@ -208,9 +209,17 @@ export function documentDisplayStatus(
 
 export type AgingBucket = "Current" | "1–30 days" | "31–60 days" | "61–90 days" | "90+ days";
 
+export function invoiceDate(date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Melbourne", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+}
+
+export function estimateExpired(invoice: { issuer_snapshot?: unknown; due_date: string }, today = invoiceDate()) {
+  return snapshotValue(invoice, "valid_until", invoice.due_date) < today;
+}
+
 export function agingBucket(dueDate: string, today = new Date()): AgingBucket {
   const due = new Date(`${dueDate}T00:00:00Z`).valueOf();
-  const at = new Date(`${today.toISOString().slice(0, 10)}T00:00:00Z`).valueOf();
+  const at = new Date(`${invoiceDate(today)}T00:00:00Z`).valueOf();
   const days = Math.floor((at - due) / 86_400_000);
   if (days <= 0) return "Current";
   if (days <= 30) return "1–30 days";

@@ -13,6 +13,7 @@ import {
   billingDocumentKind,
   billingSnapshot,
   estimateDecision,
+  invoiceDate,
   invoiceTotals,
   paymentMethods,
   paymentTotals,
@@ -23,6 +24,7 @@ import {
 } from "@/lib/invoices";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { readInvoiceLedger } from "@/lib/invoice-ledger";
 
 async function admin() {
   const auth = await createSupabaseServerClient();
@@ -165,13 +167,7 @@ function paymentSnapshot(settings: Record<string, unknown> | null) {
 }
 
 async function fetchLedger(supabase: ReturnType<typeof createSupabaseAdminClient>, invoiceId: string) {
-  const { data, error } = await supabase
-    .from("admin_audit_logs")
-    .select("id,action,entity_id,summary,metadata,created_at")
-    .eq("entity_type", "invoice")
-    .eq("entity_id", invoiceId)
-    .in("action", ["invoice.payment.record", "invoice.payment.reverse", "estimate.accepted", "estimate.declined", "estimate.converted", "estimate.reopen"])
-    .order("created_at", { ascending: false });
+  const { data, error } = await readInvoiceLedger(supabase, invoiceId);
   if (error) redirect(`/admin/invoices?invoice=${invoiceId}&notice=ledger-error`);
   return (data ?? []) as InvoiceLedgerEvent[];
 }
@@ -283,9 +279,9 @@ async function copyDocument(supabase: ReturnType<typeof createSupabaseAdminClien
   if (!source || !items?.length) redirect(`/admin/invoices?invoice=${sourceId}&notice=missing`);
   const { number, settings } = await settingsAndNumber(supabase, kind);
   const today = new Date();
-  const issueDate = today.toISOString().slice(0, 10);
+  const issueDate = invoiceDate(today);
   const dueDays = Number(settings?.default_due_days ?? 14);
-  const dueDate = new Date(today.valueOf() + dueDays * 86_400_000).toISOString().slice(0, 10);
+  const dueDate = invoiceDate(new Date(today.valueOf() + dueDays * 86_400_000));
   const sourceIssuer = asRecord(source.issuer_snapshot);
   const sourceBilling = billingSnapshot(source);
   const { data: created, error } = await supabase.from("invoices").insert({
@@ -397,7 +393,8 @@ export async function invoiceStatusAction(formData: FormData) {
   if (["send", "resend", "reminder"].includes(action)) {
     if (invoice.status === "void") redirect(`/admin/invoices?invoice=${id}&notice=send-locked`);
     if (action === "reminder" && (kind !== "invoice" || invoice.status !== "sent" || totals.balance === 0)) redirect(`/admin/invoices?invoice=${id}&notice=send-locked`);
-    const base = process.env.NEXT_PUBLIC_SITE_URL || "https://rxncor.studio";
+    const previewHost = process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL;
+    const base = process.env.VERCEL_ENV === "preview" && previewHost ? `https://${previewHost}` : siteConfig.url;
     const depositPercent = snapshotValue<number>(invoice, "deposit_percent", 0);
     const result = await sendInvoiceEmail({
       documentKind: kind,
@@ -451,7 +448,7 @@ export async function recordPaymentAction(formData: FormData) {
   });
   if (!parsed.success) redirect("/admin/invoices?notice=invalid");
   const input = parsed.data;
-  if (input.received_on > new Date().toISOString().slice(0, 10)) redirect(`/admin/invoices?invoice=${input.invoice_id}&notice=invalid`);
+  if (input.received_on > invoiceDate()) redirect(`/admin/invoices?invoice=${input.invoice_id}&notice=invalid`);
   const { data: invoice } = await supabase.from("invoices").select("*").eq("id", input.invoice_id).maybeSingle();
   if (!invoice || billingDocumentKind(invoice) !== "invoice" || invoice.status === "void") redirect(`/admin/invoices?invoice=${input.invoice_id}&notice=payment-locked`);
   const events = await fetchLedger(supabase, input.invoice_id);
