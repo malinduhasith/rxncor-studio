@@ -9,7 +9,9 @@ import {
   useRef,
   useState
 } from "react";
-import { ChevronLeft, ChevronRight, Download, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Download, X } from "lucide-react";
+import { GalleryDownloads } from "./GalleryDownloads";
+import styles from "./gallery-downloads.module.css";
 import { Notice } from "@/components/Notice";
 import type { NoticeTone } from "@/lib/notices";
 
@@ -20,15 +22,12 @@ export type GalleryDisplayPhoto = {
   eyebrow: string;
   detail: string;
   thumbnailDisplayUrl: string;
-  r2ObjectKey: string;
 };
 
 type GalleryLightboxProps = {
   albumId: string;
   albumTitle: string;
   photos: GalleryDisplayPhoto[];
-  zipObjectKey?: string | null;
-  clientEmail?: string | null;
 };
 
 const INITIAL_VISIBLE_PHOTOS = 48;
@@ -63,9 +62,7 @@ const defaultVirtualWindow: VirtualGalleryWindow = {
 
 async function requestDownload(
   albumId: string,
-  r2ObjectKey: string,
-  photoId?: string,
-  clientEmail?: string | null
+  photoId: string
 ) {
   const response = await fetch("/api/downloads", {
     method: "POST",
@@ -74,9 +71,7 @@ async function requestDownload(
     },
     body: JSON.stringify({
       album_id: albumId,
-      photo_id: photoId,
-      r2_object_key: r2ObjectKey,
-      client_email: clientEmail || undefined
+      photo_id: photoId
     })
   });
 
@@ -111,10 +106,10 @@ async function requestPreview(albumId: string, photoId: string) {
 export function GalleryLightbox({
   albumId,
   albumTitle,
-  photos,
-  zipObjectKey,
-  clientEmail
+  photos
 }: GalleryLightboxProps) {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [selecting, setSelecting] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [status, setStatus] = useState("");
   const [statusTone, setStatusTone] = useState<NoticeTone>("info");
@@ -372,26 +367,20 @@ export function GalleryLightbox({
     setStatusTone("info");
     setStatus("Preparing download...");
     try {
-      await requestDownload(albumId, photo.r2ObjectKey, photo.id, clientEmail);
+      await requestDownload(albumId, photo.id);
+      setStatus("");
     } catch (error) {
       setStatusTone("error");
       setStatus(error instanceof Error ? error.message : "Download failed.");
     }
   }
 
-  async function downloadZip() {
-    if (!zipObjectKey) {
-      return;
-    }
-
-    setStatusTone("info");
-    setStatus("Preparing album ZIP...");
-    try {
-      await requestDownload(albumId, zipObjectKey, undefined, clientEmail);
-    } catch (error) {
-      setStatusTone("error");
-      setStatus(error instanceof Error ? error.message : "ZIP download failed.");
-    }
+  function togglePhoto(id: string) {
+    setSelectedIds(current => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
   }
 
   function previousPhoto() {
@@ -407,16 +396,12 @@ export function GalleryLightbox({
   return (
     <>
       <section className="gallery-delivery" aria-label="Delivered album images">
-        <div className="gallery-actions">
-          <div>
-            <span className="label">Delivered set</span>
-            <p className="muted">Open previews or download the final delivery files.</p>
-          </div>
-          <button className="button" disabled={!zipObjectKey} onClick={downloadZip} type="button">
-            <Download size={18} />
-            Download ZIP
-          </button>
-        </div>
+        <GalleryDownloads
+          albumId={albumId} photos={photos} selectedIds={selectedIds} selecting={selecting}
+          onSelectMode={() => setSelecting(true)}
+          onSelectAll={() => setSelectedIds(new Set(photos.map(photo => photo.id)))}
+          onClear={() => setSelectedIds(new Set())} onDone={() => setSelecting(false)}
+        />
         <Notice
           notice={
             status
@@ -445,10 +430,11 @@ export function GalleryLightbox({
           }
         >
           {renderedPhotos.map(({ photo, index }) => (
-            <article className="photo-tile" key={photo.id} style={virtualTileStyle(index)}>
+            <article className={`photo-tile ${selectedIds.has(photo.id) ? styles.selectedTile : ""}`} data-photo-id={photo.id} key={photo.id} style={virtualTileStyle(index)}>
               <button
                 className="photo-open-button"
-                onClick={() => setSelectedIndex(index)}
+                aria-label={selecting ? `${selectedIds.has(photo.id) ? "Deselect" : "Select"} ${photo.filename}` : `Preview ${photo.filename}`}
+                onClick={() => selecting ? togglePhoto(photo.id) : setSelectedIndex(index)}
                 type="button"
               >
                 <Image
@@ -475,8 +461,14 @@ export function GalleryLightbox({
                     <small>{photo.eyebrow}</small>
                     <em className="tile-frame">{photo.title}</em>
                   </span>
-                  <span className="tile-action">Open</span>
+                  <span className="tile-action">{selecting ? selectedIds.has(photo.id) ? "Selected" : "Select" : "Open"}</span>
                 </div>
+              </button>
+              <button type="button" className={styles.selectToggle}
+                aria-label={`${selectedIds.has(photo.id) ? "Deselect" : "Select"} photo ${photo.filename}`}
+                aria-pressed={selectedIds.has(photo.id)}
+                onClick={() => { setSelecting(true); togglePhoto(photo.id); }}>
+                <span>{selectedIds.has(photo.id) ? <Check size={17} aria-hidden="true" /> : null}</span>
               </button>
               <a
                 aria-label={`Download ${photo.filename}`}
@@ -519,6 +511,11 @@ export function GalleryLightbox({
               <code>{selectedPhoto.filename}</code>
             </div>
             <div className="lightbox-toolbar-actions">
+              <button className="icon-button" type="button" aria-pressed={selectedIds.has(selectedPhoto.id)}
+                aria-label={selectedIds.has(selectedPhoto.id) ? "Deselect current photo" : "Select current photo"}
+                onClick={() => { setSelecting(true); togglePhoto(selectedPhoto.id); }}>
+                <Check size={22} />
+              </button>
               <button
                 className="icon-button"
                 onClick={previousPhoto}

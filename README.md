@@ -77,6 +77,18 @@ albums/
 
 Use `lib/r2.ts` helpers to create signed upload and download URLs. Keep full-resolution files and ZIPs in R2, not in this repo.
 
+### Client photo downloads
+
+Clients can select any number of photos, select the complete album, or download individual originals. Album queries page through all rows, independently of the mobile grid's visible tiles.
+
+`POST /api/downloads/archive` creates a ZIP job from an album ID and optional photo IDs. Subsequent requests with its signed job token advance bounded server-side work. ZIP bytes are written directly to R2 multipart storage, with resumable CRC/file/part checkpoints; the phone never assembles the archive. The ready download endpoint rechecks gallery access and photo membership before redirecting to a short-lived R2 URL. ZIP64 supports large originals and albums.
+
+Jobs use the existing R2 credentials. Their state is encrypted, conditionally updated to prevent concurrent workers, and stored below `rxncor-generated/jobs/`; temporary ZIPs use unpredictable keys below `rxncor-generated/archives/`. Jobs expire after 48 hours. Each new ZIP request cleans a small batch of expired artifacts; removal is activity-driven, not a guaranteed 48-hour deletion schedule. Keep the gallery open while preparing, or resume in the same browser tab. Rotating the R2 secret invalidates existing job tokens and checkpoints.
+
+The iPhone Files app can extract downloaded ZIPs. Browsers supporting native file sharing also offer a separate prepare/share flow, in groups of up to 24 photos or 48 MiB to limit phone memory use. This does not cap ZIP selection. Sharing uses the original image formats and depends on device support. Keep the gallery origin in the R2 GET CORS allowlist; preview deployment origins may need their own CORS entry to test sharing. No new database migration or service is required.
+
+Run `node --test tests/*.test.mjs`, `npm run typecheck`, `npm run lint`, and `npm run build` before deployment. Archive extraction tests use Python's independent `zipfile` reader.
+
 For browser uploads, add the R2 bucket CORS policy from [cloudflare/r2-cors.json](/Users/crazy_taxi/Documents/VsCode/cloudflare/r2-cors.json).
 
 The admin uploader accepts full-album batches. Export three groups from Lightroom:

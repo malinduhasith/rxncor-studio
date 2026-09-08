@@ -9,6 +9,7 @@ import { siteConfig } from "@/config/site";
 import { featuredAlbums } from "@/lib/sample-data";
 import { GalleryLightbox, type GalleryDisplayPhoto } from "@/components/gallery/GalleryLightbox";
 import { PhotoTile } from "@/components/PhotoTile";
+import { readAlbumPhotos } from "@/lib/album-photos";
 import { isAdminEmailAllowed } from "@/lib/admin-auth";
 import {
   albumRequiresUnlock,
@@ -120,27 +121,9 @@ export default async function ClientGalleryPage({
     adminBypass || !requiresUnlock || galleryAccess.canAccess;
   const photoBaseSelect = "id, filename, thumbnail_url, r2_object_key";
   const photoMetadataSelect = `${photoBaseSelect}, display_title, caption, camera_model, lens_model, focal_length, aperture, shutter_speed, iso, captured_at, location`;
-  const { data: dbPhotos } =
-    album && canViewPhotos
-      ? await (async () => {
-          const metadataResult = await supabase
-            .from("photos")
-            .select(photoMetadataSelect)
-            .eq("album_id", album.id)
-            .order("uploaded_at", { ascending: true });
-
-          if (!metadataResult.error) {
-            return metadataResult;
-          }
-
-          return supabase
-            .from("photos")
-            .select(photoBaseSelect)
-            .eq("album_id", album.id)
-            .order("uploaded_at", { ascending: true });
-        })()
-      : { data: [] };
-  const photos = (dbPhotos ?? []) as GalleryPhoto[];
+  const photos = album && canViewPhotos
+    ? await readAlbumPhotos<GalleryPhoto>(supabase, album.id, photoMetadataSelect)
+    : [];
   const displayPhotos: DisplayPhoto[] = await Promise.all(
     photos.map(async (photo) => {
       const thumbnailKey = objectKeyFromPublicUrl(photo.thumbnail_url);
@@ -161,9 +144,6 @@ export default async function ClientGalleryPage({
       ? `${displayPhotos.length} photos`
       : "Password required"
     : `${fallbackAlbum?.count ?? 0} photos`;
-  const zipObjectKey = album?.download_zip_url
-    ? objectKeyFromPublicUrl(album.download_zip_url)
-    : null;
   const galleryPhotos: GalleryDisplayPhoto[] = displayPhotos.map((photo, index) => {
     const label = photoDisplayLabel(photo, {
       albumTitle: title,
@@ -177,8 +157,7 @@ export default async function ClientGalleryPage({
       title: label.title,
       eyebrow: label.eyebrow,
       detail: label.detail,
-      thumbnailDisplayUrl: photo.thumbnailDisplayUrl,
-      r2ObjectKey: photo.r2_object_key
+      thumbnailDisplayUrl: photo.thumbnailDisplayUrl
     };
   });
   const galleryNotice = notice ? galleryNotices[notice] : undefined;
@@ -213,12 +192,10 @@ export default async function ClientGalleryPage({
             <small>Open any frame for preview and single-photo download.</small>
           </div>
           <div>
-            <span className="label">Full ZIP</span>
-            <strong>{zipObjectKey ? "Attached" : "Not attached yet"}</strong>
+            <span className="label">ZIP download</span>
+            <strong>All photos or your selection</strong>
             <small>
-              {zipObjectKey
-                ? "Use the ZIP button in the lightbox toolbar."
-                : "The final archive will appear here when it is delivered."}
+              Select any number of photos, then prepare your download.
             </small>
           </div>
           <div>
@@ -243,8 +220,8 @@ export default async function ClientGalleryPage({
           <div className="collage-copy">
             <span className="label">Album view</span>
             <p>
-              Browse previews, open the lightbox, download selected frames, or
-              collect the delivered ZIP when it is attached.
+              Browse previews, select your favourites, or download the whole album.
+              Original photos, ready for your phone or computer.
             </p>
           </div>
           <div className="collage-stack">
@@ -361,8 +338,6 @@ export default async function ClientGalleryPage({
           albumId={album.id}
           albumTitle={title}
           photos={galleryPhotos}
-          zipObjectKey={zipObjectKey}
-          clientEmail={galleryAccess.clientEmail}
         />
       ) : null}
       <div className="lightbox-grid">

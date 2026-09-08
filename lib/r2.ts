@@ -7,17 +7,22 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getR2Env } from "@/config/server-env";
 
+let r2Client: S3Client | undefined;
 export function createR2Client() {
+  if (r2Client) return r2Client;
   const r2Env = getR2Env();
 
-  return new S3Client({
+  r2Client = new S3Client({
     region: "auto",
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
     endpoint: `https://${r2Env.accountId}.r2.cloudflarestorage.com`,
     credentials: {
       accessKeyId: r2Env.accessKeyId,
       secretAccessKey: r2Env.secretAccessKey
     }
   });
+  return r2Client;
 }
 
 export function albumObjectKey(
@@ -47,7 +52,8 @@ function downloadDisposition(filename: string) {
     .replace(/[\r\n]/g, "")
     .replace(/\s+/g, " ");
 
-  return `attachment; filename="${safeFilename || "download"}"`;
+  const ascii = safeFilename.replace(/[^\x20-\x7e]/g, "_");
+  return `attachment; filename="${ascii || "download"}"; filename*=UTF-8''${encodeURIComponent(safeFilename || "download").replace(/['()*]/g, c => `%${c.charCodeAt(0).toString(16)}`)}`;
 }
 
 export async function createDownloadUrl(key: string, filename?: string) {

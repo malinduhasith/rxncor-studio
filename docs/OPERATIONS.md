@@ -70,11 +70,11 @@ These add:
 3. Set the client password.
 4. Create or edit an album.
 5. Assign the client to the album.
-6. Upload thumbnails, previews, full-res JPEGs, and the ZIP.
+6. Upload thumbnails, previews, and full-res JPEGs. A manually uploaded ZIP is optional; client galleries can generate their own ZIPs.
 7. Open `/login` in a private browser window.
 8. Sign in as the client.
 9. Open the assigned album.
-10. Download one photo and the ZIP.
+10. Download one photo, a ZIP of a small selection, and a full-album ZIP. Check pause/resume and the iPhone Files instructions. Test native photo sharing on an actual iPhone when available.
 11. Check admin download logs.
 12. Submit the homepage contact form and mark the inquiry replied in admin.
 13. Check Admin -> Monitoring for upload events, email events, and audit trail entries.
@@ -109,7 +109,7 @@ Do this weekly while the site is active:
 - Album has expiry date if needed.
 - Client is assigned.
 - Client password is set.
-- Full ZIP is uploaded.
+- Full-resolution originals are uploaded and a generated ZIP has been checked.
 - Public/private status is correct.
 - Send-to-client message is copied from the admin album manager.
 - Direct gallery unlock and `/login` client portal both work in a private browser window.
