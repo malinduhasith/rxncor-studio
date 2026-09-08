@@ -10792,6 +10792,13 @@ html body .admin-workspace .client-edit-row {
 
 /* Client gallery and delivery */
 
+/* Clip horizontal decoration without creating a second scroll container that
+   traps the gallery's sticky selection and download controls. */
+html:has(body > .gallery-page),
+body:has(> .gallery-page):not(.rx-lightbox-open) {
+  overflow-x: clip !important;
+}
+
 body.rx-lightbox-open {
   overflow: hidden;
 }
