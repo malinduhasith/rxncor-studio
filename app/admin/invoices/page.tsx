@@ -112,6 +112,7 @@ const noticeMessages: Record<string, string> = {
   "rate-deleted": "Rate deleted.",
   "settings-saved": "Billing settings saved.",
   "email-error": "Email could not be sent. Check email monitoring before retrying.",
+  "pdf-error": "The invoice PDF could not be prepared. No email was sent. Please try again.",
   "email-status-error": "The email provider accepted the email, but the document status could not be updated. Check email monitoring before sending again.",
   invalid: "Some required information is missing or invalid.",
   setup: "Invoice database setup is incomplete.",

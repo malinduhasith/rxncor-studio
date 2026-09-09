@@ -13,6 +13,11 @@ function getHostname(value: string | undefined, fallback: string) {
 }
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["pdfkit"],
+  outputFileTracingIncludes: {
+    "/admin/invoices": ["./assets/fonts/*.ttf"],
+    "/invoice/*/pdf": ["./assets/fonts/*.ttf"],
+  },
   async headers() {
     const sharedSecurityHeaders = [
       {
@@ -79,6 +84,10 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/client-portal/:path*",
+        headers: privateRouteHeaders
+      },
+      {
+        source: "/invoice/:path*",
         headers: privateRouteHeaders
       },
       {

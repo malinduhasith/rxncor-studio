@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { CheckCircle2, CircleAlert, Clock3 } from "lucide-react";
+import { CheckCircle2, CircleAlert, Clock3, Download } from "lucide-react";
 import { notFound } from "next/navigation";
-import { z } from "zod";
 import { DocumentViewTracker } from "@/components/DocumentViewTracker";
 import { PrintInvoiceButton } from "@/components/PrintInvoiceButton";
 import {
@@ -14,9 +12,8 @@ import {
   snapshotValue,
   type InvoiceLedgerEvent,
 } from "@/lib/invoices";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { isAdminEmailAllowed } from "@/lib/admin-auth";
+import { readClientInvoice } from "@/lib/invoice-document-access";
+import { readInvoiceItems } from "@/lib/invoice-document";
 import { readInvoiceLedger } from "@/lib/invoice-ledger";
 import { estimateDecisionAction } from "./actions";
 import styles from "./invoice.module.css";
@@ -46,25 +43,20 @@ export default async function InvoicePage({
   searchParams: Promise<{ decision?: string }>;
 }) {
   const [{ token }, query] = await Promise.all([params, searchParams]);
-  if (!z.string().uuid().safeParse(token).success) notFound();
-  const db = createSupabaseAdminClient();
-  const { data: invoice } = await db.from("invoices").select("*").eq("public_token", token).maybeSingle();
-  if (!invoice) notFound();
-  const auth = await createSupabaseServerClient();
-  const { data: { user } } = await auth.auth.getUser();
-  const isAdmin = Boolean(user && isAdminEmailAllowed(user.email));
-  if (invoice.status === "draft" && !isAdmin) notFound();
-  const [{ data: items, error: itemsError }, { data: auditRows, error: ledgerError }] = await Promise.all([
-    db.from("invoice_items").select("*").eq("invoice_id", invoice.id).order("sort_order"),
+  const document = await readClientInvoice(token);
+  if (!document) notFound();
+  const { db, invoice, isAdmin } = document;
+  const [items, { data: auditRows, error: ledgerError }] = await Promise.all([
+    readInvoiceItems(db, invoice.id),
     readInvoiceLedger(db, invoice.id),
   ]);
-  if (itemsError || ledgerError) throw new Error("Billing document is temporarily unavailable. Please try again.");
+  if (ledgerError) throw new Error("Billing document is temporarily unavailable. Please try again.");
   const events = (auditRows ?? []) as InvoiceLedgerEvent[];
   const kind = billingDocumentKind(invoice);
   const isEstimate = kind === "estimate";
   const label = isEstimate ? "Estimate" : invoice.gst_cents > 0 && invoice.issuer_snapshot?.abn ? "Tax invoice" : "Invoice";
-  const issuer = invoice.issuer_snapshot || {};
-  const payment = invoice.payment_snapshot || {};
+  const issuer = (invoice.issuer_snapshot || {}) as Record<string, string>;
+  const payment = (invoice.payment_snapshot || {}) as Record<string, string>;
   const totals = paymentTotals(invoice, events);
   const decision = isEstimate ? estimateDecision(events) : null;
   const discountCents = snapshotValue<number>(invoice, "discount_cents", 0);
@@ -80,7 +72,13 @@ export default async function InvoicePage({
   return (
     <main className={styles.shell}>
       {!isAdmin && invoice.status !== "draft" && invoice.status !== "void" ? <DocumentViewTracker token={token} /> : null}
-      <div className={styles.tools}><span>Secure client document</span><PrintInvoiceButton /></div>
+      <div className={styles.tools}>
+        <span>Secure client document</span>
+        <div className={styles.toolActions}>
+          <PrintInvoiceButton />
+          <a className={styles.downloadPdf} href={`/invoice/${token}/pdf`} download><Download size={17} aria-hidden="true" />Download PDF</a>
+        </div>
+      </div>
       {invoice.status === "draft" ? <div className={styles.message}>Draft preview — visible only to the studio. This document has not been sent.</div> : null}
       {expired && !decision && invoice.status === "sent" ? <div className={styles.message}>This estimate has expired. Contact RXNCOR for an updated estimate.</div> : null}
       {query.decision && decisionMessages[query.decision] ? <div className={styles.message} role="status">{decisionMessages[query.decision]}</div> : null}
@@ -108,7 +106,7 @@ export default async function InvoicePage({
         </section>
 
         <div className={styles.tableWrap}>
-          <table><thead><tr><th>Description</th><th>Setting</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>{(items || []).map((item: any) => <tr key={item.id}><td><strong>{item.description}</strong><small>{item.category}</small></td><td>{item.work_context}</td><td>{item.quantity} {item.unit}</td><td>{aud(item.unit_price_cents)}</td><td>{aud(item.line_total_cents)}</td></tr>)}</tbody></table>
+          <table><thead><tr><th>Description</th><th>Setting</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>{items.map((item) => <tr key={item.id}><td><strong>{item.description}</strong><small>{item.category}</small></td><td>{item.work_context}</td><td>{item.quantity} {item.unit}</td><td>{aud(item.unit_price_cents)}</td><td>{aud(item.line_total_cents)}</td></tr>)}</tbody></table>
         </div>
 
         <div className={styles.summaryArea}>

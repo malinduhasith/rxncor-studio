@@ -25,6 +25,8 @@ import {
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { readInvoiceLedger } from "@/lib/invoice-ledger";
+import { readInvoiceItems } from "@/lib/invoice-document";
+import { createInvoicePdf } from "@/lib/invoice-pdf";
 
 async function admin() {
   const auth = await createSupabaseServerClient();
@@ -396,6 +398,20 @@ export async function invoiceStatusAction(formData: FormData) {
     const previewHost = process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL;
     const base = process.env.VERCEL_ENV === "preview" && previewHost ? `https://${previewHost}` : siteConfig.url;
     const depositPercent = snapshotValue<number>(invoice, "deposit_percent", 0);
+    const invoiceUrl = `${base}/invoice/${invoice.public_token}`;
+    const pdf = await (async () => {
+      try {
+        const items = await readInvoiceItems(supabase, id);
+        return await createInvoicePdf({
+          invoice: { ...invoice, status: invoice.status === "draft" ? "sent" : invoice.status },
+          items, events, invoiceUrl,
+        });
+      } catch (error) {
+        console.error("Invoice PDF could not be prepared", error);
+        return null;
+      }
+    })();
+    if (!pdf) redirect(`/admin/invoices?invoice=${id}&notice=pdf-error`);
     const result = await sendInvoiceEmail({
       documentKind: kind,
       deliveryKind: action === "reminder" ? "reminder" : action === "resend" ? "resend" : "send",
@@ -409,7 +425,8 @@ export async function invoiceStatusAction(formData: FormData) {
       total: new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(invoice.total_cents / 100),
       balance: new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(totals.balance / 100),
       deposit: depositPercent > 0 ? new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(Math.round(invoice.total_cents * depositPercent / 100) / 100) : null,
-      invoiceUrl: `${base}/invoice/${invoice.public_token}`,
+      invoiceUrl,
+      pdf,
       payId: kind === "invoice" ? invoice.payment_snapshot?.pay_id : null,
       bankName: kind === "invoice" ? invoice.payment_snapshot?.bank_name : null,
       accountName: kind === "invoice" ? invoice.payment_snapshot?.account_name : null,

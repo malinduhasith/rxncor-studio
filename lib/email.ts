@@ -9,6 +9,7 @@ type EmailPayload = {
   html: string;
   replyTo?: string | null;
   event?: EmailEventContext;
+  attachments?: Array<{ filename: string; content: string; content_type: string }>;
 };
 
 type EmailResult = {
@@ -31,6 +32,7 @@ type InvoiceEmailInput = {
   balance: string;
   deposit?: string | null;
   invoiceUrl: string;
+  pdf: { filename: string; bytes: Buffer };
   payId?: string | null;
   bankName?: string | null;
   accountName?: string | null;
@@ -191,6 +193,9 @@ function formatDuration(milliseconds: number | null | undefined) {
 }
 
 export async function sendInvoiceEmail(input: InvoiceEmailInput) {
+  if (!input.pdf?.bytes?.length || input.pdf.bytes.subarray(0, 5).toString() !== "%PDF-") {
+    throw new Error("A valid invoice PDF attachment is required before sending.");
+  }
   const isEstimate = input.documentKind === "estimate";
   const label = isEstimate ? "Estimate" : "Invoice";
   const isReminder = input.deliveryKind === "reminder";
@@ -209,9 +214,10 @@ export async function sendInvoiceEmail(input: InvoiceEmailInput) {
   return sendEmail({
     to: input.clientEmail,
     subject,
-    text: `Hi ${input.clientName},\n\n${isReminder ? `This is a friendly reminder that the remaining balance on ${input.invoiceNumber} is ${input.balance}.` : `Your ${label.toLowerCase()} ${input.invoiceNumber} for ${input.total} is ready.`}\n${dateLabel}: ${input.dueDate}${input.deposit ? `\nDeposit requested: ${input.deposit}` : ""}\n\nView ${label.toLowerCase()}: ${input.invoiceUrl}${paymentText}\n\nThank you,\nMalindu`,
-    html: `<!doctype html><html><body style="margin:0;background:#f3f5f7;color:#172033;font-family:Arial,Helvetica,sans-serif"><div style="max-width:640px;margin:auto;padding:36px 18px"><div style="border:1px solid #d9dee7;background:#fff"><div style="background:#172033;color:#fff;padding:22px 26px"><strong style="font-size:20px;letter-spacing:.04em">RXNCOR STUDIO</strong><span style="float:right;font-size:13px">${escapeHtml(input.invoiceNumber)}</span></div><div style="padding:32px 26px"><p style="margin:0 0 12px;color:#626d7e">Hi ${escapeHtml(input.clientName)},</p><h1 style="font-size:29px;line-height:1.15;margin:0 0 18px">${escapeHtml(heading)}</h1><div style="border-top:1px solid #dfe3e8;border-bottom:1px solid #dfe3e8;padding:17px 0;margin:0 0 22px"><strong style="display:block;font-size:24px">${escapeHtml(isReminder ? input.balance : input.total)}</strong><span style="display:block;margin-top:6px;color:#626d7e">${input.projectTitle ? `${escapeHtml(input.projectTitle)} · ` : ""}${dateLabel} ${escapeHtml(input.dueDate)}</span>${input.deposit ? `<span style="display:block;margin-top:5px;color:#626d7e">Deposit requested ${escapeHtml(input.deposit)}</span>` : ""}</div>${payment}<a href="${escapeHtml(input.invoiceUrl)}" style="display:inline-block;background:#5b3df5;color:#fff;text-decoration:none;padding:13px 18px;border-radius:5px;font-weight:700">View ${label.toLowerCase()}</a><p style="margin:30px 0 0;color:#626d7e;line-height:1.55">Thank you,<br>Malindu Herath<br>RXNCOR Studio</p></div></div><p style="margin:14px 0 0;color:#7a8391;font-size:12px;line-height:1.45">This is a secure document link from rxncor.studio. Reply to this email if you have a question.</p></div></body></html>`,
-    event: { type: `${input.documentKind}.${input.deliveryKind}`, relatedType: "invoice", relatedId: input.invoiceId, metadata: { invoiceNumber: input.invoiceNumber } },
+    text: `Hi ${input.clientName},\n\n${isReminder ? `This is a friendly reminder that the remaining balance on ${input.invoiceNumber} is ${input.balance}.` : `Your ${label.toLowerCase()} ${input.invoiceNumber} for ${input.total} is ready.`}\n${dateLabel}: ${input.dueDate}${input.deposit ? `\nDeposit requested: ${input.deposit}` : ""}\n\nYour PDF is attached for your records. You can also download it from the secure document page.\n\nView ${label.toLowerCase()}: ${input.invoiceUrl}${paymentText}\n\nThank you,\nMalindu`,
+    html: `<!doctype html><html><body style="margin:0;background:#f3f5f7;color:#172033;font-family:Arial,Helvetica,sans-serif"><div style="max-width:640px;margin:auto;padding:36px 18px"><div style="border:1px solid #d9dee7;background:#fff"><div style="background:#172033;color:#fff;padding:22px 26px"><strong style="font-size:20px;letter-spacing:.04em">RXNCOR STUDIO</strong><span style="float:right;font-size:13px">${escapeHtml(input.invoiceNumber)}</span></div><div style="padding:32px 26px"><p style="margin:0 0 12px;color:#626d7e">Hi ${escapeHtml(input.clientName)},</p><h1 style="font-size:29px;line-height:1.15;margin:0 0 18px">${escapeHtml(heading)}</h1><div style="border-top:1px solid #dfe3e8;border-bottom:1px solid #dfe3e8;padding:17px 0;margin:0 0 22px"><strong style="display:block;font-size:24px">${escapeHtml(isReminder ? input.balance : input.total)}</strong><span style="display:block;margin-top:6px;color:#626d7e">${input.projectTitle ? `${escapeHtml(input.projectTitle)} · ` : ""}${dateLabel} ${escapeHtml(input.dueDate)}</span>${input.deposit ? `<span style="display:block;margin-top:5px;color:#626d7e">Deposit requested ${escapeHtml(input.deposit)}</span>` : ""}</div><p style="margin:0 0 20px;color:#626d7e;line-height:1.55">Your ${label.toLowerCase()} PDF is attached for your records. Use the button below to view the document and download another copy.</p>${payment}<a href="${escapeHtml(input.invoiceUrl)}" style="display:inline-block;background:#5b3df5;color:#fff;text-decoration:none;padding:13px 18px;border-radius:5px;font-weight:700">View ${label.toLowerCase()}</a><p style="margin:30px 0 0;color:#626d7e;line-height:1.55">Thank you,<br>Malindu Herath<br>RXNCOR Studio</p></div></div><p style="margin:14px 0 0;color:#7a8391;font-size:12px;line-height:1.45">This is a secure document link from rxncor.studio. Reply to this email if you have a question.</p></div></body></html>`,
+    attachments: [{ filename: input.pdf.filename, content: input.pdf.bytes.toString("base64"), content_type: "application/pdf" }],
+    event: { type: `${input.documentKind}.${input.deliveryKind}`, relatedType: "invoice", relatedId: input.invoiceId, metadata: { invoiceNumber: input.invoiceNumber, attachment_filename: input.pdf.filename, attachment_bytes: input.pdf.bytes.length } },
   });
 }
 
@@ -320,6 +326,7 @@ async function sendEmail(payload: EmailPayload): Promise<EmailResult> {
       text: payload.text,
       html: payload.html,
       reply_to: payload.replyTo || config.replyTo,
+      attachments: payload.attachments,
     }),
   }).catch((error: unknown) => {
     console.error("Email request failed", error);
@@ -351,8 +358,9 @@ async function sendEmail(payload: EmailPayload): Promise<EmailResult> {
     return { sent: 0, failed: recipients.length, skipped: false };
   }
 
+  const accepted = await response.json().catch(() => null) as { id?: string } | null;
   await logEmailEvents({
-    context: payload.event,
+    context: payload.event ? { ...payload.event, metadata: { ...payload.event.metadata, ...(accepted?.id ? { provider_email_id: accepted.id } : {}) } } : undefined,
     recipients,
     subject: payload.subject,
     status: "sent",
