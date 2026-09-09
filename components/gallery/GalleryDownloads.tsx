@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Check, Download, LoaderCircle, Share2 } from "lucide-react";
+import { Check, Download, LoaderCircle, Share2, X, ChevronUp } from "lucide-react";
 import styles from "./gallery-downloads.module.css";
 
 type Photo = { id: string; filename: string };
@@ -40,6 +40,8 @@ function photoMime(filename: string, contentType?: string) {
 }
 
 export function GalleryDownloads({ albumId, photos, selectedIds, selecting, onSelectMode, onSelectAll, onClear, onDone }: Props) {
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const sheet = useRef<HTMLDialogElement>(null);
   const [job, setJob] = useState<ArchiveStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -55,6 +57,14 @@ export function GalleryDownloads({ albumId, photos, selectedIds, selecting, onSe
   const previousSignature = useRef(signature);
   const storageKey = `rxncor:archive:${albumId}`;
   const targets = selectedIds.size ? photos.filter(photo => selectedIds.has(photo.id)) : photos;
+
+  useEffect(() => {
+    const dialog = sheet.current;
+    if (sheetOpen && !dialog?.open) dialog?.showModal();
+    if (!sheetOpen && dialog?.open) dialog.close();
+    document.body.classList.toggle("rx-download-open", sheetOpen);
+    return () => document.body.classList.remove("rx-download-open");
+  }, [sheetOpen]);
 
   function remember(token?: string) {
     try { if (token) sessionStorage.setItem(storageKey, token); else sessionStorage.removeItem(storageKey); } catch { /* Downloads also work with storage disabled. */ }
@@ -121,6 +131,7 @@ export function GalleryDownloads({ albumId, photos, selectedIds, selecting, onSe
 
   function pause() {
     generation.current++; controller.current?.abort(); setBusy(false);
+    if (busyKind === "photos") setShareStatus("Photo preparation paused. Tap Save / share photos to try again.");
   }
 
   function resetZip() {
@@ -176,17 +187,26 @@ export function GalleryDownloads({ albumId, photos, selectedIds, selecting, onSe
   }
 
   return (
-    <div className={styles.panel} aria-label="Photo selection and downloads">
-      <div className={styles.heading}>
-        <div><span className="label">Your photos</span><strong aria-live="polite">{selectedIds.size ? `${selectedIds.size} of ${photos.length} selected` : `${photos.length} photos · Original quality`}</strong></div>
+    <>
+      <div className={styles.toolbar} aria-label="Photo selection">
+        <strong aria-live="polite">{selecting ? `${selectedIds.size} selected` : `${photos.length} photos`}</strong>
         <div className={styles.selectionActions}>
           {!selecting ? <button type="button" onClick={onSelectMode}>Select photos</button> : <>
-            <button type="button" onClick={onSelectAll} disabled={selectedIds.size === photos.length}>Select all {photos.length}</button>
-            <button type="button" onClick={onClear} disabled={!selectedIds.size}>Clear</button>
-            <button type="button" onClick={onDone}>Done</button>
+            <button type="button" onClick={onSelectAll} disabled={selectedIds.size === photos.length}>Select all</button>
+            {selectedIds.size ? <button type="button" onClick={onClear}>Clear</button> : null}
+            <button type="button" className={styles.done} onClick={onDone}>Done</button>
           </>}
         </div>
       </div>
+      {photos.length ? <div className={styles.dock} aria-label="Gallery downloads">
+        <div><strong>{job ? `${job.photo_count} photos` : selectedIds.size ? `${selectedIds.size} selected` : "Your full gallery"}</strong>
+          <span aria-live="polite">{busy && busyKind === "zip" ? `Preparing ZIP · ${job?.percent ?? 0}%` : busy ? "Preparing photos…" : job?.phase === "ready" ? "ZIP ready to download" : job && job.phase !== "failed" ? "ZIP paused · ready to resume" : "Original quality"}</span>
+        </div>
+        <button className={styles.primary} type="button" onClick={() => setSheetOpen(true)}><Download size={18} />{job?.phase === "ready" ? "Save ZIP" : busy ? "View progress" : "Download"}<ChevronUp size={15} /></button>
+      </div> : null}
+      <dialog className={styles.sheet} ref={sheet} onCancel={() => setSheetOpen(false)} onClose={() => setSheetOpen(false)} aria-labelledby="gallery-download-title">
+        <header className={styles.sheetHeading}><div><h2 id="gallery-download-title">Download photos</h2><p>{job ? job.photo_count : targets.length} photos · Original quality</p></div><button className={styles.close} type="button" aria-label="Close downloads" onClick={() => setSheetOpen(false)}><X size={22} /></button></header>
+        <p className={styles.intro}>Get {job ? "these photos" : selectedIds.size ? "your selection" : "the whole gallery"} in one ZIP, or save photos to your phone.</p>
       <div className={styles.actions}>
         {job?.phase === "ready" && job.download_url ? <>
           <a className={styles.primary} download={job.filename} href={job.download_url}><Download size={18} /> Download ZIP · {job.photo_count} photos</a>
@@ -211,11 +231,13 @@ export function GalleryDownloads({ albumId, photos, selectedIds, selecting, onSe
       </div> : null}
       {shareStatus ? <p className={styles.message} role="status">{shareStatus}</p> : null}
       {error ? <p className={styles.error} role="alert">{error}</p> : null}
-      <details className={styles.help}>
-        <summary>Saving photos on iPhone</summary>
-        <p>Download the ZIP, then open it in the Files app and tap it to extract your photos. Select the extracted images, tap Share, then choose Save Images when available.</p>
-        <p>On phones with photo sharing, “Save / share photos” prepares a small group at a time. Tap “Share photos” and choose your preferred app or Save Images. ZIP downloads include every photo you selected.</p>
-      </details>
-    </div>
+
+        <details className={styles.help}>
+          <summary>How to save on iPhone</summary>
+          <ol><li>Download your ZIP and open the Files app.</li><li>Find the ZIP in Downloads and tap it to unzip.</li><li>Open the folder, select the photos, tap Share, then Save Images when available.</li></ol>
+          <p>If your phone supports photo sharing, choose “Save / share photos”, wait for them to prepare, then tap “Share photos”. Larger selections are shared in smaller groups.</p>
+        </details>
+      </dialog>
+    </>
   );
 }

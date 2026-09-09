@@ -35,8 +35,8 @@ const VISIBLE_PHOTO_INCREMENT = 48;
 const MOBILE_GALLERY_QUERY = "(max-width: 760px)";
 const VIRTUALIZE_AFTER_PHOTOS = 72;
 const VIRTUAL_BUFFER_ROWS = 5;
-const MOBILE_VIRTUAL_COLUMNS = 3;
-const MOBILE_TILE_ASPECT_RATIO = 1.16;
+const MOBILE_VIRTUAL_COLUMNS = 2;
+const MOBILE_TILE_ASPECT_RATIO = 1.25;
 
 type VirtualGalleryWindow = {
   startIndex: number;
@@ -122,6 +122,8 @@ export function GalleryLightbox({
     useState<VirtualGalleryWindow>(defaultVirtualWindow);
   const gridRef = useRef<HTMLDivElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const previewDialog = useRef<HTMLDialogElement>(null);
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const selectedPhoto = selectedIndex === null ? null : photos[selectedIndex];
   const selectedPreviewUrl = selectedPhoto ? previewUrls[selectedPhoto.id] : null;
   const safeVisibleCount = Math.min(visibleCount, photos.length);
@@ -296,6 +298,7 @@ export function GalleryLightbox({
 
   useEffect(() => {
     document.body.classList.toggle("rx-lightbox-open", selectedIndex !== null);
+    if (selectedIndex !== null && !previewDialog.current?.open) previewDialog.current?.showModal();
 
     return () => document.body.classList.remove("rx-lightbox-open");
   }, [selectedIndex]);
@@ -442,7 +445,7 @@ export function GalleryLightbox({
                   className="photo-img"
                   fill
                   loading={shouldVirtualizeGallery ? "lazy" : index < 8 ? "eager" : "lazy"}
-                  sizes="(max-width: 760px) 33vw, (max-width: 1100px) 25vw, 20vw"
+                  sizes="(max-width: 760px) 50vw, (max-width: 1100px) 33vw, 25vw"
                   src={photo.thumbnailDisplayUrl}
                   unoptimized
                 />
@@ -464,7 +467,7 @@ export function GalleryLightbox({
                   <span className="tile-action">{selecting ? selectedIds.has(photo.id) ? "Selected" : "Select" : "Open"}</span>
                 </div>
               </button>
-              <button type="button" className={styles.selectToggle}
+              <button type="button" className={`${styles.selectToggle} ${selecting || selectedIds.has(photo.id) ? styles.showSelection : ""}`}
                 aria-label={`${selectedIds.has(photo.id) ? "Deselect" : "Select"} photo ${photo.filename}`}
                 aria-pressed={selectedIds.has(photo.id)}
                 onClick={() => { setSelecting(true); togglePhoto(photo.id); }}>
@@ -496,7 +499,18 @@ export function GalleryLightbox({
         </div>
       </section>
       {selectedPhoto ? (
-        <div
+        <dialog
+          ref={previewDialog}
+          onCancel={() => setSelectedIndex(null)}
+          onClose={() => setSelectedIndex(null)}
+          onTouchStart={event => { swipeStart.current = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null; }}
+          onTouchEnd={event => {
+            const start = swipeStart.current; swipeStart.current = null;
+            if (!start || event.changedTouches.length !== 1 || (window.visualViewport?.scale ?? 1) > 1) return;
+            const dx = event.changedTouches[0].clientX - start.x;
+            const dy = event.changedTouches[0].clientY - start.y;
+            if (Math.abs(dx) > 65 && Math.abs(dx) > Math.abs(dy) * 1.5) { if (dx < 0) nextPhoto(); else previousPhoto(); }
+          }}
           aria-label={`${selectedPhoto.title} preview`}
           aria-modal="true"
           className="lightbox-modal"
@@ -504,7 +518,7 @@ export function GalleryLightbox({
         >
           <div className="lightbox-toolbar">
             <div>
-              <span className="label">Preview</span>
+              <span className="label">{(selectedIndex ?? 0) + 1} / {photos.length}</span>
               <strong>{selectedPhoto.title}</strong>
               <small className="lightbox-meta-line">{selectedPhoto.eyebrow}</small>
               <small className="lightbox-meta-line">{selectedPhoto.detail}</small>
@@ -544,7 +558,7 @@ export function GalleryLightbox({
               </button>
               <button
                 className="icon-button"
-                onClick={() => setSelectedIndex(null)}
+                onClick={() => { previewDialog.current?.close(); setSelectedIndex(null); }}
                 type="button"
                 aria-label="Close preview"
               >
@@ -568,7 +582,7 @@ export function GalleryLightbox({
             src="/sig.png"
             width={220}
           />
-        </div>
+        </dialog>
       ) : null}
     </>
   );

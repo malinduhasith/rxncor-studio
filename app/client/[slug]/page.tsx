@@ -1,6 +1,5 @@
-import { LockKeyhole } from "lucide-react";
+import { ArrowLeft, LockKeyhole } from "lucide-react";
 import { cookies } from "next/headers";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { unlockGalleryAction } from "./actions";
@@ -8,6 +7,7 @@ import { NoticeToaster } from "@/components/Notice";
 import { siteConfig } from "@/config/site";
 import { featuredAlbums } from "@/lib/sample-data";
 import { GalleryLightbox, type GalleryDisplayPhoto } from "@/components/gallery/GalleryLightbox";
+import galleryStyles from "@/components/gallery/gallery-downloads.module.css";
 import { PhotoTile } from "@/components/PhotoTile";
 import { readAlbumPhotos } from "@/lib/album-photos";
 import { isAdminEmailAllowed } from "@/lib/admin-auth";
@@ -163,83 +163,15 @@ export default async function ClientGalleryPage({
   const galleryNotice = notice ? galleryNotices[notice] : undefined;
 
   return (
-    <main className="rx-page rx-client-gallery gallery-page">
+    <main className={`${galleryStyles.galleryPage} rx-page rx-client-gallery gallery-page`}>
       <NoticeToaster cleanupQueryKeys={["notice"]} notices={[galleryNotice]} />
-      <div className="gallery-bar">
-        <div>
-          <p className="eyebrow">{galleryLabel}</p>
-          <h1 className="page-title gallery-title">{title}</h1>
-          <p className="muted">
-            {photoSummary}
-            {album?.event_date ? ` · ${album.event_date}` : ""}
-          </p>
+      <header className={galleryStyles.galleryHeader}>
+        <Link className={galleryStyles.backLink} href={siteConfig.routes.login}><ArrowLeft size={16} /> My galleries</Link>
+        <div className={galleryStyles.galleryIdentity}><div><span className={galleryStyles.eyebrow}>{galleryLabel}</span><h1>{title}</h1><p>{photoSummary}{album?.event_date ? ` · ${new Date(`${album.event_date.slice(0, 10)}T12:00:00Z`).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}` : ""}</p></div>
+          {isProtected ? <span className={galleryStyles.protected}><LockKeyhole size={14} /> Protected</span> : null}
         </div>
-        <div className="gallery-inline-actions">
-          {isProtected ? (
-            <button className="button secondary" type="button">
-              <LockKeyhole size={18} />
-              Protected
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      {album && canViewPhotos && displayPhotos.length ? (
-        <section className="client-delivery-summary" aria-label="Gallery delivery status">
-          <div>
-            <span className="label">Photo set</span>
-            <strong>{displayPhotos.length} files ready</strong>
-            <small>Open any frame for preview and single-photo download.</small>
-          </div>
-          <div>
-            <span className="label">ZIP download</span>
-            <strong>All photos or your selection</strong>
-            <small>
-              Select any number of photos, then prepare your download.
-            </small>
-          </div>
-          <div>
-            <span className="label">Access</span>
-            <strong>{isProtected ? "Protected" : "Open link"}</strong>
-            <small>
-              {galleryAccess.clientEmail
-                ? `Unlocked for ${galleryAccess.clientEmail}.`
-                : "Keep this gallery link private."}
-            </small>
-          </div>
-          <div>
-            <span className="label">Expiry</span>
-            <strong>{album.expires_at ? album.expires_at.slice(0, 10) : "No expiry"}</strong>
-            <small>Ask for reopening if you need more time.</small>
-          </div>
-        </section>
-      ) : null}
-
-      {album && canViewPhotos && displayPhotos.length ? (
-        <section className="album-hero-collage" aria-label="Album preview collage">
-          <div className="collage-copy">
-            <span className="label">Album view</span>
-            <p>
-              Browse previews, select your favourites, or download the whole album.
-              Original photos, ready for your phone or computer.
-            </p>
-          </div>
-          <div className="collage-stack">
-            {displayPhotos.slice(0, 5).map((photo, index) => (
-              <figure key={photo.id}>
-                <Image
-                  alt={`${title} preview ${index + 1}`}
-                  fill
-                  loading={index === 0 ? "eager" : "lazy"}
-                  sizes="(max-width: 760px) 46vw, 20vw"
-                  src={photo.thumbnailDisplayUrl}
-                  unoptimized
-                />
-              </figure>
-            ))}
-          </div>
-        </section>
-      ) : null}
+        {album?.expires_at && canViewPhotos ? <p className={galleryStyles.expiry}>Available until {new Date(album.expires_at).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}</p> : null}
+      </header>
 
       {album && isProtected && !canViewPhotos ? (
         <section className="gallery-gate">

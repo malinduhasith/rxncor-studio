@@ -563,9 +563,7 @@ export async function sendAlbumReadyEmails(input: AlbumReadyInput) {
           : client.hasClientPassword
             ? "You can also sign in from the client login page with your client password."
             : null,
-        input.hasZip
-          ? "A full album ZIP download is attached in the gallery."
-          : null,
+        "Select any number of photos or download the whole gallery as a ZIP.",
       ].filter(Boolean);
 
       return sendEmail({
@@ -589,7 +587,7 @@ export async function sendAlbumReadyEmails(input: AlbumReadyInput) {
             [
               ["Album", input.albumTitle],
               ["Photos", String(input.photoCount)],
-              ["ZIP", input.hasZip ? "Ready" : "Not attached"],
+              ["Downloads", "Individual photos or a ZIP of your selection"],
               ["Access", accessNotes.join(" ")],
             ],
           )}</table>`,

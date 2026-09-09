@@ -1,4 +1,6 @@
 import {
+  ArrowLeft,
+  ChevronRight,
   CalendarDays,
   CircleAlert,
   CircleCheck,
@@ -49,6 +51,9 @@ import {
 } from "./actions";
 import { AdminFileActionButton } from "@/components/admin/AdminFileActionButton";
 import { AdminCommandMenu } from "@/components/admin/AdminCommandMenu";
+import { AlbumWorkspaceTabs } from "@/components/admin/AlbumWorkspaceTabs";
+import albumStyles from "./albums.module.css";
+import { readAlbumPhotos } from "@/lib/album-photos";
 import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
 import { AdminPasswordField } from "@/components/admin/AdminPasswordField";
 import { AdminPhotoUpload } from "@/components/admin/AdminPhotoUpload";
@@ -248,6 +253,7 @@ type AdminPageProps = {
     status?: string;
     view?: string;
     clientQ?: string;
+    albumTab?: string;
   }>;
 };
 
@@ -320,7 +326,7 @@ const adminViewCopy: Record<
     label: "Uploads",
     title: "Upload workflow",
     detail:
-      "Upload full-res files, auto-generate delivery images, read EXIF, and attach the final ZIP.",
+      "Upload originals to generate previews and enable client downloads automatically.",
   },
   monitoring: {
     label: "Monitoring",
@@ -601,10 +607,6 @@ function albumStatus(album: AdminAlbum, photoCount: number) {
     return "Draft";
   }
 
-  if (!album.download_zip_url) {
-    return "Needs ZIP";
-  }
-
   return "Ready";
 }
 
@@ -645,7 +647,6 @@ function matchesAlbumFilter(
     case "draft":
     case "ready":
     case "expired":
-    case "needs zip":
       return statusLabel === status;
     default:
       return true;
@@ -677,9 +678,7 @@ function shareMessage({
   const emailLine = album.requires_email
     ? "The client will be asked for their email before the gallery opens."
     : null;
-  const zipLine = album.download_zip_url
-    ? "You can download individual photos or the full album ZIP."
-    : "You can download individual photos now. The full album ZIP will be added separately.";
+  const zipLine = "Download individual photos, choose your favourites, or download the whole album as a ZIP.";
 
   return [
     greeting,
@@ -775,9 +774,9 @@ function readinessItems({
       complete: Boolean(album.cover_photo_url),
     },
     {
-      label: "Full ZIP",
-      detail: album.download_zip_url ? "ZIP ready" : "Upload the delivery ZIP",
-      complete: Boolean(album.download_zip_url),
+      label: "Downloads",
+      detail: photoCount ? "Automatic ZIPs ready" : "Upload photos first",
+      complete: photoCount > 0,
     },
     {
       label: "Expiry",
@@ -810,6 +809,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     status: albumStatusFilter = "all",
     view,
     clientQ = "",
+    albumTab,
   } = await searchParams;
   const activeView = isAdminView(view)
     ? view
@@ -917,7 +917,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const albumClients = (albumClientsResult.data ?? []) as AdminAlbumClient[];
   const shootRequests = (shootRequestsResult.data ?? []) as ShootRequest[];
   const selectedAlbum =
-    albums.find((album) => album.id === selectedAlbumId) ?? albums[0] ?? null;
+    albums.find((album) => album.id === selectedAlbumId) ?? (activeView === "albums" ? null : albums[0]) ?? null;
   const albumCount = albumCountResult.count ?? 0;
   const photoCount = photoCountResult.count ?? 0;
   const protectedAlbumCount = protectedAlbumCountResult.count ?? 0;
@@ -1018,21 +1018,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const adminPhotoMetadataSelect = `${adminPhotoBaseSelect}, display_title, caption, camera_model, lens_model, focal_length, aperture, shutter_speed, iso, captured_at, location, thumbnail_size_bytes, preview_size_bytes, full_size_bytes, file_size_bytes, generated_thumbnail, generated_preview`;
   const selectedPhotoResult = selectedAlbum
     ? await (async () => {
-        const metadataResult = await supabase
-          .from("photos")
-          .select(adminPhotoMetadataSelect)
-          .eq("album_id", selectedAlbum.id)
-          .order("uploaded_at", { ascending: true });
-
-        if (!metadataResult.error) {
-          return metadataResult;
+        try {
+          return { data: await readAlbumPhotos<AdminPhoto>(supabase, selectedAlbum.id, adminPhotoMetadataSelect), error: null };
+        } catch {
+          try {
+            return { data: await readAlbumPhotos<AdminPhoto>(supabase, selectedAlbum.id, adminPhotoBaseSelect), error: null };
+          } catch {
+            return { data: [], error: { message: "The full photo list could not be loaded. Please refresh." } };
+          }
         }
-
-        return supabase
-          .from("photos")
-          .select(adminPhotoBaseSelect)
-          .eq("album_id", selectedAlbum.id)
-          .order("uploaded_at", { ascending: true });
       })()
     : { data: [], error: null };
   const selectedPhotos = (selectedPhotoResult.data ?? []) as AdminPhoto[];
@@ -1094,6 +1088,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const selectedReadinessComplete = selectedReadinessItems.filter(
     (item) => item.complete,
   ).length;
+  const albumCovers = new Map(await Promise.all(
+    activeView === "albums" && !selectedAlbum
+      ? albums.map(async album => [album.id, await signedObjectUrl(album.cover_photo_url)] as const)
+      : [],
+  ));
   const visibleAlbums = albums.filter((album) =>
     matchesAlbumFilter(
       album,
@@ -1316,9 +1315,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         "Check the public About page after edits and hide anything that feels too heavy.",
     },
   ];
-  const albumsNeedingZipCount = albums.filter(
-    (album) =>
-      (albumPhotoCounts.get(album.id) ?? 0) > 0 && !album.download_zip_url,
+  const albumsWithDownloadsCount = albums.filter(
+    album => albumStatus(album, albumPhotoCounts.get(album.id) ?? 0) === "Ready",
   ).length;
   const expiredAlbumCount = albums.filter(
     (album) => album.expires_at && new Date(album.expires_at) < new Date(),
@@ -1547,7 +1545,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </form>
             </div>
           </div>
-          <div className="admin-page-header">
+          <div className="admin-page-header" hidden={activeView === "albums"}>
             <div>
               <span className="label">{activeViewCopy.label}</span>
               <h2>{activeViewCopy.title}</h2>
@@ -1652,15 +1650,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     </span>
                   </div>
                   <div
-                    className={`readiness-item ${
-                      albumsNeedingZipCount ? "attention" : "complete"
-                    }`}
+                    className="readiness-item complete"
                   >
                     <FileArchive size={18} />
                     <span>
-                      <strong>{albumsNeedingZipCount} need ZIPs</strong>
+                      <strong>{albumsWithDownloadsCount} ready to download</strong>
                       <small>
-                        Albums with photos but no final delivery ZIP.
+                        Clients can generate ZIPs from their photo selection.
                       </small>
                     </span>
                   </div>
@@ -2663,508 +2659,49 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           ) : null}
 
           {activeView === "albums" ? (
-            <section id="manager" className="admin-section active-admin-page">
-              <div className="section-head compact">
-                <div>
-                  <p className="eyebrow">Album manager</p>
-                  <h2>Albums and files</h2>
+            <section id="manager" className={albumStyles.workspace}>
+              {!selectedAlbum ? <>
+                <header className={albumStyles.header}>
+                  <div><span className="label">Your library</span><h1>Albums</h1><p>{albums.length} galleries. Open one to manage photos, access, and delivery.</p></div>
+                  <a className="button" href={adminHref("new-album")}><Plus size={18} /> New album</a>
+                </header>
+                <form className={albumStyles.filters} action="/admin" method="get">
+                  <input name="view" type="hidden" value="albums" />
+                  <label className="field"><span className="sr-only">Search albums</span><input name="q" type="search" placeholder="Search albums or clients" defaultValue={albumQuery} /></label>
+                  <label className="field"><span className="sr-only">Filter albums</span><select name="status" defaultValue={albumStatusFilter}><option value="all">All albums</option><option value="ready">Ready</option><option value="draft">Draft</option><option value="expired">Expired</option><option value="public">Public</option><option value="private">Private</option><option value="protected">Protected</option></select></label>
+                  <button className="button secondary" type="submit"><Search size={16} /> Search</button>
+                </form>
+                <div className={albumStyles.albumList} aria-label="Albums">
+                  {visibleAlbums.map(album => {
+                    const count = albumPhotoCounts.get(album.id) ?? 0;
+                    const client = clients.find(client => client.id === album.client_id);
+                    const cover = albumCovers.get(album.id);
+                    return <a className={albumStyles.albumRow} href={adminHref("albums", { album: album.id, q: albumQuery, status: albumStatusFilter })} key={album.id}>
+                      <span className={albumStyles.cover}>{cover ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={cover} alt="" loading="lazy" />
+                      ) : <ImageUp size={24} aria-hidden="true" />}</span>
+                      <span className={albumStyles.albumIdentity}><strong>{album.title}</strong><small>{client?.name ?? "No client assigned"}{album.event_date ? ` · ${dateInputValue(album.event_date)}` : ""}</small></span>
+                      <span className={albumStyles.albumCount}>{count} <small>photos</small></span>
+                      <span className={albumStyles.albumState}><span data-status={albumStatus(album, count)}>{albumStatus(album, count)}</span><small>{album.is_public ? "Public" : "Private"}</small></span>
+                      <ChevronRight size={20} aria-hidden="true" />
+                    </a>;
+                  })}
+                  {!visibleAlbums.length ? <div className="admin-empty-state"><ImageUp size={26} /><strong>{albums.length ? "No matching albums" : "Your first gallery starts here"}</strong><p>{albums.length ? "Try another name or choose All albums." : "Create an album, then add your photographs."}</p></div> : null}
                 </div>
-                <p>
-                  Select an album to edit details, check upload status, set a
-                  cover, manage ZIP delivery, and remove files.
-                </p>
-              </div>
-
-              <div className="manager-grid">
-                <div className="manager-panel">
-                  <div className="panel-title-row">
-                    <h3>Album list</h3>
-                    <span className="pill">
-                      {visibleAlbums.length}/{albums.length} shown
-                    </span>
-                  </div>
-                  <form className="filter-bar" action="/admin" method="get">
-                    <input name="view" type="hidden" value="albums" />
-                    <input
-                      name="album"
-                      type="hidden"
-                      value={selectedAlbum?.id ?? ""}
-                    />
-                    <label className="field">
-                      Search
-                      <input
-                        name="q"
-                        placeholder="Album, slug, client"
-                        defaultValue={albumQuery}
-                      />
-                    </label>
-                    <label className="field">
-                      Filter
-                      <select name="status" defaultValue={albumStatusFilter}>
-                        <option value="all">All albums</option>
-                        <option value="ready">Ready</option>
-                        <option value="draft">Draft</option>
-                        <option value="needs zip">Needs ZIP</option>
-                        <option value="expired">Expired</option>
-                        <option value="public">Public</option>
-                        <option value="private">Private</option>
-                        <option value="protected">Protected</option>
-                      </select>
-                    </label>
-                    <button className="button secondary small" type="submit">
-                      <Search size={16} />
-                      Apply
-                    </button>
-                  </form>
-                  <div className="album-list">
-                    {visibleAlbums.map((album) => (
-                      <a
-                        className={`album-list-row ${
-                          selectedAlbum?.id === album.id ? "active" : ""
-                        }`}
-                        href={adminHref("albums", {
-                          album: album.id,
-                          q: albumQuery,
-                          status: albumStatusFilter,
-                        })}
-                        key={album.id}
-                      >
-                        <span>
-                          <strong>{album.title}</strong>
-                          <small>{album.slug}</small>
-                        </span>
-                        <span className="album-badges">
-                          <span>
-                            {albumPhotoCounts.get(album.id) ?? 0} photos
-                          </span>
-                          <span>
-                            {albumStatus(
-                              album,
-                              albumPhotoCounts.get(album.id) ?? 0,
-                            )}
-                          </span>
-                          <span>{album.is_public ? "Public" : "Private"}</span>
-                          {album.requires_email ? <span>Email</span> : null}
-                          {album.allow_client_password_access !== false ? (
-                            <span>Client PW</span>
-                          ) : null}
-                          {album.is_password_protected ? (
-                            <span>Protected</span>
-                          ) : null}
-                          {album.download_zip_url ? <span>ZIP</span> : null}
-                        </span>
-                      </a>
-                    ))}
-                    {!albums.length ? (
-                      <p className="muted">No albums yet.</p>
-                    ) : null}
-                    {albums.length && !visibleAlbums.length ? (
-                      <p className="muted">No albums match this filter.</p>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="manager-panel">
-                  {selectedAlbum ? (
-                    <>
-                      <div className="panel-title-row">
-                        <div>
-                          <h3>{selectedAlbum.title}</h3>
-                          <p className="muted">
-                            {selectedAlbumPhotoCount} photos
-                            {selectedClient ? ` · ${selectedClient.name}` : ""}
-                          </p>
-                        </div>
-                        <div className="inline-actions">
-                          <a
-                            className="button secondary small"
-                            href={`/client/${selectedAlbum.slug}`}
-                          >
-                            <ExternalLink size={16} />
-                            Open gallery
-                          </a>
-                          <CopyLinkButton value={selectedClientLink} />
-                          {selectedAlbum.is_public ? (
-                            <a
-                              className="button secondary small"
-                              href="/albums"
-                            >
-                              <ExternalLink size={16} />
-                              Public page
-                            </a>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      <div className="detail-grid">
-                        <div>
-                          <span className="label">Client link</span>
-                          <code className="code-line">
-                            {selectedClientLink}
-                          </code>
-                        </div>
-                        <div>
-                          <span className="label">Status</span>
-                          <strong>
-                            {albumStatus(
-                              selectedAlbum,
-                              selectedAlbumPhotoCount,
-                            )}
-                          </strong>
-                        </div>
-                        <div>
-                          <span className="label">Created</span>
-                          <strong>
-                            {formatDateTime(selectedAlbum.created_at)}
-                          </strong>
-                        </div>
-                        <div>
-                          <span className="label">ZIP</span>
-                          <strong>
-                            {selectedAlbum.download_zip_url
-                              ? "Uploaded"
-                              : "Missing"}
-                          </strong>
-                        </div>
-                        <div>
-                          <span className="label">Cover</span>
-                          <strong>
-                            {selectedAlbum.cover_photo_url ? "Set" : "Not set"}
-                          </strong>
-                        </div>
-                        <div>
-                          <span className="label">Assigned clients</span>
-                          <strong>{selectedAssignedClients.length}</strong>
-                        </div>
-                        <div>
-                          <span className="label">Access</span>
-                          <strong>
-                            {selectedAlbum.allow_client_password_access !==
-                            false
-                              ? "Client password on"
-                              : "Client password off"}
-                            {selectedAlbum.requires_email
-                              ? " + email required"
-                              : ""}
-                          </strong>
-                        </div>
-                      </div>
-
-                      <div className="share-box">
-                        <div className="panel-title-row">
-                          <div>
-                            <h3>Send to client</h3>
-                            <p className="muted">
-                              Copy this message into Gmail, Instagram, or SMS.
-                              For password albums, add the password you set.
-                            </p>
-                          </div>
-                          <div className="inline-actions">
-                            <CopyTextButton
-                              text={selectedShareMessage}
-                              label="Copy message"
-                            />
-                          </div>
-                        </div>
-                        <form className="admin-email-composer" action={sendAlbumReadyEmailAction}>
-                          <input name="album_id" type="hidden" value={selectedAlbum.id} />
-                          <input name="recipient_selection" type="hidden" value="true" />
-                          <div className="admin-email-composer-head">
-                            <div>
-                              <span className="label">Email recipients</span>
-                              <strong>Choose exactly who receives this delivery</strong>
-                            </div>
-                            <span className="pill">
-                              {selectedAssignedClients.filter((client) => client.email).length} available
-                            </span>
-                          </div>
-                          <div className="admin-recipient-list">
-                            {selectedAssignedClients.map((client) => (
-                              <label className="admin-recipient" key={client.id}>
-                                <input
-                                  defaultChecked={Boolean(client.email)}
-                                  disabled={!client.email}
-                                  name="recipient_client_ids"
-                                  type="checkbox"
-                                  value={client.id}
-                                />
-                                <span>
-                                  <strong>{client.name}</strong>
-                                  <small>{client.email ?? "Add an email before sending"}</small>
-                                </span>
-                                <span className={`admin-status-dot ${client.email ? "is-ready" : "needs-action"}`}>
-                                  {client.email ? "Ready" : "Missing email"}
-                                </span>
-                              </label>
-                            ))}
-                          </div>
-                          <div className="admin-email-action-row">
-                            <p>
-                              {selectedAlbum.is_password_protected
-                                ? "For security, the gallery password is never included in this email. Copy it separately."
-                                : "The gallery link and access instructions are included automatically."}
-                            </p>
-                            <ConfirmSubmitButton
-                              className="button small"
-                              disabled={!selectedAssignedClients.some((client) => client.email)}
-                              confirmMessage={`Send the gallery-ready email to the checked recipients?${selectedAlbum.is_password_protected ? " The gallery password is not included; send it separately." : ""}`}
-                            >
-                              <Mail size={16} />
-                              Send delivery email
-                            </ConfirmSubmitButton>
-                          </div>
-                        </form>
-                        <pre>{selectedShareMessage}</pre>
-                        <div className="delivery-summary-grid">
-                          <div>
-                            <span className="label">Email subject</span>
-                            <strong>
-                              {selectedAlbum.title} is ready - rxncor.studio
-                            </strong>
-                          </div>
-                          <div>
-                            <span className="label">Recipients</span>
-                            <strong>
-                              {
-                                selectedAssignedClients.filter(
-                                  (client) => client.email,
-                                ).length
-                              }{" "}
-                              ready
-                            </strong>
-                            <small>
-                              {selectedAssignedClients
-                                .map((client) => client.email)
-                                .filter(Boolean)
-                                .join(", ") ||
-                                "Add client emails before sending."}
-                            </small>
-                          </div>
-                          <div>
-                            <span className="label">Access note</span>
-                            <strong>
-                              {selectedAlbum.is_password_protected
-                                ? "Gallery password required"
-                                : selectedAlbum.allow_client_password_access !==
-                                    false
-                                  ? "Client password login"
-                                  : "Email gate only"}
-                            </strong>
-                          </div>
-                        </div>
-                        <div className="copy-detail-list">
-                          {selectedAssignedClients.map((client) => (
-                            <div className="copy-detail-row" key={client.id}>
-                              <div>
-                                <strong>{client.name}</strong>
-                                <small>
-                                  {client.email ?? "No email saved"}
-                                </small>
-                              </div>
-                              <CopyTextButton
-                                label="Copy login details"
-                                text={clientLoginDetailsMessage({
-                                  album: selectedAlbum,
-                                  client,
-                                  albumLink: selectedClientLink,
-                                  photoCount: selectedAlbumPhotoCount,
-                                })}
-                              />
-                            </div>
-                          ))}
-                          {!selectedAssignedClients.length ? (
-                            <p className="muted">
-                              Assign clients below to generate client-specific
-                              login messages.
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      <form action={updateAlbumAction} className="compact-form">
-                        <input
-                          name="album_id"
-                          type="hidden"
-                          value={selectedAlbum.id}
-                        />
-                        <div className="admin-form-section-heading">
-                          <span className="label">Step 1</span>
-                          <h3>Gallery details and access</h3>
-                          <p>Save the client assignment, link, access method and password before sending delivery email.</p>
-                        </div>
-                        <label className="field">
-                          Client
-                          <select
-                            name="client_id"
-                            defaultValue={selectedAlbum.client_id ?? ""}
-                          >
-                            <option value="">No client selected</option>
-                            {clients.map((client) => (
-                              <option key={client.id} value={client.id}>
-                                {client.name}
-                                {client.email ? ` (${client.email})` : ""}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label className="field">
-                          Album title
-                          <input
-                            name="title"
-                            defaultValue={selectedAlbum.title}
-                            required
-                          />
-                        </label>
-                        <label className="field">
-                          Slug
-                          <input
-                            name="slug"
-                            defaultValue={selectedAlbum.slug}
-                            pattern="[a-z0-9-]+"
-                            required
-                          />
-                        </label>
-                        <label className="field">
-                          Event date
-                          <input
-                            name="event_date"
-                            type="date"
-                            defaultValue={dateInputValue(
-                              selectedAlbum.event_date,
-                            )}
-                          />
-                        </label>
-                        <AdminPasswordField
-                          label="Gallery password"
-                          placeholder={selectedAlbum.is_password_protected ? "Leave blank to keep the current password" : "Optional"}
-                          helper={selectedAlbum.is_password_protected ? "A password is active. For security it cannot be displayed. Generate and copy a replacement here if needed." : "Optional shared password for this specific gallery. This is separate from each client's portal password."}
-                        />
-                        <label className="checkbox-field">
-                          <input
-                            name="is_public"
-                            type="checkbox"
-                            defaultChecked={selectedAlbum.is_public}
-                          />
-                          Public album
-                        </label>
-                        <label className="checkbox-field">
-                          <input
-                            name="requires_email"
-                            type="checkbox"
-                            defaultChecked={Boolean(
-                              selectedAlbum.requires_email,
-                            )}
-                          />
-                          Require email before viewing
-                        </label>
-                        <label className="checkbox-field">
-                          <input
-                            name="allow_client_password_access"
-                            type="checkbox"
-                            defaultChecked={
-                              selectedAlbum.allow_client_password_access !==
-                              false
-                            }
-                          />
-                          Assigned clients can use their own password
-                        </label>
-                        <label className="checkbox-field">
-                          <input name="remove_password" type="checkbox" />
-                          Remove password protection
-                        </label>
-                        <label className="field">
-                          Expiry date
-                          <input
-                            name="expires_at"
-                            type="date"
-                            defaultValue={dateInputValue(
-                              selectedAlbum.expires_at,
-                            )}
-                          />
-                        </label>
-                        <div className="assignment-list">
-                          <span className="label">Assigned clients</span>
-                          {clients.map((client) => (
-                            <label
-                              className="checkbox-field compact"
-                              key={client.id}
-                            >
-                              <input
-                                name="assigned_client_ids"
-                                type="checkbox"
-                                value={client.id}
-                                defaultChecked={selectedAssignedClientIds.has(
-                                  client.id,
-                                )}
-                              />
-                              {client.name}
-                              {client.email ? ` (${client.email})` : ""}
-                              {client.password_hash
-                                ? " · client password set"
-                                : ""}
-                            </label>
-                          ))}
-                          {!clients.length ? (
-                            <p className="muted">
-                              Create clients first, then assign them here.
-                            </p>
-                          ) : null}
-                        </div>
-                        <button className="button" type="submit">
-                          <Save size={18} />
-                          Save album details
-                        </button>
-                      </form>
-
-                      <div className="danger-zone">
-                        <form action={deleteAlbumAction}>
-                          <input
-                            name="album_id"
-                            type="hidden"
-                            value={selectedAlbum.id}
-                          />
-                          <ConfirmSubmitButton
-                            className="button danger"
-                            confirmMessage={`Delete ${selectedAlbum.title} and all uploaded R2 files?`}
-                          >
-                            <Trash2 size={18} />
-                            Delete album
-                          </ConfirmSubmitButton>
-                        </form>
-                        {selectedAlbum.download_zip_url ? (
-                          <form action={removeZipAction}>
-                            <input
-                              name="album_id"
-                              type="hidden"
-                              value={selectedAlbum.id}
-                            />
-                            <ConfirmSubmitButton
-                              className="button secondary"
-                              confirmMessage={`Remove the ZIP file for ${selectedAlbum.title}?`}
-                            >
-                              <FileArchive size={18} />
-                              Remove ZIP
-                            </ConfirmSubmitButton>
-                          </form>
-                        ) : null}
-                      </div>
-                    </>
-                  ) : (
-                    <p className="muted">
-                      Create an album first, then it will appear here.
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {selectedAlbum ? (
-                <div className="manager-panel file-panel" id="files">
+              </> : <>
+                <a className={albumStyles.back} href={adminHref("albums", { q: albumQuery, status: albumStatusFilter })}><ArrowLeft size={17} /> All albums</a>
+                <header className={albumStyles.header}>
+                  <div><h1>{selectedAlbum.title}</h1><p>{selectedAlbumPhotoCount} photos · {selectedAlbum.is_public ? "Public gallery" : "Private gallery"}{selectedClient ? ` · ${selectedClient.name}` : ""}</p></div>
+                  <div className={albumStyles.headerActions}><a className="button secondary" href={`/client/${selectedAlbum.slug}`}><ExternalLink size={16} /> Open gallery</a><CopyLinkButton value={selectedClientLink} /></div>
+                </header>
+                <AlbumWorkspaceTabs key={`${selectedAlbum.id}:${albumTab}:${notice ?? ""}`} initialTab={albumTab === "access" || albumTab === "delivery" ? albumTab : notice === "album-updated" ? "access" : notice?.includes("email") ? "delivery" : "photos"}
+                  photos={                <div className="manager-panel file-panel" id="files">
                   <div className="panel-title-row">
                     <div>
-                      <h3>Files in {selectedAlbum.title}</h3>
+                      <h3>{displayPhotos.length} photos</h3>
                       <p className="muted">
-                        {displayPhotos.length} files shown with upload date, R2
-                        key, cover status, and actions.
+                        Original files, cover selection, and portfolio picks.
                       </p>
                     </div>
                     <a
@@ -3196,255 +2733,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       </div>
                     </form>
                   ) : null}
-                  <div className="table-wrap admin-photo-legacy-table">
-                    <table className="table file-table">
-                      <thead>
-                        <tr>
-                          <th><span className="sr-only">Select</span></th>
-                          <th>Preview</th>
-                          <th>File</th>
-                          <th>Data</th>
-                          <th>Status</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {displayPhotos.map((photo) => (
-                          <tr key={photo.id}>
-                            <td>
-                              <input
-                                aria-label={`Select ${photo.filename}`}
-                                className="admin-row-checkbox"
-                                form={`bulk-photo-form-${selectedAlbum.id}`}
-                                name="photo_ids"
-                                type="checkbox"
-                                value={photo.id}
-                              />
-                            </td>
-                            <td>
-                              {photo.thumbnailDisplayUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  className="mini-thumb"
-                                  src={photo.thumbnailDisplayUrl}
-                                  alt={photo.filename}
-                                />
-                              ) : (
-                                <span className="mini-thumb placeholder">
-                                  No preview
-                                </span>
-                              )}
-                            </td>
-                            <td>
-                              <strong>{photo.displayLabel.title}</strong>
-                              <small>{photo.displayLabel.eyebrow}</small>
-                              <code className="code-line">
-                                {photo.filename}
-                              </code>
-                            </td>
-                            <td>
-                              <span>{photo.displayLabel.detail}</span>
-                              <span>
-                                {formatBytes(
-                                  photo.file_size_bytes ??
-                                    (photo.thumbnail_size_bytes ?? 0) +
-                                      (photo.preview_size_bytes ?? 0) +
-                                      (photo.full_size_bytes ?? 0),
-                                )}
-                                {photo.generated_thumbnail ||
-                                photo.generated_preview
-                                  ? " · auto-generated web images"
-                                  : ""}
-                              </span>
-                              <span>
-                                Uploaded {formatDateTime(photo.uploaded_at)}
-                              </span>
-                              <code className="code-line">
-                                {photo.r2_object_key}
-                              </code>
-                              <details className="photo-meta-editor">
-                                <summary>Edit public card label</summary>
-                                <form
-                                  action={updatePhotoMetadataAction}
-                                  className="photo-meta-form"
-                                >
-                                  <input
-                                    name="photo_id"
-                                    type="hidden"
-                                    value={photo.id}
-                                  />
-                                  <label className="field">
-                                    Card title
-                                    <input
-                                      name="display_title"
-                                      defaultValue={photo.display_title ?? ""}
-                                      placeholder={photo.displayLabel.title}
-                                    />
-                                  </label>
-                                  <label className="field">
-                                    Caption
-                                    <input
-                                      name="caption"
-                                      defaultValue={photo.caption ?? ""}
-                                      placeholder="Short human caption"
-                                    />
-                                  </label>
-                                  <label className="field">
-                                    Camera
-                                    <input
-                                      name="camera_model"
-                                      defaultValue={photo.camera_model ?? ""}
-                                      placeholder="Sony A7 IV"
-                                    />
-                                  </label>
-                                  <label className="field">
-                                    Lens
-                                    <input
-                                      name="lens_model"
-                                      defaultValue={photo.lens_model ?? ""}
-                                      placeholder="Sony 35mm f/1.4 GM"
-                                    />
-                                  </label>
-                                  <label className="field">
-                                    Focal length
-                                    <input
-                                      name="focal_length"
-                                      defaultValue={photo.focal_length ?? ""}
-                                      placeholder="35mm"
-                                    />
-                                  </label>
-                                  <label className="field">
-                                    Aperture
-                                    <input
-                                      name="aperture"
-                                      defaultValue={photo.aperture ?? ""}
-                                      placeholder="f/1.8"
-                                    />
-                                  </label>
-                                  <label className="field">
-                                    Shutter
-                                    <input
-                                      name="shutter_speed"
-                                      defaultValue={photo.shutter_speed ?? ""}
-                                      placeholder="1/250"
-                                    />
-                                  </label>
-                                  <label className="field">
-                                    ISO
-                                    <input
-                                      name="iso"
-                                      defaultValue={photo.iso ?? ""}
-                                      placeholder="ISO 400"
-                                    />
-                                  </label>
-                                  <label className="field">
-                                    Captured
-                                    <input
-                                      name="captured_at"
-                                      type="datetime-local"
-                                      defaultValue={dateTimeInputValue(
-                                        photo.captured_at ?? null,
-                                      )}
-                                    />
-                                  </label>
-                                  <label className="field">
-                                    Location
-                                    <input
-                                      name="location"
-                                      defaultValue={photo.location ?? ""}
-                                      placeholder="Melbourne"
-                                    />
-                                  </label>
-                                  <button
-                                    className="button secondary small"
-                                    type="submit"
-                                  >
-                                    <Save size={16} />
-                                    Save label
-                                  </button>
-                                </form>
-                              </details>
-                            </td>
-                            <td>
-                              <span className="album-badges">
-                                {photo.isCover ? <span>Cover</span> : null}
-                                {photo.is_selected ? (
-                                  <span>Selected</span>
-                                ) : null}
-                                {!photo.isCover && !photo.is_selected ? (
-                                  <span>Ready</span>
-                                ) : null}
-                              </span>
-                            </td>
-                            <td>
-                              <div className="table-actions">
-                                <AdminFileActionButton
-                                  albumId={selectedAlbum.id}
-                                  photoId={photo.id}
-                                  kind="preview"
-                                />
-                                <AdminFileActionButton
-                                  albumId={selectedAlbum.id}
-                                  photoId={photo.id}
-                                  kind="full"
-                                />
-                                <form action={setCoverPhotoAction}>
-                                  <input
-                                    name="photo_id"
-                                    type="hidden"
-                                    value={photo.id}
-                                  />
-                                  <button
-                                    className="button secondary small"
-                                    disabled={photo.isCover}
-                                    type="submit"
-                                  >
-                                    <Star size={16} />
-                                    Cover
-                                  </button>
-                                </form>
-                                <form action={togglePhotoSelectedAction}>
-                                  <input
-                                    name="photo_id"
-                                    type="hidden"
-                                    value={photo.id}
-                                  />
-                                  <button
-                                    className="button secondary small"
-                                    type="submit"
-                                  >
-                                    <Star size={16} />
-                                    {photo.is_selected ? "Unselect" : "Select"}
-                                  </button>
-                                </form>
-                                <form action={deletePhotoAction}>
-                                  <input
-                                    name="photo_id"
-                                    type="hidden"
-                                    value={photo.id}
-                                  />
-                                  <ConfirmSubmitButton
-                                    className="button danger small"
-                                    confirmMessage={`Delete ${photo.filename} from this album and R2?`}
-                                  >
-                                    <Trash2 size={16} />
-                                    Delete
-                                  </ConfirmSubmitButton>
-                                </form>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {!displayPhotos.length ? (
-                          <tr>
-                            <td colSpan={6}>
-                              No photos uploaded to this album yet.
-                            </td>
-                          </tr>
-                        ) : null}
-                      </tbody>
-                    </table>
-                  </div>
                   {displayPhotos.length ? (
                     <div className="admin-photo-grid" aria-label="Album photos">
                       {displayPhotos.map((photo) => (
@@ -3464,7 +2752,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                 type="checkbox"
                                 value={photo.id}
                               />
-                              <span>Select</span>
+                              <span className="sr-only">Select</span>
                             </label>
                             <div className="admin-photo-status">
                               {photo.isCover ? <span>Cover</span> : null}
@@ -3546,11 +2834,268 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <a className="button small" href={adminHref("uploads", { album: selectedAlbum.id })}>Upload photos</a>
                     </div>
                   )}
-                </div>
-              ) : null}
+                </div>}
+                  access={<div className={albumStyles.access}>                      <form action={updateAlbumAction} className={albumStyles.accessForm}>
+                        <input
+                          name="album_id"
+                          type="hidden"
+                          value={selectedAlbum.id}
+                        />
+<fieldset><legend>Gallery details</legend><p className={albumStyles.fieldHint}>The title and link your clients see.</p>
+                        <label className="field">
+                          Client
+                          <select
+                            name="client_id"
+                            defaultValue={selectedAlbum.client_id ?? ""}
+                          >
+                            <option value="">No client selected</option>
+                            {clients.map((client) => (
+                              <option key={client.id} value={client.id}>
+                                {client.name}
+                                {client.email ? ` (${client.email})` : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="field">
+                          Album title
+                          <input
+                            name="title"
+                            defaultValue={selectedAlbum.title}
+                            required
+                          />
+                        </label>
+                        <label className="field">
+                          Slug
+                          <input
+                            name="slug"
+                            defaultValue={selectedAlbum.slug}
+                            pattern="[a-z0-9-]+"
+                            required
+                          />
+                        </label>
+                        <label className="field">
+                          Event date
+                          <input
+                            name="event_date"
+                            type="date"
+                            defaultValue={dateInputValue(
+                              selectedAlbum.event_date,
+                            )}
+                          />
+                        </label>
+</fieldset><fieldset><legend>Access &amp; protection</legend><p className={albumStyles.fieldHint}>Choose how people open this gallery.</p>
+                        <AdminPasswordField
+                          label="Gallery password"
+                          placeholder={selectedAlbum.is_password_protected ? "Leave blank to keep the current password" : "Optional"}
+                          helper={selectedAlbum.is_password_protected ? "A password is active. For security it cannot be displayed. Generate and copy a replacement here if needed." : "Optional shared password for this specific gallery. This is separate from each client's portal password."}
+                        />
+                        <label className="checkbox-field">
+                          <input
+                            name="is_public"
+                            type="checkbox"
+                            defaultChecked={selectedAlbum.is_public}
+                          />
+                          Public album
+                        </label>
+                        <label className="checkbox-field">
+                          <input
+                            name="requires_email"
+                            type="checkbox"
+                            defaultChecked={Boolean(
+                              selectedAlbum.requires_email,
+                            )}
+                          />
+                          Require email before viewing
+                        </label>
+                        <label className="checkbox-field">
+                          <input
+                            name="allow_client_password_access"
+                            type="checkbox"
+                            defaultChecked={
+                              selectedAlbum.allow_client_password_access !==
+                              false
+                            }
+                          />
+                          Assigned clients can use their own password
+                        </label>
+                        <label className="checkbox-field">
+                          <input name="remove_password" type="checkbox" />
+                          Remove password protection
+                        </label>
+                        <label className="field">
+                          Expiry date
+                          <input
+                            name="expires_at"
+                            type="date"
+                            defaultValue={dateInputValue(
+                              selectedAlbum.expires_at,
+                            )}
+                          />
+                        </label>
+</fieldset><fieldset><legend>Assigned clients</legend>
+                        <div className="assignment-list">
 
-              {selectedAlbum ? (
-                <div className="manager-panel file-panel">
+                          {clients.map((client) => (
+                            <label
+                              className="checkbox-field compact"
+                              key={client.id}
+                            >
+                              <input
+                                name="assigned_client_ids"
+                                type="checkbox"
+                                value={client.id}
+                                defaultChecked={selectedAssignedClientIds.has(
+                                  client.id,
+                                )}
+                              />
+                              {client.name}
+                              {client.email ? ` (${client.email})` : ""}
+                              {client.password_hash
+                                ? " · client password set"
+                                : ""}
+                            </label>
+                          ))}
+                          {!clients.length ? (
+                            <p className="muted">
+                              Create clients first, then assign them here.
+                            </p>
+                          ) : null}
+                        </div>
+</fieldset><div className={albumStyles.saveBar}><button className="button" type="submit">
+                          <Save size={18} />
+                          Save album details
+                        </button>
+</div></form>
+
+<details className={albumStyles.disclosure}><summary>Delete album or remove an uploaded ZIP</summary>                      <div className="danger-zone">
+                        <form action={deleteAlbumAction}>
+                          <input
+                            name="album_id"
+                            type="hidden"
+                            value={selectedAlbum.id}
+                          />
+                          <ConfirmSubmitButton
+                            className="button danger"
+                            confirmMessage={`Delete ${selectedAlbum.title} and all uploaded R2 files?`}
+                          >
+                            <Trash2 size={18} />
+                            Delete album
+                          </ConfirmSubmitButton>
+                        </form>
+                        {selectedAlbum.download_zip_url ? (
+                          <form action={removeZipAction}>
+                            <input
+                              name="album_id"
+                              type="hidden"
+                              value={selectedAlbum.id}
+                            />
+                            <ConfirmSubmitButton
+                              className="button secondary"
+                              confirmMessage={`Remove the ZIP file for ${selectedAlbum.title}?`}
+                            >
+                              <FileArchive size={18} />
+                              Remove ZIP
+                            </ConfirmSubmitButton>
+                          </form>
+                        ) : null}
+                      </div>
+</details></div>}
+                  delivery={<div className={albumStyles.delivery}><div className={albumStyles.downloadNote}><CircleCheck size={20} /><div><strong>Automatic photo downloads</strong><p>Clients can select any number of photos or download the whole album as a ZIP. No ZIP upload is needed.</p></div></div>                      <div className="share-box">
+                        <div className="panel-title-row">
+                          <div>
+                            <h3>Send to client</h3>
+                            <p className="muted">
+                              Copy this message into Gmail, Instagram, or SMS.
+                              For password albums, add the password you set.
+                            </p>
+                          </div>
+                          <div className="inline-actions">
+                            <CopyTextButton
+                              text={selectedShareMessage}
+                              label="Copy message"
+                            />
+                          </div>
+                        </div>
+                        <form className="admin-email-composer" action={sendAlbumReadyEmailAction}>
+                          <input name="album_id" type="hidden" value={selectedAlbum.id} />
+                          <input name="recipient_selection" type="hidden" value="true" />
+                          <div className="admin-email-composer-head">
+                            <div>
+                              <span className="label">Email recipients</span>
+                              <strong>Choose exactly who receives this delivery</strong>
+                            </div>
+                            <span className="pill">
+                              {selectedAssignedClients.filter((client) => client.email).length} available
+                            </span>
+                          </div>
+                          <div className="admin-recipient-list">
+                            {selectedAssignedClients.map((client) => (
+                              <label className="admin-recipient" key={client.id}>
+                                <input
+                                  defaultChecked={Boolean(client.email)}
+                                  disabled={!client.email}
+                                  name="recipient_client_ids"
+                                  type="checkbox"
+                                  value={client.id}
+                                />
+                                <span>
+                                  <strong>{client.name}</strong>
+                                  <small>{client.email ?? "Add an email before sending"}</small>
+                                </span>
+                                <span className={`admin-status-dot ${client.email ? "is-ready" : "needs-action"}`}>
+                                  {client.email ? "Ready" : "Missing email"}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                          <div className="admin-email-action-row">
+                            <p>
+                              {selectedAlbum.is_password_protected
+                                ? "For security, the gallery password is never included in this email. Copy it separately."
+                                : "The gallery link and access instructions are included automatically."}
+                            </p>
+                            <ConfirmSubmitButton
+                              className="button small"
+                              disabled={!selectedAssignedClients.some((client) => client.email)}
+                              confirmMessage={`Send the gallery-ready email to the checked recipients?${selectedAlbum.is_password_protected ? " The gallery password is not included; send it separately." : ""}`}
+                            >
+                              <Mail size={16} />
+                              Send delivery email
+                            </ConfirmSubmitButton>
+                          </div>
+                        </form>
+                        <details className={albumStyles.disclosure}><summary>Preview delivery message</summary><pre>{selectedShareMessage}</pre></details>
+                        <div className="copy-detail-list">
+                          {selectedAssignedClients.map((client) => (
+                            <div className="copy-detail-row" key={client.id}>
+                              <div>
+                                <strong>{client.name}</strong>
+                                <small>
+                                  {client.email ?? "No email saved"}
+                                </small>
+                              </div>
+                              <CopyTextButton
+                                label="Copy login details"
+                                text={clientLoginDetailsMessage({
+                                  album: selectedAlbum,
+                                  client,
+                                  albumLink: selectedClientLink,
+                                  photoCount: selectedAlbumPhotoCount,
+                                })}
+                              />
+                            </div>
+                          ))}
+                          {!selectedAssignedClients.length ? (
+                            <p className="muted">
+                              Assign clients in Access to generate client-specific
+                              login messages.
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+
+<details className={albumStyles.disclosure}><summary>Recent downloads</summary>                <div className="manager-panel file-panel">
                   <div className="panel-title-row">
                     <div>
                       <h3>Download history for {selectedAlbum.title}</h3>
@@ -3597,8 +3142,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       </tbody>
                     </table>
                   </div>
-                </div>
-              ) : null}
+                </div></details></div>}
+                />
+              </>}
             </section>
           ) : null}
 
@@ -3865,11 +3411,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 albums={albums}
                 defaultAlbumId={selectedAlbum?.id}
               />
-              <h3 className="subsection-title">Full album ZIP</h3>
+              <details><summary className="subsection-title">Optional pre-made ZIP</summary><p className="muted">Client ZIPs are generated automatically. You can also keep a pre-made archive here.</p>
               <AdminZipUpload
                 albums={albums}
                 defaultAlbumId={selectedAlbum?.id}
-              />
+              /></details>
             </section>
           ) : null}
 

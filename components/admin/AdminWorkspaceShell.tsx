@@ -88,7 +88,7 @@ function adminLink(view: AdminWorkspaceView, selectedAlbumId?: string) {
   if (view === "invoices") return "/admin/invoices";
 
   const search = new URLSearchParams({ view });
-  if (selectedAlbumId && ["albums", "uploads", "delivery"].includes(view)) {
+  if (selectedAlbumId && ["uploads", "delivery"].includes(view)) {
     search.set("album", selectedAlbumId);
   }
   return `/admin?${search.toString()}`;
