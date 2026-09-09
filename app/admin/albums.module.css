@@ -29,7 +29,7 @@
 .tabs button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 24px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: #596579; font: inherit; font-size: .85rem; font-weight: 650; cursor: pointer; }
 .tabs button[aria-selected="true"] { background: #fff; color: #1d4ed8; border-color: #dce2eb; box-shadow: 0 1px 3px #1720330a; }
 .tabPanel[hidden] { display: none !important; }
-:global(.admin-v4) .tabPanel > :global(.manager-panel) { margin: 0; padding: 0; border: 0; background: transparent; }
+:global(.admin-v4) .workspace .tabPanel > :global(.manager-panel) { margin: 0; padding: 0; border: 0; background: transparent; }
 :global(.admin-v4) .workspace :global(.panel-title-row) { padding: 0 0 16px; border: 0; background: transparent; }
 :global(.admin-v4) .workspace :global(.admin-bulk-toolbar) { border: 1px solid #e1e5ec; border-radius: 10px; padding: 12px 14px; margin: 0 0 18px; }
 :global(.admin-v4) .workspace :global(.admin-photo-grid) { grid-template-columns: repeat(3,minmax(0,1fr)); align-items: start; gap: 16px; background: transparent; border: 0; }
@@ -116,3 +116,5 @@
   :global(.admin-v4) .workspace :global(.admin-photo-primary-actions) { display: flex; }
 }
 @media (prefers-reduced-motion: reduce) { .albumRow { transition: none; } }
+
+:global(.admin-v4) .workspace :global(.admin-bulk-toolbar > div:first-child) { display: grid; gap: 4px; }

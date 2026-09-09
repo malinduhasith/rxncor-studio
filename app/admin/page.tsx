@@ -2674,14 +2674,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <div className={albumStyles.albumList} aria-label="Albums">
                   {visibleAlbums.map(album => {
                     const count = albumPhotoCounts.get(album.id) ?? 0;
-                    const client = clients.find(client => client.id === album.client_id);
+                    const assignedIds = albumAssignedClientIds.get(album.id) ?? new Set<string>();
+                    const assigned = clients.filter(client => assignedIds.has(client.id));
+                    const clientLabel = assigned.length > 1 ? `${assigned.length} assigned clients` : assigned[0]?.name ?? "No client assigned";
                     const cover = albumCovers.get(album.id);
                     return <a className={albumStyles.albumRow} href={adminHref("albums", { album: album.id, q: albumQuery, status: albumStatusFilter })} key={album.id}>
                       <span className={albumStyles.cover}>{cover ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={cover} alt="" loading="lazy" />
                       ) : <ImageUp size={24} aria-hidden="true" />}</span>
-                      <span className={albumStyles.albumIdentity}><strong>{album.title}</strong><small>{client?.name ?? "No client assigned"}{album.event_date ? ` · ${dateInputValue(album.event_date)}` : ""}</small></span>
+                      <span className={albumStyles.albumIdentity}><strong>{album.title}</strong><small>{clientLabel}{album.event_date ? ` · ${dateInputValue(album.event_date)}` : ""}</small></span>
                       <span className={albumStyles.albumCount}>{count} <small>photos</small></span>
                       <span className={albumStyles.albumState}><span data-status={albumStatus(album, count)}>{albumStatus(album, count)}</span><small>{album.is_public ? "Public" : "Private"}</small></span>
                       <ChevronRight size={20} aria-hidden="true" />
