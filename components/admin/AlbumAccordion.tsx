@@ -56,7 +56,7 @@ export function AlbumAccordion({ albums, selectedId, children }: {
       setUploadWarning(true);
       return;
     }
-    if (album.id !== selectedId && dirty.current === selectedId) {
+    if (selectedId !== null && album.id !== selectedId && dirty.current === selectedId) {
       setSelection(current => ({ ...current, expanded: selectedId }));
       setDiscardTarget(album);
       return;
