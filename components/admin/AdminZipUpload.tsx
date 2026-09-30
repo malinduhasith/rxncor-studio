@@ -20,6 +20,7 @@ type SignedUpload = {
 type AdminZipUploadProps = {
   albums: UploadAlbum[];
   defaultAlbumId?: string;
+  fixedAlbum?: boolean;
 };
 
 function fileSizeLabel(bytes: number) {
@@ -81,7 +82,8 @@ async function logZipFailure(albumId: string, zipFile: File, message: string, du
 
 export function AdminZipUpload({
   albums,
-  defaultAlbumId: preferredAlbumId
+  defaultAlbumId: preferredAlbumId,
+  fixedAlbum = false
 }: AdminZipUploadProps) {
   const [status, setStatus] = useState("");
   const [statusTone, setStatusTone] = useState<NoticeTone>("info");
@@ -188,13 +190,14 @@ export function AdminZipUpload({
   }
 
   return (
-    <form className="upload-form" onSubmit={handleSubmit}>
+    <form className="upload-form" data-upload-busy={isUploading} onSubmit={handleSubmit}>
+      {fixedAlbum ? <input name="album_id" type="hidden" value={defaultAlbumId} /> : (
       <label className="field">
         Album
-        <select name="album_id" defaultValue={defaultAlbumId} disabled={!hasAlbums}>
+        <select name="album_id" defaultValue={defaultAlbumId} disabled={!hasAlbums || isUploading}>
           {hasAlbums ? albumOptions : <option value="">Create an album first</option>}
         </select>
-      </label>
+      </label>)}
       <div className="upload-guidance">
         <strong>Use one final delivery ZIP</strong>
         <span>The ZIP should contain the full-resolution files you want the client to keep.</span>

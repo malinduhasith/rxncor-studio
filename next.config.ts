@@ -97,6 +97,9 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    // Uploads already include WebP thumbnails/previews. Signed URLs must not
+    // create a fresh Vercel optimization cache entry on every gallery visit.
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",

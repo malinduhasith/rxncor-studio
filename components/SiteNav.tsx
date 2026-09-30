@@ -92,6 +92,8 @@ export function SiteNav() {
     window.history.pushState(null, "", href);
   }
 
+  if (pathname.startsWith("/admin") || pathname.startsWith("/invoice/")) return null;
+
   return (
     <header
       className="site-header rx-site-header"

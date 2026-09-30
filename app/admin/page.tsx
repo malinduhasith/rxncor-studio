@@ -1,6 +1,4 @@
 import {
-  ArrowLeft,
-  ChevronRight,
   CalendarDays,
   CircleAlert,
   CircleCheck,
@@ -51,7 +49,8 @@ import {
 } from "./actions";
 import { AdminFileActionButton } from "@/components/admin/AdminFileActionButton";
 import { AdminCommandMenu } from "@/components/admin/AdminCommandMenu";
-import { AlbumWorkspaceTabs } from "@/components/admin/AlbumWorkspaceTabs";
+import { AlbumAccordion } from "@/components/admin/AlbumAccordion";
+import { AlbumTabButton, AlbumWorkspaceTabs } from "@/components/admin/AlbumWorkspaceTabs";
 import albumStyles from "./albums.module.css";
 import { readAlbumPhotos } from "@/lib/album-photos";
 import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
@@ -1089,7 +1088,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     (item) => item.complete,
   ).length;
   const albumCovers = new Map(await Promise.all(
-    activeView === "albums" && !selectedAlbum
+    activeView === "albums"
       ? albums.map(async album => [album.id, await signedObjectUrl(album.cover_photo_url)] as const)
       : [],
   ));
@@ -2660,9 +2659,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
           {activeView === "albums" ? (
             <section id="manager" className={albumStyles.workspace}>
-              {!selectedAlbum ? <>
                 <header className={albumStyles.header}>
-                  <div><span className="label">Your library</span><h1>Albums</h1><p>{albums.length} galleries. Open one to manage photos, access, and delivery.</p></div>
+                  <div><span className="label">Your library</span><h1>Albums</h1><p>{albums.length} galleries. Tap an album to manage everything right here.</p></div>
                   <a className="button" href={adminHref("new-album")}><Plus size={18} /> New album</a>
                 </header>
                 <form className={albumStyles.filters} action="/admin" method="get">
@@ -2671,33 +2669,25 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   <label className="field"><span className="sr-only">Filter albums</span><select name="status" defaultValue={albumStatusFilter}><option value="all">All albums</option><option value="ready">Ready</option><option value="draft">Draft</option><option value="expired">Expired</option><option value="public">Public</option><option value="private">Private</option><option value="protected">Protected</option></select></label>
                   <button className="button secondary" type="submit"><Search size={16} /> Search</button>
                 </form>
-                <div className={albumStyles.albumList} aria-label="Albums">
-                  {visibleAlbums.map(album => {
-                    const count = albumPhotoCounts.get(album.id) ?? 0;
-                    const assignedIds = albumAssignedClientIds.get(album.id) ?? new Set<string>();
-                    const assigned = clients.filter(client => assignedIds.has(client.id));
-                    const clientLabel = assigned.length > 1 ? `${assigned.length} assigned clients` : assigned[0]?.name ?? "No client assigned";
-                    const cover = albumCovers.get(album.id);
-                    return <a className={albumStyles.albumRow} href={adminHref("albums", { album: album.id, q: albumQuery, status: albumStatusFilter })} key={album.id}>
-                      <span className={albumStyles.cover}>{cover ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={cover} alt="" loading="lazy" />
-                      ) : <ImageUp size={24} aria-hidden="true" />}</span>
-                      <span className={albumStyles.albumIdentity}><strong>{album.title}</strong><small>{clientLabel}{album.event_date ? ` · ${dateInputValue(album.event_date)}` : ""}</small></span>
-                      <span className={albumStyles.albumCount}>{count} <small>photos</small></span>
-                      <span className={albumStyles.albumState}><span data-status={albumStatus(album, count)}>{albumStatus(album, count)}</span><small>{album.is_public ? "Public" : "Private"}</small></span>
-                      <ChevronRight size={20} aria-hidden="true" />
-                    </a>;
-                  })}
-                  {!visibleAlbums.length ? <div className="admin-empty-state"><ImageUp size={26} /><strong>{albums.length ? "No matching albums" : "Your first gallery starts here"}</strong><p>{albums.length ? "Try another name or choose All albums." : "Create an album, then add your photographs."}</p></div> : null}
+                <AlbumAccordion key={notice ?? "albums"} selectedId={selectedAlbum?.id ?? null} albums={visibleAlbums.map(album => {
+                  const count = albumPhotoCounts.get(album.id) ?? 0;
+                  const assignedIds = albumAssignedClientIds.get(album.id) ?? new Set<string>();
+                  const assigned = clients.filter(client => assignedIds.has(client.id));
+                  return {
+                    id: album.id, title: album.title, count,
+                    clientLabel: assigned.length > 1 ? `${assigned.length} assigned clients` : assigned[0]?.name ?? "No client assigned",
+                    date: album.event_date ? dateInputValue(album.event_date) : "",
+                    cover: albumCovers.get(album.id) || undefined,
+                    status: albumStatus(album, count), isPublic: Boolean(album.is_public),
+                    href: adminHref("albums", { album: album.id, q: albumQuery, status: albumStatusFilter }),
+                  };
+                })}>
+                {selectedAlbum ? <>
+                <div className={albumStyles.cardActions}>
+                  <span>{selectedAlbumPhotoCount} photos · {selectedAlbum.is_public ? "Public gallery" : "Private gallery"}</span>
+                  <div className={albumStyles.headerActions}><a className="button secondary" href={`/client/${selectedAlbum.slug}`} target="_blank" rel="noreferrer"><ExternalLink size={16} /> Open gallery</a><CopyLinkButton value={selectedClientLink} /></div>
                 </div>
-              </> : <>
-                <a className={albumStyles.back} href={adminHref("albums", { q: albumQuery, status: albumStatusFilter })}><ArrowLeft size={17} /> All albums</a>
-                <header className={albumStyles.header}>
-                  <div><h1>{selectedAlbum.title}</h1><p>{selectedAlbumPhotoCount} photos · {selectedAlbum.is_public ? "Public gallery" : "Private gallery"}{selectedClient ? ` · ${selectedClient.name}` : ""}</p></div>
-                  <div className={albumStyles.headerActions}><a className="button secondary" href={`/client/${selectedAlbum.slug}`}><ExternalLink size={16} /> Open gallery</a><CopyLinkButton value={selectedClientLink} /></div>
-                </header>
-                <AlbumWorkspaceTabs key={`${selectedAlbum.id}:${albumTab}:${notice ?? ""}`} initialTab={albumTab === "access" || albumTab === "delivery" ? albumTab : notice === "album-updated" ? "access" : notice?.includes("email") ? "delivery" : "photos"}
+                <AlbumWorkspaceTabs key={`${selectedAlbum.id}:${albumTab}:${notice ?? ""}`} initialTab={albumTab === "access" || albumTab === "delivery" || albumTab === "upload" ? albumTab : notice === "album-updated" ? "access" : notice?.includes("email") ? "delivery" : "photos"}
                   photos={                <div className="manager-panel file-panel" id="files">
                   <div className="panel-title-row">
                     <div>
@@ -2706,13 +2696,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         Original files, cover selection, and portfolio picks.
                       </p>
                     </div>
-                    <a
-                      className="button secondary small"
-                      href={adminHref("uploads", { album: selectedAlbum.id })}
-                    >
-                      <ImageUp size={16} />
-                      Upload more
-                    </a>
+                    <AlbumTabButton tab="upload"><ImageUp size={16} /> Add photos</AlbumTabButton>
                   </div>
                   {displayPhotos.length ? (
                     <form
@@ -2833,11 +2817,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <ImageUp size={24} />
                       <strong>No photos yet</strong>
                       <p>Upload the first set of photographs to start preparing this gallery.</p>
-                      <a className="button small" href={adminHref("uploads", { album: selectedAlbum.id })}>Upload photos</a>
+                      <AlbumTabButton tab="upload">Upload photos</AlbumTabButton>
                     </div>
                   )}
                 </div>}
-                  access={<div className={albumStyles.access}>                      <form action={updateAlbumAction} className={albumStyles.accessForm}>
+                  upload={<div className={albumStyles.upload}>
+                    <div className="panel-title-row"><div><h3>Add photos</h3><p className="muted">Choose your originals. Previews are created automatically.</p></div></div>
+                    <AdminPhotoUpload albums={[{id: selectedAlbum.id, title: selectedAlbum.title, slug: selectedAlbum.slug}]} defaultAlbumId={selectedAlbum.id} fixedAlbum />
+                    <details className={albumStyles.disclosure}><summary>Optional: supply your own delivery ZIP</summary><p className="muted">Clients can already download an automatic ZIP of any selected photos.</p><AdminZipUpload albums={[{id: selectedAlbum.id, title: selectedAlbum.title, slug: selectedAlbum.slug}]} defaultAlbumId={selectedAlbum.id} fixedAlbum /></details>
+                  </div>}
+                  access={<div className={albumStyles.access}>                      <form action={updateAlbumAction} className={albumStyles.accessForm} data-album-settings>
                         <input
                           name="album_id"
                           type="hidden"
@@ -3146,7 +3135,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   </div>
                 </div></details></div>}
                 />
-              </>}
+              </> : null}
+              </AlbumAccordion>
+              {!visibleAlbums.length ? <div className="admin-empty-state"><ImageUp size={26} /><strong>{albums.length ? "No matching albums" : "Your first gallery starts here"}</strong><p>{albums.length ? "Try another name or choose All albums." : "Create an album, then add your photographs."}</p></div> : null}
             </section>
           ) : null}
 

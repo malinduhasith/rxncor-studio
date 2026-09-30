@@ -163,7 +163,7 @@ export function AdminWorkspaceShell({
         </aside>
 
         <section className="dashboard-panel admin-main-panel">
-          <details className="admin-mobile-nav">
+          <details className="admin-mobile-nav" key={activeView}>
             <summary>
               <Menu size={19} aria-hidden="true" />
               <span>RXNCOR Admin</span>
@@ -189,6 +189,11 @@ export function AdminWorkspaceShell({
             </nav>
           </details>
           {children}
+          <nav className="admin-mobile-dock" aria-label="Quick admin navigation">
+            {navigationGroups[0].items.map(({ view, label, icon: Icon }) => <Link
+              href={adminLink(view)} key={view} aria-current={activeView === view ? "page" : undefined}
+            ><Icon size={21} aria-hidden="true" /><span>{view === "albums" ? "Albums" : label}</span></Link>)}
+          </nav>
         </section>
       </div>
     </main>

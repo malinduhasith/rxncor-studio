@@ -20,6 +20,7 @@ type R2UploadKind = "thumbnails" | "previews" | "full";
 type AdminPhotoUploadProps = {
   albums: UploadAlbum[];
   defaultAlbumId?: string;
+  fixedAlbum?: boolean;
 };
 
 type PhotoSet = {
@@ -741,7 +742,8 @@ async function uploadWithLimit(
 
 export function AdminPhotoUpload({
   albums,
-  defaultAlbumId: preferredAlbumId
+  defaultAlbumId: preferredAlbumId,
+  fixedAlbum = false
 }: AdminPhotoUploadProps) {
   const [status, setStatus] = useState("");
   const [statusKind, setStatusKind] = useState<"info" | "error">("info");
@@ -1016,35 +1018,23 @@ export function AdminPhotoUpload({
   return (
     <form
       className="upload-form"
+      data-upload-busy={isUploading || isTestingR2}
       onChange={(event) => updateSelectionSummary(event.currentTarget)}
       onSubmit={handleSubmit}
     >
+      {fixedAlbum ? <input name="album_id" type="hidden" value={defaultAlbumId} /> : (
       <label className="field">
         Album
-        <select name="album_id" defaultValue={defaultAlbumId} disabled={!hasAlbums}>
+        <select name="album_id" defaultValue={defaultAlbumId} disabled={!hasAlbums || isUploading}>
           {hasAlbums ? albumOptions : <option value="">Create an album first</option>}
         </select>
-      </label>
+      </label>)}
       <div className="upload-guidance">
         <strong>Upload a full album in one run</strong>
         <span>
-          Choose the full-res JPEGs. The browser will read EXIF, generate WebP
-          thumbnails/previews, upload everything to R2, then save the photo records.
-          You can still add your own thumbnails or previews as overrides.
+          Choose all the original photos you want to add. Keep this tab open until
+          the upload finishes. Smaller gallery previews are created automatically.
         </span>
-      </div>
-      <div className="upload-diagnostic">
-        <button
-          className="button secondary"
-          type="button"
-          disabled={!hasAlbums || isUploading || isTestingR2}
-          onClick={handleR2Diagnostic}
-        >
-          {isTestingR2 ? "Testing R2" : "Test R2 upload"}
-        </button>
-        {diagnosticStatus ? (
-          <p className={`upload-message ${diagnosticKind}`}>{diagnosticStatus}</p>
-        ) : null}
       </div>
       <label className="checkbox-field">
         <input name="skip_existing" type="checkbox" defaultChecked />
@@ -1055,6 +1045,17 @@ export function AdminPhotoUpload({
         Email assigned clients after a successful upload
         <small>Only sends if the whole selected batch finishes without failures.</small>
       </label>
+      <label className="field">
+        Full-res images <small>Required source files</small>
+        <input
+          name="fulls"
+          type="file"
+          accept="image/jpeg,image/jpg,image/*"
+          multiple
+          required
+        />
+      </label>
+      <details className="upload-advanced"><summary>Preview overrides & upload diagnostics</summary>
       <label className="field">
         Thumbnail images <small>Optional override</small>
         <input
@@ -1073,16 +1074,20 @@ export function AdminPhotoUpload({
           multiple
         />
       </label>
-      <label className="field">
-        Full-res images <small>Required source files</small>
-        <input
-          name="fulls"
-          type="file"
-          accept="image/jpeg,image/jpg,image/*"
-          multiple
-          required
-        />
-      </label>
+      <div className="upload-diagnostic">
+        <button
+          className="button secondary"
+          type="button"
+          disabled={!hasAlbums || isUploading || isTestingR2}
+          onClick={handleR2Diagnostic}
+        >
+          {isTestingR2 ? "Testing R2" : "Test R2 upload"}
+        </button>
+        {diagnosticStatus ? (
+          <p className={`upload-message ${diagnosticKind}`}>{diagnosticStatus}</p>
+        ) : null}
+      </div>
+      </details>
       <button className="button" type="submit" disabled={!hasAlbums || isUploading}>
         <UploadCloud size={18} />
         {isUploading ? "Uploading" : "Upload album photos"}

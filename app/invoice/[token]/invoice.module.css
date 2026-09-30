@@ -2,3 +2,34 @@
 @media(max-width:720px){.shell{padding:0}.tools{box-sizing:border-box;margin:0;padding:10px 14px;background:#e9ecf0}.message{margin:0;border-inline:0}.invoice{min-height:100vh;padding:28px 20px;box-shadow:none}.documentTitle h1{font-size:28px}.brand span{font-size:8px}.meta{grid-template-columns:1fr;gap:18px}.meta dl{padding-top:18px;border-top:1px solid #d8dde5}.summaryArea,.decision,.footer{grid-template-columns:1fr}.summaryArea{gap:20px}.decision{margin-inline:0}.void{right:25px;top:100px;font-size:22px}}
 @media(max-width:420px){.tools>span{width:100%}.toolActions{width:100%}.toolActions .downloadPdf{flex:1}.tools{padding-bottom:12px}}
 @media print{.shell{padding:0;background:#fff}.tools,.message,.decision{display:none}.invoice{width:100%;max-width:none;min-height:0;margin:0;padding:24px;box-shadow:none}.stateBanner{break-inside:avoid}.footer{break-inside:avoid}}
+
+/* Documents have their own toolbar; the public site's fixed header must not cover it. */
+:global(body):has(.shell) :global(.rx-site-header),
+:global(body):has(.shell) :global(.rx-footer),
+:global(body):has(.shell) :global(.rr-cursor-orb),
+:global(body):has(.shell) :global(.rr-site-noise),
+:global(body):has(.shell) :global(.rr-scroll-transition) { display: none !important; }
+:global(html):has(.shell), :global(body):has(.shell) { min-width: 320px; margin: 0; background: #e9ecf0; color-scheme: light; }
+.shell, .shell * { box-sizing: border-box; }
+.tools { position: sticky; top: 0; z-index: 30; padding-block: 12px; background: #e9ecf0; }
+.studioLink { display: flex; flex-direction: column; justify-content: center; min-height: 44px; color: #172033; font-size: 16px; font-weight: 800; letter-spacing: .04em; text-decoration: none; }
+.studioLink span { color: #667085; font-size: 11px; font-weight: 400; letter-spacing: normal; }
+@media screen and (max-width:720px) {
+  .tools { padding: calc(10px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 12px max(14px,env(safe-area-inset-left,0px)); }
+  .toolActions { width: 100%; }
+  .toolActions > * { flex: 1; min-height: 48px; font-size: 14px; }
+  .invoice { padding: 24px 18px calc(32px + env(safe-area-inset-bottom,0px)); min-height: 0; }
+  .header { gap: 12px; }
+  .brand b { font-size: 22px; }
+  .documentTitle { min-width: 0; overflow-wrap: anywhere; }
+  .invoice table { display: block; min-width: 0; }
+  .invoice thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .invoice tbody { display: grid; gap: 12px; }
+  .invoice tbody tr { display: grid; grid-template-columns: 1fr 1fr; padding: 14px; border: 1px solid #d8dde5; border-radius: 8px; gap: 10px 16px; }
+  .invoice td { min-width: 0; padding: 0; border: 0; text-align: left !important; overflow-wrap: anywhere; }
+  .invoice td:first-child { grid-column: 1 / -1; padding-bottom: 10px; border-bottom: 1px solid #e6e9ee; }
+  .invoice td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 3px; color: #667085; font-size: 11px; }
+  .invoice td:last-child { font-weight: 700; }
+  .decision input { min-height: 44px; font-size: 16px; }
+  .decision button { min-height: 48px; font-size: 14px; }
+}

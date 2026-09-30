@@ -118,3 +118,63 @@
 @media (prefers-reduced-motion: reduce) { .albumRow { transition: none; } }
 
 :global(.admin-v4) .workspace :global(.admin-bulk-toolbar > div:first-child) { display: grid; gap: 4px; }
+
+/* Each gallery opens in the library, with folder tabs attached to its panel. */
+.albumCard { min-width: 0; border: 1px solid #dfe4ed; border-radius: 14px; background: #fff; scroll-margin-top: 78px; }
+.albumCard[data-expanded="true"] { border-color: #90afe3; box-shadow: 0 5px 24px #193e7108; }
+.cardHeading { margin: 0; font: inherit; }
+:global(.admin-v4) .albumCard .albumRow { width: 100%; border: 0; border-radius: 14px; color: #172033; text-align: left; font: inherit; cursor: pointer; }
+:global(.admin-v4) .albumCard[data-expanded="true"] .albumRow { background: #f0f5ff; border-radius: 14px 14px 0 0; }
+.albumRow:disabled { cursor: progress; }
+.cardChevron { transition: transform .15s; }
+.albumRow[aria-expanded="true"] .cardChevron { transform: rotate(180deg); }
+.cardContent { padding: 0 22px 22px; min-width: 0; }
+.cardContent[hidden] { display: none !important; }
+.cardActions { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 16px 0; }
+.cardActions > span { color: #687386; font-size: 13px; }
+.cardLoading { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 36px 12px; color: #596579; font-size: 14px; }
+.cardNotice { margin: 16px 0 0; padding: 16px; border: 1px solid #ebc685; border-radius: 8px; background: #fff8eb; color: #785216; font-size: 14px; }
+.cardNotice p { margin: 0 0 12px; }
+.tabs { width: 100%; gap: 4px; padding: 8px 8px 0; margin: 0; border: 1px solid #e1e5ec; border-radius: 12px 12px 0 0; background: #edf1f7; overflow-x: auto; }
+.tabs button { flex: 0 0 auto; position: relative; min-height: 48px; margin-bottom: -1px; padding: 12px 22px; border-radius: 9px 9px 0 0; font-size: 14px; white-space: nowrap; }
+.tabs button[aria-selected="true"] { border-color: #d9e1ee; border-bottom-color: #fff; background: #fff; color: #1d4ed8; box-shadow: none; }
+.tabs button:focus-visible { outline-offset: -4px; }
+.tabPanel { min-width: 0; padding: 22px 16px 4px; border: 1px solid #e1e5ec; border-top: 0; border-radius: 0 0 12px 12px; background: #fff; }
+.upload { max-width: 900px; }
+:global(.admin-v4) .upload :global(.upload-form) { display: grid; grid-template-columns: minmax(0,1fr); gap: 18px; padding: 0; border: 0; }
+:global(.admin-v4) .upload :global(.upload-form > *) { grid-column: 1; min-width: 0; }
+:global(.admin-v4) .upload :global(.upload-advanced) { padding: 0 14px; border: 1px solid #e1e5ec; border-radius: 8px; }
+.upload :global(.upload-advanced summary) { padding-block: 15px; cursor: pointer; font-size: 14px; }
+.upload :global(.upload-advanced .field) { margin-block: 14px; }
+.upload :global(.upload-form > button) { justify-self: start; }
+@media (max-width: 980px) {
+  .saveBar { position: sticky; bottom: var(--admin-dock-height, 0px); z-index: 10; padding: 12px 0; background: #fffffff5; backdrop-filter: blur(14px); }
+  .saveBar > button { width: 100%; }
+}
+@media (max-width: 720px) {
+  .cardContent { padding: 0 10px 10px; }
+  :global(.admin-v4) .albumCard .albumRow { grid-template-columns: 54px minmax(0,1fr) 22px; gap: 6px 10px; padding: 14px 12px; }
+  .cover { width: 54px; height: 66px; grid-row: 1 / 3; }
+  .albumIdentity { grid-row: 1; }
+  .albumIdentity strong { font-size: 15px; }
+  .albumIdentity small { font-size: 12px; }
+  .albumCount { grid-column: 2; grid-row: 2; font-size: 12px; }
+  .albumState { grid-column: 1 / -1; grid-row: 3; display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 12px; }
+  .albumState small { font-size: 12px; }
+  .albumRow > .cardChevron { display: block; grid-column: 3; grid-row: 1 / 3; }
+  .cardActions { padding-block: 14px; gap: 10px; }
+  .cardActions .headerActions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tabs { gap: 2px; padding: 6px 4px 0; }
+  .tabs button { flex: 1 0 auto; gap: 4px; padding: 12px 8px; font-size: 13px; }
+  .tabs button svg { display: none; }
+  .tabPanel { padding: 18px 8px 4px; }
+  :global(.admin-v4) .accessForm fieldset { padding: 14px 10px; }
+  :global(.admin-v4) .accessForm :global(.checkbox-field) { font-size: 14px; }
+  :global(.admin-v4) .workspace :global(.admin-photo-grid) { grid-template-columns: minmax(0,1fr); }
+  :global(.admin-v4) .workspace :global(.admin-photo-primary-actions) { display: grid; grid-template-columns: 1fr; }
+  :global(.admin-v4) .workspace :global(.admin-photo-primary-actions .button), :global(.admin-v4) .workspace :global(.admin-photo-more > summary) { font-size: 14px; }
+  .upload :global(.upload-form > button) { justify-self: stretch; }
+  .downloadNote { padding: 14px; }
+  .downloadNote strong, .downloadNote p, .fieldHint { font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .cardChevron { transition: none; } }

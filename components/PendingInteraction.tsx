@@ -114,6 +114,7 @@ export function PendingInteraction() {
   const [pending, setPending] = useState(false);
   const [label, setLabel] = useState("Working");
   const [lineStartIndex, setLineStartIndex] = useState(0);
+  const previousPath = useRef(pathname);
   const timeoutRef = useRef<number | null>(null);
   const lineIndexRef = useRef(0);
 
@@ -150,9 +151,11 @@ export function PendingInteraction() {
   useEffect(() => {
     window.history.scrollRestoration = "manual";
 
+    const pathChanged = previousPath.current !== pathname;
+    previousPath.current = pathname;
     const frame = window.requestAnimationFrame(() => {
       clearPending();
-      if (!restoreScrollIfNeeded()) {
+      if (!restoreScrollIfNeeded() && pathChanged) {
         window.requestAnimationFrame(scrollToRouteStart);
       }
     });
@@ -217,12 +220,12 @@ export function PendingInteraction() {
       );
     }
 
-    document.addEventListener("click", handleClick, true);
-    document.addEventListener("submit", handleSubmit, true);
+    document.addEventListener("click", handleClick);
+    document.addEventListener("submit", handleSubmit);
 
     return () => {
-      document.removeEventListener("click", handleClick, true);
-      document.removeEventListener("submit", handleSubmit, true);
+      document.removeEventListener("click", handleClick);
+      document.removeEventListener("submit", handleSubmit);
     };
   }, [startPending]);
 

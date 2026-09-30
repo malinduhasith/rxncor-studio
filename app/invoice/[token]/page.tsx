@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CheckCircle2, CircleAlert, Clock3, Download } from "lucide-react";
 import { notFound } from "next/navigation";
 import { DocumentViewTracker } from "@/components/DocumentViewTracker";
@@ -73,7 +74,7 @@ export default async function InvoicePage({
     <main className={styles.shell}>
       {!isAdmin && invoice.status !== "draft" && invoice.status !== "void" ? <DocumentViewTracker token={token} /> : null}
       <div className={styles.tools}>
-        <span>Secure client document</span>
+        <Link className={styles.studioLink} href="/" aria-label="RXNCOR Studio home">RXNCOR <span>Client document</span></Link>
         <div className={styles.toolActions}>
           <PrintInvoiceButton />
           <a className={styles.downloadPdf} href={`/invoice/${token}/pdf`} download><Download size={17} aria-hidden="true" />Download PDF</a>
@@ -106,7 +107,7 @@ export default async function InvoicePage({
         </section>
 
         <div className={styles.tableWrap}>
-          <table><thead><tr><th>Description</th><th>Setting</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>{items.map((item) => <tr key={item.id}><td><strong>{item.description}</strong><small>{item.category}</small></td><td>{item.work_context}</td><td>{item.quantity} {item.unit}</td><td>{aud(item.unit_price_cents)}</td><td>{aud(item.line_total_cents)}</td></tr>)}</tbody></table>
+          <table><thead><tr><th>Description</th><th>Setting</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>{items.map((item) => <tr key={item.id}><td><strong>{item.description}</strong><small>{item.category}</small></td><td data-label="Setting">{item.work_context}</td><td data-label="Quantity">{item.quantity} {item.unit}</td><td data-label="Rate">{aud(item.unit_price_cents)}</td><td data-label="Amount">{aud(item.line_total_cents)}</td></tr>)}</tbody></table>
         </div>
 
         <div className={styles.summaryArea}>
