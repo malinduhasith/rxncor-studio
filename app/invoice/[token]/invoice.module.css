@@ -33,3 +33,21 @@
   .decision input { min-height: 44px; font-size: 16px; }
   .decision button { min-height: 48px; font-size: 14px; }
 }
+
+@media screen and (max-width: 600px) {
+  .tools { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; border-bottom: 1px solid #c9d2e0; background: #f5f6f8; }
+  .studioLink { font-size: 14px; }
+  .studioLink span { font-size: 10px; }
+  .toolActions { width: auto; gap: 6px; }
+  .toolActions > * { padding: 10px; font-size: 13px; gap: 5px; }
+  .invoice { padding-inline: max(14px,env(safe-area-inset-left,0px)) max(14px,env(safe-area-inset-right,0px)); }
+  .meta { padding-block: 22px; }
+  .decision { padding: 18px 12px; gap: 20px; }
+  .decision form > div { flex-wrap: wrap; }
+  .decision button { flex: 1; }
+  .footer { gap: 20px; overflow-wrap: anywhere; }
+}
+@media screen and (max-width: 359px) {
+  .tools { grid-template-columns: minmax(0,1fr); }
+  .toolActions { width: 100%; }
+}

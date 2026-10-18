@@ -15,6 +15,18 @@
 
 .tabs::-webkit-scrollbar { display: none; }
 
+@media (max-width: 600px) {
+  .workspace .tabs { gap: 8px; padding-bottom: 6px; scroll-snap-type: x proximity; }
+  .workspace .tabs a { padding-inline: 12px; border-radius: 8px; background: #fff; border: 1px solid #dfe3e8; scroll-snap-align: start; }
+  .workspace .tabs .activeTab { background: #eff6ff; border-color: #90afe3; color: #1d4ed8; }
+  .workspace .detailActions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); width: 100%; }
+  .workspace .detailActions a { white-space: normal; font-size: 13px; }
+  .workspace .filters { grid-template-columns: minmax(0,1fr); gap: 8px; }
+  .workspace .filters > * { min-width: 0; width: 100%; }
+  .workspace .detailSummary > div { min-width: 0; padding: 12px; }
+  .workspace .detailSummary strong { font-size: 14px; }
+}
+
 .tabs a {
   position: relative;
   flex: 0 0 auto;

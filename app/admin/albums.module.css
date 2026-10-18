@@ -178,3 +178,29 @@
   .downloadNote strong, .downloadNote p, .fieldHint { font-size: 14px; }
 }
 @media (prefers-reduced-motion: reduce) { .cardChevron { transition: none; } }
+
+/* Phone workspace: spend the available width on content, not nested frames. */
+@media (max-width: 600px) {
+  .header { flex-direction: row; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .headerActions { width: auto; }
+  .header p { font-size: 13px; }
+  .albumCard { scroll-margin-top: calc(64px + env(safe-area-inset-top,0px)); }
+  .cardContent { padding: 0 10px 12px; }
+  .cardActions { display: grid; grid-template-columns: minmax(0,1fr); gap: 8px; }
+  .cardActions .headerActions { width: 100%; }
+  .tabs { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); width: 100%; overflow: visible; padding: 4px 3px 0; gap: 0; }
+  .tabs button { min-width: 0; padding: 10px 2px; font-size: 13px; min-height: 46px; }
+  .tabPanel { padding: 16px 0 0; border: 0; border-radius: 0; }
+  :global(.admin-v4) .accessForm { gap: 16px; }
+  :global(.admin-v4) .accessForm fieldset { padding: 12px 0 0; border: 0; border-top: 1px solid #e1e5ec; border-radius: 0; gap: 12px; }
+  .accessForm legend { padding: 0 8px 0 0; font-size: 14px; }
+  :global(.admin-v4) .accessForm :global(.assignment-list label) { padding: 8px; }
+  .saveBar { background: #fff; backdrop-filter: none; padding-block: 8px; }
+  :global(.admin-v4) .workspace :global(.admin-photo-card-body) { padding: 10px; gap: 8px; }
+  :global(.admin-v4) .workspace :global(.admin-photo-primary-actions) { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+  :global(.admin-v4) .workspace :global(.admin-photo-primary-actions .button) { min-width: 0; padding: 8px; font-size: 13px; }
+  :global(.admin-v4) .delivery :global(.share-box) { padding: 12px 0; border: 0; }
+  :global(.admin-v4) .delivery :global(.admin-email-composer) { padding: 12px 8px; }
+  .downloadNote { padding: 12px; margin-bottom: 16px; }
+  .downloadNote p { line-height: 1.5; }
+}
