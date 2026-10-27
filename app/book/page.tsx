@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { submitShootRequestAction } from "../actions";
+import { PublicFormTrap } from "@/components/PublicFormTrap";
 import { DateTimeRangeFields } from "@/components/DateTimeRangeFields";
 import { NoticeToaster } from "@/components/Notice";
 import { PublicPageHero } from "@/components/public/PublicPageHero";
@@ -59,6 +60,7 @@ export default async function BookPage({ searchParams }: BookPageProps) {
         </div>
 
         <form action={submitShootRequestAction} className="rx-form rx-book-form" data-reveal>
+          <PublicFormTrap />
           <label className="field">
             <span>01 / Name</span>
             <input name="name" autoComplete="name" placeholder="Your name" required />

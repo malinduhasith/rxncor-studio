@@ -6,6 +6,7 @@ import { z } from "zod";
 import { sendContactEmails, sendShootRequestEmails } from "@/lib/email";
 import { checkRateLimit, clientIpFromHeaders } from "@/lib/rate-limit";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { isSpamSubmission, publicFormKeys } from "@/lib/form-abuse";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -65,6 +66,10 @@ export async function submitShootRequestAction(formData: FormData) {
     redirect("/book?shoot=error#request");
   }
 
+  if (isSpamSubmission(payload.data, formData.get("website_url"))) {
+    redirect("/book?shoot=sent#request");
+  }
+
   const overlap = await hasAcceptedShootOverlap(
     payload.data.preferred_start_at,
     payload.data.preferred_end_at
@@ -90,6 +95,14 @@ export async function submitShootRequestAction(formData: FormData) {
   }
 
   const supabase = createSupabaseAdminClient();
+  const guard = await supabase.rpc("claim_public_form_submission", publicFormKeys("shoot", payload.data, ipAddress,
+    JSON.stringify([payload.data.shoot_type, payload.data.preferred_start_at, payload.data.preferred_end_at, payload.data.location])));
+  if (guard.error || !["allowed", "duplicate", "rate-limited"].includes(guard.data)) {
+    console.error("Public form guard unavailable", { form: "shoot", code: guard.error?.code });
+    redirect("/book?shoot=error#request");
+  }
+  if (guard.data === "duplicate") redirect("/book?shoot=rate-limited#request");
+  if (guard.data === "rate-limited") redirect("/book?shoot=rate-limited#request");
   const { error } = await supabase.from("shoot_requests").insert({
     name: payload.data.name,
     email: payload.data.email.toLowerCase(),
@@ -133,6 +146,10 @@ export async function submitContactAction(formData: FormData) {
     redirect("/?contact=error#inquiries");
   }
 
+  if (isSpamSubmission(payload.data, formData.get("website_url"))) {
+    redirect("/?contact=sent#inquiries");
+  }
+
   const requestHeaders = await headers();
   const ipAddress = clientIpFromHeaders(requestHeaders);
   const rateLimit = checkRateLimit(`contact:${ipAddress}`, {
@@ -145,6 +162,13 @@ export async function submitContactAction(formData: FormData) {
   }
 
   const supabase = createSupabaseAdminClient();
+  const guard = await supabase.rpc("claim_public_form_submission", publicFormKeys("contact", payload.data, ipAddress));
+  if (guard.error || !["allowed", "duplicate", "rate-limited"].includes(guard.data)) {
+    console.error("Public form guard unavailable", { form: "contact", code: guard.error?.code });
+    redirect("/?contact=error#inquiries");
+  }
+  if (guard.data === "duplicate") redirect("/?contact=rate-limited#inquiries");
+  if (guard.data === "rate-limited") redirect("/?contact=rate-limited#inquiries");
   const { error } = await supabase.from("contact_inquiries").insert({
     name: payload.data.name,
     email: payload.data.email.toLowerCase(),

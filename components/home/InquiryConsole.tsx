@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { submitContactAction } from "@/app/actions";
 import { CompositionMark } from "@/components/home/CompositionMark";
+import { PublicFormTrap } from "@/components/PublicFormTrap";
 
 const requiredFields = ["name", "email", "message"] as const;
 
@@ -54,6 +55,7 @@ export function InquiryConsole() {
         data-active-field={activeField}
         onChange={(event) => updateCompletion(event.currentTarget)}
       >
+        <PublicFormTrap />
         <label data-active={activeField === "name" ? "true" : "false"} data-complete={completed.name ? "true" : "false"}>
           <span>01 / Your name <i>{completed.name ? "Locked" : "Required"}</i></span>
           <input
